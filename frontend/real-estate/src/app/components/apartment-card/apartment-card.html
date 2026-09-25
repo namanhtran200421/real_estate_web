@@ -1,0 +1,63 @@
+@let apt = apartment();
+
+<article
+  class="group grid h-full overflow-hidden rounded-lg border border-border bg-card transition-all duration-200 ease-out hover:border-border-hover"
+  [class]="featured() ? 'shadow-md hover:shadow-lg md:grid-cols-[1.3fr_0.7fr]' : 'grid-rows-[auto_1fr] shadow-sm hover:shadow-md'"
+>
+  <a
+    routerLink="/apartment"
+    [queryParams]="{ apt: apt.slug }"
+    class="relative block aspect-[4/3] overflow-hidden bg-muted"
+    [class]="featured() ? 'md:aspect-auto md:min-h-[26rem]' : ''"
+    tabindex="-1"
+    aria-hidden="true"
+  >
+    <img
+      [ngSrc]="apt.photos[0].src"
+      [alt]="apt.photos[0].alt"
+      fill
+      [priority]="featured()"
+      [sizes]="featured() ? '(min-width: 768px) 60vw, 100vw' : '(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw'"
+      class="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.02]"
+    />
+  </a>
+
+  <div class="flex flex-col" [class]="featured() ? 'p-8 md:p-10' : 'p-6'">
+    <p class="small-caps text-accent">{{ apt.area }}</p>
+    <h3 class="mt-2 font-normal" [class]="featured() ? 'text-3xl md:text-4xl' : 'text-2xl'">
+      <a routerLink="/apartment" [queryParams]="{ apt: apt.slug }" class="hover:text-accent transition-colors duration-200">
+        {{ apt.name }}
+      </a>
+    </h3>
+    <p class="mt-3 text-muted-foreground">{{ apt.tagline }}</p>
+
+    <p class="mt-5 text-sm text-muted-foreground">
+      {{ apt.guests }} khách · {{ apt.bedrooms }} phòng ngủ · {{ apt.beds }} giường ·
+      {{ apt.bathrooms }} phòng tắm
+    </p>
+
+    @if (featured()) {
+      <ul class="mt-5 flex flex-wrap gap-2">
+        @for (item of apt.keyFacilities; track item) {
+          <li class="rounded-md border border-border px-3 py-1 text-sm">{{ item }}</li>
+        }
+      </ul>
+    }
+
+    <div class="mt-auto pt-8">
+      <hr />
+      <div class="mt-6 flex flex-wrap items-center justify-between gap-4">
+        <p class="text-muted-foreground">
+          Từ <span class="font-serif text-2xl text-foreground">{{ apt.pricing.weekday | number }} ₫</span>
+          / đêm
+        </p>
+        @if (featured()) {
+          <div class="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
+            <a routerLink="/apartment" [queryParams]="{ apt: apt.slug }" class="btn btn-outline">Xem chi tiết</a>
+            <a routerLink="/book" [queryParams]="{ apt: apt.slug }" class="btn btn-primary">Đặt lịch</a>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+</article>

@@ -1,0 +1,86 @@
+@let b = booking;
+
+<section class="pb-20 pt-16 md:pb-28 md:pt-20">
+  <div class="container-editorial max-w-3xl">
+    <div class="text-center">
+      <p class="section-label mx-auto max-w-sm">Đặt phòng của bạn</p>
+      <h1 class="text-4xl md:text-5xl">Tra cứu đặt phòng</h1>
+      <p class="mx-auto mt-4 max-w-md text-muted-foreground">
+        Nhập mã đặt phòng và email hoặc số điện thoại đã dùng khi đặt để xem trạng thái.
+      </p>
+    </div>
+
+    <form class="card mt-12" (submit)="$event.preventDefault()">
+      <div class="grid gap-6 sm:grid-cols-2">
+        <div>
+          <label class="label" for="lookup-reference">Mã đặt phòng</label>
+          <input id="lookup-reference" class="input uppercase" type="text" placeholder="RE-XXXX-XXXX" autocomplete="off" />
+        </div>
+        <div>
+          <label class="label" for="lookup-contact">Email hoặc số điện thoại</label>
+          <input id="lookup-contact" class="input" type="text" placeholder="ban@email.com" autocomplete="email" />
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary mt-6 w-full sm:w-auto">Tra cứu</button>
+    </form>
+
+    <!-- Result (placeholder) -->
+    @if (apartment; as apt) {
+      <div class="mt-16">
+        <p class="small-caps text-muted-foreground">Kết quả</p>
+        <div class="card card-accent-top mt-4">
+          <div class="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p class="font-mono text-xl tracking-[0.1em]">{{ b.reference }}</p>
+              <p class="mt-1 text-sm text-muted-foreground">Đặt ngày {{ b.createdAt | date: 'dd/MM/yyyy' }}</p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <app-status-badge [status]="b.status" />
+              <app-status-badge [status]="b.paymentStatus" />
+            </div>
+          </div>
+
+          <div class="mt-6 flex gap-4 border-y border-border py-6">
+            <img
+              [ngSrc]="apt.photos[0].src"
+              [alt]="apt.photos[0].alt"
+              width="96"
+              height="80"
+              [loaderParams]="{ ar: '6:5' }"
+              class="h-20 w-24 shrink-0 rounded-md bg-muted object-cover"
+            />
+            <div class="min-w-0">
+              <p class="small-caps text-[0.625rem] text-accent">{{ apt.area }}</p>
+              <p class="mt-1 font-serif text-xl">{{ apt.name }}</p>
+              <p class="mt-1 text-sm text-muted-foreground">
+                {{ b.checkIn | date: 'dd/MM/yyyy' }} – {{ b.checkOut | date: 'dd/MM/yyyy' }} · {{ b.guests }} khách
+              </p>
+            </div>
+          </div>
+
+          @if (quote(); as q) {
+            <dl class="mt-6 grid grid-cols-3 gap-4 text-center">
+              <div>
+                <dt class="small-caps text-[0.625rem] text-muted-foreground">Tổng tiền</dt>
+                <dd class="mt-2 font-serif text-lg sm:text-xl">{{ q.total | number }} ₫</dd>
+              </div>
+              <div class="border-x border-border">
+                <dt class="small-caps text-[0.625rem] text-muted-foreground">Đã trả</dt>
+                <dd class="mt-2 font-serif text-lg text-accent sm:text-xl">{{ q.deposit | number }} ₫</dd>
+              </div>
+              <div>
+                <dt class="small-caps text-[0.625rem] text-muted-foreground">Còn lại</dt>
+                <dd class="mt-2 font-serif text-lg sm:text-xl">{{ q.remaining | number }} ₫</dd>
+              </div>
+            </dl>
+          }
+
+          <div class="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-end">
+            <a routerLink="/contact" class="btn btn-outline">Liên hệ chủ nhà</a>
+            <a routerLink="/apartment" [queryParams]="{ apt: apt.slug }" class="btn btn-ghost">Xem căn hộ</a>
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+</section>

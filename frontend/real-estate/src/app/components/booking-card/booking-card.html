@@ -1,0 +1,44 @@
+<div class="card card-accent-top card-elevated p-6 md:p-8">
+  <p>
+    <span class="font-serif text-3xl">{{ priceFrom() | number }} ₫</span>
+    <span class="text-muted-foreground"> / đêm</span>
+  </p>
+  <p class="small-caps mt-1 text-muted-foreground">Giá từ · Thứ Hai – Thứ Năm</p>
+
+  <a
+    routerLink="/book"
+    [queryParams]="{ apt: slug() }"
+    class="mt-6 grid grid-cols-2 rounded-md border border-border transition-colors duration-200 hover:border-border-hover"
+  >
+    <span class="border-b border-r border-border px-4 py-3">
+      <span class="small-caps block text-[0.625rem] text-accent">Nhận phòng</span>
+      <span class="mt-0.5 block text-muted-foreground">Chọn ngày</span>
+    </span>
+    <span class="border-b border-border px-4 py-3">
+      <span class="small-caps block text-[0.625rem] text-accent">Trả phòng</span>
+      <span class="mt-0.5 block text-muted-foreground">Chọn ngày</span>
+    </span>
+    <span class="col-span-2 px-4 py-3">
+      <span class="small-caps block text-[0.625rem] text-accent">Số khách</span>
+      <span class="mt-0.5 block text-muted-foreground">1 khách</span>
+    </span>
+  </a>
+
+  <a routerLink="/book" [queryParams]="{ apt: slug() }" class="btn btn-primary mt-5 w-full">Đặt lịch</a>
+  <a
+    routerLink="/availability"
+    [queryParams]="{ apt: slug() }"
+    class="btn btn-ghost mt-2 w-full"
+  >
+    Xem lịch trống
+  </a>
+  <p class="mt-3 text-center text-sm text-muted-foreground">
+    Giá được tính tự động và hiển thị trước khi thanh toán.
+  </p>
+
+  <hr class="my-6" />
+  <ul class="space-y-2 text-sm text-muted-foreground">
+    <li>Đặt cọc hoặc thanh toán toàn bộ</li>
+    <li>Xác nhận đặt phòng qua email</li>
+  </ul>
+</div>

@@ -1,0 +1,46 @@
+<!-- Intro -->
+<section class="pb-12 pt-16 md:pb-16 md:pt-24">
+  <div class="container-editorial text-center">
+    <p class="section-label mx-auto max-w-md">Căn hộ cho thuê · TP. Hồ Chí Minh</p>
+    <h1 class="mx-auto max-w-3xl">
+      Nghỉ ngơi giữa lòng <em class="text-accent">thành phố</em>
+    </h1>
+    <p class="mx-auto mt-6 max-w-xl text-lg text-muted-foreground">
+      Xem lịch trống, biết giá ngay và đặt phòng trực tuyến, tất cả trên điện thoại của bạn.
+    </p>
+  </div>
+</section>
+
+<!-- Apartments -->
+<section id="can-ho" class="pb-20 md:pb-28">
+  <div class="container-editorial max-w-6xl">
+    @if (featured(); as apt) {
+      <app-apartment-card [apartment]="apt" [featured]="true" />
+    }
+
+    @if (others().length) {
+      <h2 class="mt-20 text-3xl md:text-4xl">Căn hộ khác</h2>
+      <div class="mt-8 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+        @for (apt of others(); track apt.id) {
+          <app-apartment-card [apartment]="apt" />
+        }
+      </div>
+    }
+  </div>
+</section>
+
+<!-- Why book direct -->
+<section class="border-t border-border bg-muted py-20 md:py-28">
+  <div class="container-editorial max-w-6xl">
+    <p class="section-label">Đặt trực tiếp</p>
+    <div class="mt-10 grid gap-10 md:grid-cols-3 md:gap-12">
+      @for (item of promises; track item.title; let i = $index) {
+        <div>
+          <p class="font-serif text-4xl text-accent">0{{ i + 1 }}</p>
+          <h3 class="mt-4">{{ item.title }}</h3>
+          <p class="mt-3 text-muted-foreground">{{ item.text }}</p>
+        </div>
+      }
+    </div>
+  </div>
+</section>

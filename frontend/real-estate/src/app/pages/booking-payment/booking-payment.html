@@ -1,0 +1,92 @@
+@if (apartment(); as apt) {
+  @let q = quote()!;
+  @let b = booking;
+
+  <section class="pb-20 pt-10 md:pb-28 md:pt-14">
+    <div class="container-editorial max-w-6xl">
+      <app-booking-steps [current]="3" />
+
+      <h1 class="mt-12 text-4xl md:text-5xl">Thanh toán</h1>
+      <p class="mt-3 text-muted-foreground">Chọn số tiền và phương thức thanh toán.</p>
+
+      <div class="mt-10 grid gap-10 lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-14">
+        <form class="min-w-0 space-y-12" (submit)="$event.preventDefault()">
+          <!-- Amount -->
+          <fieldset>
+            <legend class="font-serif text-2xl">Số tiền thanh toán</legend>
+            <div class="mt-6 grid gap-4 sm:grid-cols-2">
+              <label
+                class="card flex cursor-pointer gap-4 p-6 has-[:checked]:border-accent has-[:checked]:bg-accent-muted md:p-6"
+              >
+                <input type="radio" name="amount" value="deposit" checked class="mt-1.5 h-4 w-4 shrink-0 accent-accent" />
+                <span>
+                  <span class="block font-medium">Đặt cọc {{ b.depositPercent }}%</span>
+                  <span class="mt-2 block font-serif text-2xl">{{ q.deposit | number }} ₫</span>
+                  <span class="mt-1 block text-sm text-muted-foreground">
+                    Còn lại {{ q.remaining | number }} ₫ thanh toán khi nhận phòng
+                  </span>
+                </span>
+              </label>
+              <label
+                class="card flex cursor-pointer gap-4 p-6 has-[:checked]:border-accent has-[:checked]:bg-accent-muted md:p-6"
+              >
+                <input type="radio" name="amount" value="full" class="mt-1.5 h-4 w-4 shrink-0 accent-accent" />
+                <span>
+                  <span class="block font-medium">Thanh toán toàn bộ</span>
+                  <span class="mt-2 block font-serif text-2xl">{{ q.total | number }} ₫</span>
+                  <span class="mt-1 block text-sm text-muted-foreground">Không cần thanh toán thêm khi nhận phòng</span>
+                </span>
+              </label>
+            </div>
+          </fieldset>
+
+          <!-- Method -->
+          <fieldset>
+            <legend class="font-serif text-2xl">Phương thức thanh toán</legend>
+            <div class="mt-6 divide-y divide-border rounded-lg border border-border bg-card">
+              @for (m of methods; track m.id; let first = $first) {
+                <label class="flex cursor-pointer items-center gap-4 px-5 py-4 transition-colors duration-200 hover:bg-muted/50 has-[:checked]:bg-accent-muted">
+                  <input type="radio" name="method" [value]="m.id" [checked]="first" class="h-4 w-4 shrink-0 accent-accent" />
+                  <span>
+                    <span class="block font-medium">{{ m.label }}</span>
+                    <span class="block text-sm text-muted-foreground">{{ m.text }}</span>
+                  </span>
+                </label>
+              }
+            </div>
+          </fieldset>
+
+          <!-- Amount due -->
+          <div class="card card-accent-top card-elevated">
+            <div class="flex items-baseline justify-between gap-4">
+              <span class="small-caps text-muted-foreground">Thanh toán hôm nay</span>
+              <span class="display-number">{{ q.deposit | number }} ₫</span>
+            </div>
+            <p class="mt-3 text-sm text-muted-foreground">
+              Tổng tiền đặt phòng {{ q.total | number }} ₫. Số tiền còn lại
+              {{ q.remaining | number }} ₫ thanh toán khi nhận phòng.
+            </p>
+            <a
+              [routerLink]="['/booking', b.reference, 'confirmation']"
+              [queryParams]="{ apt: apt.slug }"
+              class="btn btn-primary mt-6 w-full"
+            >
+              Thanh toán {{ q.deposit | number }} ₫
+            </a>
+            <p class="mt-4 text-center text-xs text-muted-foreground">
+              Bằng việc thanh toán, bạn đồng ý với nội quy của căn hộ.
+            </p>
+          </div>
+
+          <a routerLink="/book/review" [queryParams]="{ apt: apt.slug }" class="btn btn-ghost">← Quay lại</a>
+        </form>
+
+        <aside class="lg:sticky lg:top-28 lg:self-start">
+          <app-booking-summary [apartment]="apt" [booking]="b" [total]="q.total" />
+        </aside>
+      </div>
+    </div>
+  </section>
+} @else {
+  <app-apartment-not-found />
+}

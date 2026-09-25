@@ -1,0 +1,40 @@
+<ol class="flex items-center gap-3 sm:gap-4" aria-label="Các bước đặt phòng">
+  @for (step of steps; track step; let i = $index, last = $last) {
+    @let n = i + 1;
+    <li class="flex items-center gap-3 sm:gap-4" [class.flex-1]="!last" [attr.aria-current]="n === current() ? 'step' : null">
+      <span class="flex items-center gap-2.5">
+        <span
+          class="grid h-8 w-8 shrink-0 place-items-center rounded-full border font-mono text-xs"
+          [class]="
+            n < current()
+              ? 'border-accent bg-accent text-accent-foreground'
+              : n === current()
+                ? 'border-accent text-accent'
+                : 'border-border text-muted-foreground'
+          "
+        >
+          @if (n < current()) {
+            <svg viewBox="0 0 20 20" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2.25" aria-hidden="true">
+              <path d="m4 10.5 4 4 8-9" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          } @else {
+            {{ n }}
+          }
+        </span>
+        <span
+          class="hidden whitespace-nowrap text-sm font-medium md:inline"
+          [class]="n === current() ? 'text-foreground' : 'text-muted-foreground'"
+        >
+          {{ step }}
+        </span>
+      </span>
+      @if (!last) {
+        <span class="h-px min-w-6 flex-1" [class]="n < current() ? 'bg-accent' : 'bg-border'" aria-hidden="true"></span>
+      }
+    </li>
+  }
+</ol>
+<p class="mt-4 text-sm md:hidden">
+  <span class="small-caps text-muted-foreground">Bước {{ current() }}/{{ steps.length }}</span>
+  <span class="ml-2 font-medium">{{ steps[current() - 1] }}</span>
+</p>

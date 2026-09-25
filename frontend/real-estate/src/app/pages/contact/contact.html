@@ -1,0 +1,28 @@
+<section class="pb-20 pt-16 md:pb-28 md:pt-20">
+  <div class="container-editorial max-w-6xl">
+    <div class="text-center">
+      <p class="section-label mx-auto max-w-sm">Liên hệ</p>
+      <h1 class="text-4xl md:text-5xl">Chúng tôi luôn sẵn sàng hỗ trợ</h1>
+      <p class="mx-auto mt-4 max-w-lg text-muted-foreground">
+        Gọi điện, nhắn Zalo hoặc gửi email, chúng tôi sẽ phản hồi sớm nhất có thể.
+      </p>
+    </div>
+
+    <app-contact-cards class="mt-14 block" />
+
+    <div class="mt-16 grid gap-6 md:grid-cols-2">
+      <div class="card">
+        <p class="small-caps text-accent">Đã đặt phòng?</p>
+        <p class="mt-3 font-serif text-2xl">Xem trạng thái đặt phòng</p>
+        <p class="mt-2 text-muted-foreground">Tra cứu bằng mã đặt phòng và email hoặc số điện thoại.</p>
+        <a routerLink="/booking/manage" class="btn btn-outline mt-6">Tra cứu đặt phòng</a>
+      </div>
+      <div class="card">
+        <p class="small-caps text-accent">Chưa đặt phòng?</p>
+        <p class="mt-3 font-serif text-2xl">Xem ngày còn trống</p>
+        <p class="mt-2 text-muted-foreground">Kiểm tra lịch và đặt trực tuyến, không cần nhắn tin hỏi trước.</p>
+        <a routerLink="/availability" class="btn btn-primary mt-6">Xem lịch trống</a>
+      </div>
+    </div>
+  </div>
+</section>

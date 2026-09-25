@@ -1,0 +1,57 @@
+@let apt = apartment();
+
+<div class="card card-accent-top card-elevated p-6">
+  <div class="flex gap-4">
+    <img
+      [ngSrc]="apt.photos[0].src"
+      [alt]="apt.photos[0].alt"
+      width="96"
+      height="80"
+      [loaderParams]="{ ar: '6:5' }"
+      class="h-20 w-24 shrink-0 rounded-md bg-muted object-cover"
+    />
+    <div class="min-w-0">
+      <p class="small-caps truncate text-[0.625rem] text-accent">{{ apt.area }}</p>
+      <p class="mt-1 font-serif text-xl leading-tight">{{ apt.name }}</p>
+      <p class="mt-1 text-sm text-muted-foreground">
+        {{ apt.bedrooms }} phòng ngủ · tối đa {{ apt.guests }} khách
+      </p>
+    </div>
+  </div>
+
+  <hr class="my-5" />
+
+  @if (booking(); as b) {
+    <dl class="space-y-3 text-sm">
+      <div class="flex justify-between gap-4">
+        <dt class="text-muted-foreground">Nhận phòng</dt>
+        <dd>{{ b.checkIn | date: 'dd/MM/yyyy' }} · {{ apt.checkIn }}</dd>
+      </div>
+      <div class="flex justify-between gap-4">
+        <dt class="text-muted-foreground">Trả phòng</dt>
+        <dd>{{ b.checkOut | date: 'dd/MM/yyyy' }} · {{ apt.checkOut }}</dd>
+      </div>
+      <div class="flex justify-between gap-4">
+        <dt class="text-muted-foreground">Số đêm</dt>
+        <dd>{{ b.nights.length }} đêm</dd>
+      </div>
+      <div class="flex justify-between gap-4">
+        <dt class="text-muted-foreground">Số khách</dt>
+        <dd>{{ b.guests }} khách</dd>
+      </div>
+    </dl>
+  } @else {
+    <p class="text-sm text-muted-foreground">
+      Giá từ <span class="font-serif text-lg text-foreground">{{ apt.pricing.weekday | number }} ₫</span> / đêm.
+      Tổng tiền được tính tự động sau khi bạn chọn ngày.
+    </p>
+  }
+
+  @if (total() !== undefined) {
+    <hr class="my-5" />
+    <div class="flex items-baseline justify-between gap-4">
+      <span class="small-caps text-muted-foreground">Tổng cộng</span>
+      <span class="font-serif text-2xl">{{ total() | number }} ₫</span>
+    </div>
+  }
+</div>

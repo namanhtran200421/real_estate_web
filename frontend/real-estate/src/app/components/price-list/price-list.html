@@ -1,0 +1,26 @@
+<table class="w-full">
+  <tbody class="divide-y divide-border border-y border-border">
+    @for (row of rows(); track row.label) {
+      <tr>
+        <th scope="row" class="py-4 text-left font-normal">{{ row.label }}</th>
+        <td class="py-4 text-right">
+          <span class="font-serif text-xl">{{ row.amount | number }} ₫</span>
+          <span class="text-sm text-muted-foreground"> {{ row.unit }}</span>
+        </td>
+      </tr>
+    }
+  </tbody>
+</table>
+
+@if (pricing().longStayDiscounts.length) {
+  <p class="small-caps mt-10 text-muted-foreground">Giảm giá khi ở dài ngày</p>
+  <ul class="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-6">
+    @for (d of pricing().longStayDiscounts; track d.nights) {
+      <li class="rounded-md border border-border bg-card py-3 text-center">
+        <p class="font-serif text-xl text-accent">−{{ d.percent }}%</p>
+        <p class="text-sm text-muted-foreground">{{ d.nights }} đêm</p>
+      </li>
+    }
+  </ul>
+  <p class="mt-4 text-sm text-muted-foreground">Không áp dụng giảm giá cho ngày lễ.</p>
+}

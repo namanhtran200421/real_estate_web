@@ -1,0 +1,476 @@
+/*
+ * Serif design system: editorial, warm, restrained.
+ * Tokens live in @theme so every value is available both as a Tailwind
+ * utility (bg-accent, font-serif, shadow-md…) and as a CSS variable.
+ */
+
+@import 'tailwindcss';
+
+@theme {
+  /* Color: monochrome with a single burnished-gold accent */
+  --color-background: #fafaf8;
+  --color-foreground: #1a1a1a;
+  --color-muted: #f5f3f0;
+  --color-muted-foreground: #6b6b6b;
+  --color-accent: #b8860b;
+  --color-accent-secondary: #d4a84b;
+  --color-accent-foreground: #ffffff;
+  --color-accent-muted: rgb(184 134 11 / 0.06);
+  --color-border: #e8e4df;
+  --color-border-hover: #d6d0c8;
+  --color-input: #e8e4df;
+  --color-card: #ffffff;
+  --color-ring: #b8860b;
+
+  /* Typography */
+  --font-serif: 'Playfair Display', Georgia, serif;
+  --font-sans: 'Source Sans 3', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+
+  /* Radii: Tailwind defaults already match: md = 6px, lg = 8px */
+
+  /* Shadows: refinement, not depth */
+  --shadow-sm: 0 1px 2px rgb(26 26 26 / 0.04);
+  --shadow-md: 0 4px 12px rgb(26 26 26 / 0.06);
+  --shadow-lg: 0 8px 24px rgb(26 26 26 / 0.08);
+  --shadow-accent: 0 4px 14px rgb(184 134 11 / 0.25);
+
+  /* Motion: nothing bounces, nothing overshoots */
+  --ease-editorial: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --animate-fade-in: fade-in 0.6s ease-out both;
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+}
+
+/* ───────────────────────── Base ───────────────────────── */
+
+@layer base {
+  html {
+    color-scheme: light;
+    scroll-padding-top: 6rem;
+    font-variant-numeric: lining-nums;
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    font-size: 100%;
+    line-height: 1.75;
+    letter-spacing: 0.01em;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    min-height: 100dvh;
+  }
+
+  /* Paper texture: a faint print-like grain over the whole page */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    pointer-events: none;
+    opacity: 0.3;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.08'/%3E%3C/svg%3E");
+  }
+
+  /* Ambient glow: warm atmospheric depth, offset from center */
+  body::after {
+    content: '';
+    position: fixed;
+    top: -20vmax;
+    right: -15vmax;
+    z-index: -1;
+    width: 60vmax;
+    height: 60vmax;
+    pointer-events: none;
+    /* A gradient instead of filter: blur() so it costs nothing to paint on scroll. */
+    background: radial-gradient(circle, rgb(184 134 11 / 0.05), transparent 65%);
+  }
+
+  *,
+  ::before,
+  ::after {
+    border-color: var(--color-border);
+  }
+
+  ::selection {
+    background-color: rgb(184 134 11 / 0.18);
+    color: var(--color-foreground);
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-serif);
+    font-weight: 400;
+    color: var(--color-foreground);
+    text-wrap: balance;
+  }
+
+  h1 {
+    font-size: 2.5rem;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+  }
+
+  h2 {
+    font-size: 2rem;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+  }
+
+  h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+
+  h4 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    line-height: 1.4;
+  }
+
+  @media (width >= 48rem) {
+    h1 {
+      font-size: 3.75rem;
+    }
+    h2 {
+      font-size: 2.5rem;
+    }
+  }
+
+  @media (width >= 64rem) {
+    h1 {
+      font-size: 4.5rem;
+    }
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  hr {
+    border: 0;
+    border-top: 1px solid var(--color-border);
+  }
+
+  a,
+  button,
+  [role='button'],
+  input,
+  select,
+  textarea,
+  label {
+    touch-action: manipulation;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-ring);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+/* ───────────────────────── Components ─────────────────────────
+ * Plain classes in the components layer, so Tailwind utilities
+ * can still override any of them at the call site.
+ */
+
+@layer components {
+  /* Layout */
+  .container-editorial {
+    width: 100%;
+    max-width: 64rem;
+    margin-inline: auto;
+    padding-inline: 1.5rem;
+  }
+
+  .section {
+    padding-block: 5rem;
+  }
+
+  @media (width >= 48rem) {
+    .container-editorial {
+      padding-inline: 2rem;
+    }
+    .section {
+      padding-block: 8rem;
+    }
+  }
+
+  @media (width >= 64rem) {
+    .section {
+      padding-block: 11rem;
+    }
+  }
+
+  /* Small caps & section labels */
+  .small-caps {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 500;
+    line-height: 1.5;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+
+  .section-label {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 500;
+    line-height: 1.5;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--color-accent);
+  }
+
+  .section-label::before,
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--color-border);
+  }
+
+  /* Rules */
+  .rule {
+    height: 1px;
+    border: 0;
+    background: var(--color-border);
+  }
+
+  .rule-accent {
+    display: block;
+    width: 3rem;
+    height: 1px;
+    border: 0;
+    background: var(--color-accent);
+  }
+
+  /* Display type */
+  .display-number {
+    font-family: var(--font-serif);
+    font-size: 2.25rem;
+    font-weight: 400;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    font-variant-numeric: lining-nums tabular-nums;
+  }
+
+  @media (width >= 48rem) {
+    .display-number {
+      font-size: 3rem;
+    }
+  }
+
+  .quote-mark {
+    display: block;
+    font-family: var(--font-serif);
+    font-size: 4.5rem;
+    line-height: 1;
+    height: 2.5rem;
+    color: var(--color-accent);
+    user-select: none;
+  }
+
+  .link {
+    color: var(--color-accent);
+    text-decoration-line: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 4px;
+    text-decoration-color: rgb(184 134 11 / 0.4);
+    transition: all 200ms ease-out;
+  }
+
+  .link:hover {
+    text-decoration-color: var(--color-accent);
+  }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 44px;
+    padding: 0.75rem 1.75rem;
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    font-family: var(--font-sans);
+    font-size: 0.9375rem;
+    font-weight: 500;
+    line-height: 1.25;
+    letter-spacing: 0.05em;
+    text-decoration: none;
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+    touch-action: manipulation;
+    transition: all 200ms ease-out;
+  }
+
+  .btn:disabled,
+  .btn[aria-disabled='true'] {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  .btn-primary {
+    background: var(--color-accent);
+    color: var(--color-accent-foreground);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .btn-primary:hover {
+    background: var(--color-accent-secondary);
+    box-shadow: var(--shadow-accent);
+    transform: translateY(-2px);
+  }
+
+  .btn-primary:active {
+    transform: translateY(0);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .btn-outline {
+    background: transparent;
+    border-color: var(--color-foreground);
+    color: var(--color-foreground);
+  }
+
+  .btn-outline:hover {
+    background: var(--color-muted);
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+  }
+
+  .btn-ghost {
+    padding-inline: 0.5rem;
+    background: transparent;
+    color: var(--color-muted-foreground);
+    text-decoration-line: underline;
+    text-decoration-color: transparent;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 4px;
+  }
+
+  .btn-ghost:hover {
+    color: var(--color-foreground);
+    text-decoration-color: var(--color-accent);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .btn-primary:hover {
+      transform: none;
+    }
+  }
+
+  /* Cards */
+  .card {
+    background: var(--color-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    padding: 2rem;
+    transition: all 200ms ease-out;
+  }
+
+  @media (width >= 48rem) {
+    .card {
+      padding: 2.5rem;
+    }
+  }
+
+  .card-hover:hover {
+    background: color-mix(in srgb, var(--color-muted) 30%, var(--color-card));
+    border-color: var(--color-border-hover);
+    box-shadow: var(--shadow-md);
+  }
+
+  .card-elevated {
+    box-shadow: var(--shadow-md);
+  }
+
+  .card-featured {
+    background: linear-gradient(var(--color-accent-muted), var(--color-accent-muted)),
+      var(--color-card);
+  }
+
+  .card-accent-top,
+  .card-featured,
+  .card-accent-top:hover,
+  .card-featured:hover {
+    border-top: 2px solid var(--color-accent);
+  }
+
+  /* Form fields */
+  .input {
+    display: block;
+    width: 100%;
+    height: 3rem;
+    padding-inline: 1rem;
+    border: 1px solid var(--color-input);
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    line-height: 1.5;
+    transition: all 150ms ease-out;
+  }
+
+  textarea.input {
+    height: auto;
+    min-height: 8rem;
+    padding-block: 0.75rem;
+  }
+
+  .input::placeholder {
+    color: color-mix(in srgb, var(--color-muted-foreground) 60%, transparent);
+  }
+
+  .input:hover {
+    border-color: var(--color-border-hover);
+  }
+
+  .input:focus-visible {
+    border-color: var(--color-accent);
+    outline: 2px solid var(--color-ring);
+    outline-offset: 2px;
+  }
+
+  .label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    color: var(--color-foreground);
+  }
+}

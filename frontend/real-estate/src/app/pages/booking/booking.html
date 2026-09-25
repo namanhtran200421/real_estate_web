@@ -1,0 +1,107 @@
+@if (apartment(); as apt) {
+  <section class="pb-20 pt-10 md:pb-28 md:pt-14">
+    <div class="container-editorial max-w-6xl">
+      <app-booking-steps [current]="1" />
+
+      <h1 class="mt-12 text-4xl md:text-5xl">Đặt lịch</h1>
+      <p class="mt-3 text-muted-foreground">Chọn ngày, số khách và để lại thông tin liên hệ của bạn.</p>
+
+      <div class="mt-10 grid gap-10 lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-14">
+        <form class="min-w-0 space-y-12" (submit)="$event.preventDefault()">
+          <!-- Stay -->
+          <fieldset class="space-y-6">
+            <legend class="font-serif text-2xl">Ngày lưu trú</legend>
+
+            @if (all().length > 1) {
+              <div>
+                <label class="label" for="book-apartment">Căn hộ</label>
+                <select id="book-apartment" class="input">
+                  @for (a of all(); track a.id) {
+                    <option [value]="a.slug" [selected]="a.slug === apt.slug">{{ a.name }} · {{ a.area }}</option>
+                  }
+                </select>
+              </div>
+            }
+
+            <div class="grid gap-6 sm:grid-cols-2">
+              <div>
+                <label class="label" for="book-check-in">Ngày nhận phòng</label>
+                <input id="book-check-in" class="input" type="date" />
+              </div>
+              <div>
+                <label class="label" for="book-check-out">Ngày trả phòng</label>
+                <input id="book-check-out" class="input" type="date" />
+              </div>
+            </div>
+            <a routerLink="/availability" [queryParams]="{ apt: apt.slug }" class="link inline-block text-sm">
+              Xem lịch trống trước khi chọn ngày
+            </a>
+
+            <div class="sm:max-w-[calc(50%-0.75rem)]">
+              <label class="label" for="book-guests">Số khách</label>
+              <select id="book-guests" class="input">
+                @for (n of guestOptions(); track n) {
+                  <option [value]="n">{{ n }} khách</option>
+                }
+              </select>
+              <p class="mt-2 text-sm text-muted-foreground">Tối đa {{ apt.guests }} khách.</p>
+            </div>
+          </fieldset>
+
+          <!-- Contact -->
+          <div class="border-t border-border pt-12">
+          <fieldset class="space-y-6">
+            <legend class="font-serif text-2xl">Thông tin liên hệ</legend>
+
+            <div>
+              <label class="label" for="book-name">Họ và tên</label>
+              <input id="book-name" class="input" type="text" autocomplete="name" placeholder="Nguyễn Văn A" />
+            </div>
+            <div class="grid gap-6 sm:grid-cols-2">
+              <div>
+                <label class="label" for="book-phone">Số điện thoại</label>
+                <input
+                  id="book-phone"
+                  class="input"
+                  type="tel"
+                  inputmode="tel"
+                  autocomplete="tel"
+                  placeholder="09xx xxx xxx"
+                />
+              </div>
+              <div>
+                <label class="label" for="book-email">Email</label>
+                <input
+                  id="book-email"
+                  class="input"
+                  type="email"
+                  inputmode="email"
+                  autocomplete="email"
+                  placeholder="ban@email.com"
+                />
+              </div>
+            </div>
+            <div>
+              <label class="label" for="book-message">
+                Lời nhắn <span class="font-normal text-muted-foreground">(không bắt buộc)</span>
+              </label>
+              <textarea id="book-message" class="input" placeholder="Giờ đến dự kiến, yêu cầu đặc biệt…"></textarea>
+            </div>
+          </fieldset>
+          </div>
+
+          <div class="flex flex-col-reverse gap-3 border-t border-border pt-8 sm:flex-row sm:items-center sm:justify-between">
+            <a routerLink="/apartment" [queryParams]="{ apt: apt.slug }" class="btn btn-ghost">← Quay lại căn hộ</a>
+            <a routerLink="/book/review" [queryParams]="{ apt: apt.slug }" class="btn btn-primary">Tiếp tục</a>
+          </div>
+        </form>
+
+        <aside class="lg:sticky lg:top-28 lg:self-start">
+          <app-booking-summary [apartment]="apt" />
+        </aside>
+      </div>
+    </div>
+  </section>
+} @else {
+  <app-apartment-not-found />
+}

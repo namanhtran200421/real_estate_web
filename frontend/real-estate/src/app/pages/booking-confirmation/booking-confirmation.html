@@ -1,0 +1,83 @@
+@let b = booking;
+
+<section class="pb-20 pt-10 md:pb-28 md:pt-14">
+  <div class="container-editorial max-w-3xl">
+    <app-booking-steps [current]="4" />
+
+    <div class="mt-14 text-center">
+      <span class="mx-auto grid h-16 w-16 place-items-center rounded-full border border-accent/40 bg-accent-muted text-accent">
+        <svg viewBox="0 0 20 20" class="h-7 w-7" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+          <path d="m4 10.5 4 4 8-9" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </span>
+      <p class="small-caps mt-6 text-accent">Đặt phòng thành công</p>
+      <h1 class="mt-3 text-4xl md:text-5xl">Cảm ơn bạn, {{ b.customer.name }}</h1>
+      <p class="mx-auto mt-4 max-w-lg text-muted-foreground">
+        Chúng tôi đã gửi email xác nhận tới <span class="text-foreground">{{ b.customer.email }}</span>.
+        Chủ nhà sẽ xác nhận đặt phòng của bạn sớm nhất.
+      </p>
+    </div>
+
+    <div class="card card-accent-top card-elevated mt-12">
+      <div class="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <p class="small-caps text-muted-foreground">Mã đặt phòng</p>
+          <p class="mt-1 font-mono text-2xl tracking-[0.1em]">{{ reference() }}</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <app-status-badge [status]="b.status" />
+          <app-status-badge [status]="b.paymentStatus" />
+        </div>
+      </div>
+
+      <hr class="my-6" />
+
+      @if (apartment(); as apt) {
+        <dl class="grid gap-x-8 gap-y-5 sm:grid-cols-2">
+          <div class="sm:col-span-2">
+            <dt class="small-caps text-muted-foreground">Căn hộ</dt>
+            <dd class="mt-1 font-serif text-xl">{{ apt.name }} <span class="font-sans text-base text-muted-foreground">· {{ apt.area }}</span></dd>
+          </div>
+          <div>
+            <dt class="small-caps text-muted-foreground">Nhận phòng</dt>
+            <dd class="mt-1">{{ b.checkIn | date: 'EEEE, dd/MM/yyyy' }} · từ {{ apt.checkIn }}</dd>
+          </div>
+          <div>
+            <dt class="small-caps text-muted-foreground">Trả phòng</dt>
+            <dd class="mt-1">{{ b.checkOut | date: 'EEEE, dd/MM/yyyy' }} · trước {{ apt.checkOut }}</dd>
+          </div>
+          <div>
+            <dt class="small-caps text-muted-foreground">Số khách</dt>
+            <dd class="mt-1">{{ b.guests }} khách</dd>
+          </div>
+          <div>
+            <dt class="small-caps text-muted-foreground">Ngày đặt</dt>
+            <dd class="mt-1">{{ b.createdAt | date: 'dd/MM/yyyy' }}</dd>
+          </div>
+        </dl>
+
+        @if (quote(); as q) {
+          <div class="mt-8 space-y-3 rounded-md bg-muted p-5">
+            <div class="flex justify-between gap-4">
+              <span class="text-muted-foreground">Tổng tiền</span>
+              <span>{{ q.total | number }} ₫</span>
+            </div>
+            <div class="flex justify-between gap-4">
+              <span class="text-muted-foreground">Đã thanh toán</span>
+              <span class="text-accent">{{ q.deposit | number }} ₫</span>
+            </div>
+            <div class="flex items-baseline justify-between gap-4 border-t border-border pt-3">
+              <span class="font-medium">Còn lại khi nhận phòng</span>
+              <span class="font-serif text-2xl">{{ q.remaining | number }} ₫</span>
+            </div>
+          </div>
+        }
+      }
+    </div>
+
+    <div class="mt-10 flex flex-col justify-center gap-3 sm:flex-row">
+      <a routerLink="/booking/manage" class="btn btn-outline">Tra cứu đặt phòng</a>
+      <a routerLink="/" class="btn btn-primary">Về trang chủ</a>
+    </div>
+  </div>
+</section>

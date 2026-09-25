@@ -1,0 +1,45 @@
+<footer class="border-t border-border bg-card">
+  <div class="container-editorial max-w-6xl py-16 md:py-20">
+    <div class="grid gap-12 md:grid-cols-[1fr_auto_minmax(0,20rem)] md:gap-16">
+      <div>
+        <a routerLink="/" class="font-serif text-2xl">{{ site.name }}</a>
+        <p class="mt-4 max-w-sm text-muted-foreground">{{ site.tagline }}</p>
+      </div>
+
+      <nav aria-label="Liên kết chân trang">
+        <p class="small-caps text-accent">Khám phá</p>
+        <ul class="mt-5 space-y-1">
+          @for (link of links; track link.path) {
+            <li>
+              <a
+                [routerLink]="link.path"
+                class="inline-flex min-h-11 items-center text-muted-foreground transition-colors duration-200 hover:text-foreground"
+              >
+                {{ link.label }}
+              </a>
+            </li>
+          }
+        </ul>
+      </nav>
+
+      <div>
+        <p class="small-caps text-accent">Liên hệ</p>
+        <ul class="mt-5 divide-y divide-border border-y border-border">
+          @for (c of site.contact; track c.label) {
+            <li>
+              <a
+                [href]="c.href"
+                class="flex min-h-11 items-baseline justify-between gap-4 py-3 transition-colors duration-200 hover:text-accent"
+              >
+                <span class="text-sm text-muted-foreground">{{ c.label }}</span>
+                <span class="font-serif text-lg">{{ c.value }}</span>
+              </a>
+            </li>
+          }
+        </ul>
+      </div>
+    </div>
+
+    <p class="mt-16 text-sm text-muted-foreground">&copy; {{ year }} {{ site.name }}. Bảo lưu mọi quyền.</p>
+  </div>
+</footer>

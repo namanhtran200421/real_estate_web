@@ -1,0 +1,30 @@
+<div
+  class="relative grid gap-2 overflow-hidden rounded-lg md:h-[30rem] md:grid-rows-2 lg:h-[34rem]"
+  [class]="gridClass()"
+>
+  @for (photo of visible(); track photo.src; let i = $index, first = $first) {
+    <div class="relative overflow-hidden bg-muted" [class]="photoClass(i)">
+      <img
+        [ngSrc]="photo.src"
+        [alt]="photo.alt"
+        fill
+        [priority]="first"
+        [sizes]="first ? '(min-width: 768px) 50vw, 100vw' : '25vw'"
+        class="object-cover"
+      />
+    </div>
+  }
+  <a
+    routerLink="/gallery"
+    [queryParams]="{ apt: slug() }"
+    class="btn absolute bottom-4 right-4 border-foreground bg-card/95 px-4 text-foreground shadow-sm hover:bg-card"
+  >
+    <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+      <rect x="3" y="3" width="7" height="7" rx="1" />
+      <rect x="14" y="3" width="7" height="7" rx="1" />
+      <rect x="3" y="14" width="7" height="7" rx="1" />
+      <rect x="14" y="14" width="7" height="7" rx="1" />
+    </svg>
+    Xem tất cả {{ photos().length }} ảnh
+  </a>
+</div>
