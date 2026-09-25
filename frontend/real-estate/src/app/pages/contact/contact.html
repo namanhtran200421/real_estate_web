@@ -49,22 +49,18 @@
           <div class="grid gap-6 sm:grid-cols-2">
             <div>
               <label class="label" for="contact-topic">Chủ đề</label>
-              <select id="contact-topic" class="input">
-                @for (topic of topics; track topic) {
-                  <option [value]="topic">{{ topic }}</option>
-                }
-              </select>
+              <app-select inputId="contact-topic" name="topic" [options]="topicOptions" value="Đặt phòng" />
             </div>
             <div>
               <label class="label" for="contact-apartment">
                 Căn hộ quan tâm <span class="font-normal text-muted-foreground">(không bắt buộc)</span>
               </label>
-              <select id="contact-apartment" class="input">
-                <option value="">Chưa chọn</option>
-                @for (a of apartments(); track a.id) {
-                  <option [value]="a.slug">{{ a.name }}</option>
-                }
-              </select>
+              <app-select
+                inputId="contact-apartment"
+                name="apartment"
+                [options]="apartmentOptions()"
+                placeholder="Chưa chọn"
+              />
             </div>
           </div>
 

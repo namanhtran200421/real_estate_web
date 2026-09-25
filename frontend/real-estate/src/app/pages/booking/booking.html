@@ -15,11 +15,7 @@
             @if (all().length > 1) {
               <div>
                 <label class="label" for="book-apartment">Căn hộ</label>
-                <select id="book-apartment" class="input">
-                  @for (a of all(); track a.id) {
-                    <option [value]="a.slug" [selected]="a.slug === apt.slug">{{ a.name }} · {{ a.area }}</option>
-                  }
-                </select>
+                <app-select inputId="book-apartment" name="apartment" [options]="apartmentOptions()" [value]="apt.slug" />
               </div>
             }
 
@@ -39,11 +35,7 @@
 
             <div class="sm:max-w-[calc(50%-0.75rem)]">
               <label class="label" for="book-guests">Số khách</label>
-              <select id="book-guests" class="input">
-                @for (n of guestOptions(); track n) {
-                  <option [value]="n">{{ n }} khách</option>
-                }
-              </select>
+              <app-select inputId="book-guests" name="guests" [options]="guestOptions()" value="1" />
               <p class="mt-2 text-sm text-muted-foreground">Tối đa {{ apt.guests }} khách.</p>
             </div>
           </fieldset>
