@@ -1,6 +1,16 @@
 <header class="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur-md">
   <div class="container-editorial flex h-[4.5rem] max-w-6xl items-center gap-4">
-    <a routerLink="/" class="shrink-0 font-serif text-xl md:text-2xl" (click)="menuOpen.set(false)">{{ site.name }}</a>
+    <a routerLink="/" class="shrink-0" [attr.aria-label]="site.name + ' · Trang chủ'" (click)="menuOpen.set(false)">
+      <!-- Horizontal lockup (mark + wordmark), transparent so it sits on the page background. -->
+      <img
+        src="brand/logo-horizontal.webp"
+        [alt]="site.name"
+        width="758"
+        height="155"
+        fetchpriority="high"
+        class="h-8 w-auto sm:h-9 lg:h-10"
+      />
+    </a>
 
     <nav aria-label="Điều hướng chính" class="ml-10 hidden items-center gap-8 lg:flex">
       @for (link of links; track link.path) {

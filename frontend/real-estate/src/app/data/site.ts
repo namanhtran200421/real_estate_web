@@ -1,7 +1,7 @@
 // Site-wide details that belong to the owner, not to a single apartment.
 // Placeholder contact details. Replace with the owner's real ones.
 export const SITE = {
-  name: 'vnbookinghub',
+  name: 'VN Booking Hub',
   tagline: 'Căn hộ cho thuê được chọn lọc, đặt trực tuyến dễ dàng.',
   /** Default meta description for pages that don't set their own. */
   description:

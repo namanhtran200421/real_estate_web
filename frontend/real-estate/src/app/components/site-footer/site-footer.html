@@ -2,7 +2,9 @@
   <div class="container-editorial max-w-6xl py-16 md:py-20">
     <div class="grid gap-12 md:grid-cols-[1fr_auto_minmax(0,20rem)] md:gap-16">
       <div>
-        <a routerLink="/" class="font-serif text-2xl">{{ site.name }}</a>
+        <a routerLink="/" class="inline-block" [attr.aria-label]="site.name + ' · Trang chủ'">
+          <img src="brand/logo-stacked.webp" [alt]="site.name" width="500" height="337" loading="lazy" class="h-20 w-auto" />
+        </a>
         <p class="mt-4 max-w-sm text-muted-foreground">{{ site.tagline }}</p>
       </div>
 
