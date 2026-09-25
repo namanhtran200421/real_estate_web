@@ -34,6 +34,7 @@ app.get('/sitemap.xml', (req, res) => {
   const base = origin(req);
   const paths = [
     '/',
+    '/about',
     '/contact',
     ...APARTMENTS.flatMap((a) =>
       ['/apartment', '/gallery', '/availability', '/location'].map((p) => `${p}?apt=${a.slug}`),

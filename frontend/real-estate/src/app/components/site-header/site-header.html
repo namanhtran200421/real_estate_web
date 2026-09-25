@@ -1,23 +1,27 @@
 <header class="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur-md">
-  <div class="container-editorial flex h-20 max-w-6xl items-center justify-between gap-6">
-    <a routerLink="/" class="font-serif text-xl md:text-2xl" (click)="menuOpen.set(false)">{{ site.name }}</a>
+  <div class="container-editorial flex h-[4.5rem] max-w-6xl items-center gap-4">
+    <a routerLink="/" class="shrink-0 font-serif text-xl md:text-2xl" (click)="menuOpen.set(false)">{{ site.name }}</a>
 
-    <nav aria-label="Điều hướng chính" class="hidden items-center gap-7 xl:flex">
+    <nav aria-label="Điều hướng chính" class="ml-10 hidden items-center gap-8 lg:flex">
       @for (link of links; track link.path) {
         <a
           [routerLink]="link.path"
-          [queryParamsHandling]="link.keepApt ? 'preserve' : ''"
-          routerLinkActive="text-foreground!"
-          [routerLinkActiveOptions]="{ paths: 'exact', queryParams: 'ignored', matrixParams: 'ignored', fragment: 'ignored' }"
+          routerLinkActive="text-foreground! after:absolute after:inset-x-0 after:-bottom-0.5 after:h-px after:bg-accent"
+          [routerLinkActiveOptions]="{ exact: true }"
           ariaCurrentWhenActive="page"
-          class="py-2 text-sm font-medium tracking-[0.05em] text-muted-foreground transition-colors duration-200 hover:text-foreground"
+          class="relative whitespace-nowrap py-1 text-sm font-medium tracking-[0.03em] text-muted-foreground transition-colors duration-200 hover:text-foreground"
         >
           {{ link.label }}
         </a>
       }
     </nav>
 
-    <div class="flex items-center gap-2 sm:gap-3">
+    <div class="ml-auto flex items-center gap-3">
+      <!-- Search (desktop) -->
+      <ng-container *ngTemplateOutlet="search; context: { id: 'site-search' }" />
+
+      <span class="hidden h-5 w-px bg-border lg:block" aria-hidden="true"></span>
+
       <div class="small-caps hidden items-center sm:flex" role="group" aria-label="Ngôn ngữ">
         <button type="button" aria-pressed="true" class="min-h-11 px-1.5 text-foreground">VI</button>
         <span class="text-border" aria-hidden="true">/</span>
@@ -29,12 +33,17 @@
           EN
         </button>
       </div>
-      <a routerLink="/book" queryParamsHandling="preserve" class="btn btn-primary px-5" (click)="menuOpen.set(false)">
+      <a
+        routerLink="/book"
+        queryParamsHandling="preserve"
+        class="btn btn-primary px-5 lg:h-10 lg:min-h-10 lg:text-sm"
+        (click)="menuOpen.set(false)"
+      >
         Đặt lịch
       </a>
       <button
         type="button"
-        class="grid h-11 w-11 place-items-center rounded-md border border-border bg-card xl:hidden"
+        class="grid h-11 w-11 place-items-center rounded-md border border-border bg-card lg:hidden"
         [attr.aria-expanded]="menuOpen()"
         aria-controls="mobile-menu"
         [attr.aria-label]="menuOpen() ? 'Đóng menu' : 'Mở menu'"
@@ -52,37 +61,70 @@
   </div>
 
   @if (menuOpen()) {
-    <nav id="mobile-menu" aria-label="Menu" class="border-t border-border bg-background xl:hidden">
-      <ul class="container-editorial max-w-6xl divide-y divide-border py-2">
-        @for (link of links; track link.path) {
+    <nav id="mobile-menu" aria-label="Menu" class="border-t border-border bg-background lg:hidden">
+      <div class="container-editorial max-w-6xl py-4">
+        <ng-container *ngTemplateOutlet="search; context: { id: 'site-search-mobile', mobile: true }" />
+        <ul class="mt-2 divide-y divide-border">
+          @for (link of links; track link.path) {
+            <li>
+              <a
+                [routerLink]="link.path"
+                routerLinkActive="text-accent!"
+                [routerLinkActiveOptions]="{ exact: true }"
+                ariaCurrentWhenActive="page"
+                class="flex min-h-12 items-center font-serif text-lg"
+                (click)="menuOpen.set(false)"
+              >
+                {{ link.label }}
+              </a>
+            </li>
+          }
           <li>
-            <a
-              [routerLink]="link.path"
-              [queryParamsHandling]="link.keepApt ? 'preserve' : ''"
-              routerLinkActive="text-accent!"
-              [routerLinkActiveOptions]="{ paths: 'exact', queryParams: 'ignored', matrixParams: 'ignored', fragment: 'ignored' }"
-              ariaCurrentWhenActive="page"
-              class="flex min-h-12 items-center font-serif text-lg"
-              (click)="menuOpen.set(false)"
-            >
-              {{ link.label }}
+            <a routerLink="/booking/manage" class="flex min-h-12 items-center font-serif text-lg" (click)="menuOpen.set(false)">
+              Tra cứu đặt phòng
             </a>
           </li>
-        }
-        <li>
-          <a routerLink="/booking/manage" class="flex min-h-12 items-center font-serif text-lg" (click)="menuOpen.set(false)">
-            Tra cứu đặt phòng
-          </a>
-        </li>
-        <li class="flex min-h-12 items-center gap-4 sm:hidden">
-          <span class="small-caps text-muted-foreground">Ngôn ngữ</span>
-          <span class="small-caps flex items-center" role="group" aria-label="Ngôn ngữ">
-            <button type="button" aria-pressed="true" class="min-h-11 px-1.5 text-foreground">VI</button>
-            <span class="text-border" aria-hidden="true">/</span>
-            <button type="button" aria-pressed="false" class="min-h-11 px-1.5 text-muted-foreground">EN</button>
-          </span>
-        </li>
-      </ul>
+          <li class="flex min-h-12 items-center gap-4 sm:hidden">
+            <span class="small-caps text-muted-foreground">Ngôn ngữ</span>
+            <span class="small-caps flex items-center" role="group" aria-label="Ngôn ngữ">
+              <button type="button" aria-pressed="true" class="min-h-11 px-1.5 text-foreground">VI</button>
+              <span class="text-border" aria-hidden="true">/</span>
+              <button type="button" aria-pressed="false" class="min-h-11 px-1.5 text-muted-foreground">EN</button>
+            </span>
+          </li>
+        </ul>
+      </div>
     </nav>
   }
 </header>
+
+<ng-template #search let-id="id" let-mobile="mobile">
+  <form
+    role="search"
+    class="relative"
+    [class]="mobile ? 'block w-full' : 'hidden w-48 lg:block xl:w-60'"
+    (submit)="$event.preventDefault()"
+  >
+    <label [for]="id" class="sr-only">Tìm căn hộ</label>
+    <svg
+      viewBox="0 0 24 24"
+      class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="1.75"
+      aria-hidden="true"
+    >
+      <circle cx="11" cy="11" r="6.5" />
+      <path d="m20 20-4.2-4.2" stroke-linecap="round" />
+    </svg>
+    <input
+      [id]="id"
+      type="search"
+      enterkeyhint="search"
+      autocomplete="off"
+      placeholder="Tìm căn hộ, khu vực…"
+      class="input pl-9 text-sm"
+      [class]="mobile ? 'h-11 bg-card' : 'h-10 border-transparent bg-muted hover:border-border focus-visible:bg-card'"
+    />
+  </form>
+</ng-template>

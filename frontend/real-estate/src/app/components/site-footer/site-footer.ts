@@ -12,6 +12,7 @@ export class SiteFooter {
   protected readonly year = new Date().getFullYear();
 
   protected readonly links = [
+    { label: 'Về chúng tôi', path: '/about' },
     { label: 'Căn hộ', path: '/apartment' },
     { label: 'Lịch trống', path: '/availability' },
     { label: 'Đặt lịch', path: '/book' },

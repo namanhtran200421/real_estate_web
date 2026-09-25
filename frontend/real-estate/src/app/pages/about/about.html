@@ -1,0 +1,71 @@
+<!-- Intro -->
+<section class="pb-16 pt-16 md:pb-20 md:pt-20">
+  <div class="container-editorial text-center">
+    <p class="section-label mx-auto max-w-sm">Về chúng tôi</p>
+    <h1 class="mx-auto max-w-3xl">
+      Những nơi ở <em class="text-accent">đáng nhớ</em> giữa lòng thành phố
+    </h1>
+    <p class="mx-auto mt-6 max-w-xl text-lg text-muted-foreground">
+      {{ site.name }} là tập hợp những căn hộ cho thuê được chọn lọc tại TP. Hồ Chí Minh, đặt trực tuyến dễ
+      dàng và rõ ràng.
+    </p>
+  </div>
+</section>
+
+<!-- Story (asymmetric) -->
+<section class="pb-20 md:pb-28">
+  <div class="container-editorial grid max-w-6xl items-center gap-12 md:grid-cols-[1.3fr_0.7fr] md:gap-16">
+    <div class="relative aspect-[4/3] overflow-hidden rounded-lg bg-muted shadow-md">
+      <img
+        ngSrc="https://images.unsplash.com/photo-1600210492486-724fe5c67fb0"
+        alt="Góc sinh hoạt chung ngập nắng với sofa và cây xanh"
+        fill
+        priority
+        sizes="(min-width: 768px) 60vw, 100vw"
+        class="object-cover"
+      />
+    </div>
+    <div>
+      <p class="small-caps text-accent">Câu chuyện</p>
+      <h2 class="mt-3 text-3xl md:text-4xl">Bắt đầu từ một căn hộ</h2>
+      <span class="rule-accent mt-6"></span>
+      <p class="mt-6 text-muted-foreground">
+        Chúng tôi bắt đầu với một căn hộ ở trung tâm Quận 1 và mong muốn khách thuê có thể xem phòng, kiểm tra lịch
+        trống và đặt ngay mà không phải nhắn tin hỏi qua lại.
+      </p>
+      <p class="mt-4 text-muted-foreground">
+        Hôm nay, {{ site.name }} quản lý {{ apartments().length }} căn hộ, mỗi căn đều được chăm chút để bạn thấy như
+        ở nhà.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- Values -->
+<section class="border-t border-border bg-muted py-20 md:py-28">
+  <div class="container-editorial max-w-6xl">
+    <p class="section-label">Điều chúng tôi cam kết</p>
+    <div class="mt-10 grid gap-10 md:grid-cols-3 md:gap-12">
+      @for (value of values; track value.title; let i = $index) {
+        <div>
+          <p class="font-serif text-4xl text-accent">0{{ i + 1 }}</p>
+          <h3 class="mt-4">{{ value.title }}</h3>
+          <p class="mt-3 text-muted-foreground">{{ value.text }}</p>
+        </div>
+      }
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="py-20 md:py-28">
+  <div class="container-editorial max-w-3xl text-center">
+    <span class="rule-accent mx-auto"></span>
+    <h2 class="mt-8 text-3xl md:text-4xl">Sẵn sàng cho kỳ nghỉ tiếp theo?</h2>
+    <p class="mt-4 text-muted-foreground">Xem các căn hộ hoặc liên hệ để được tư vấn.</p>
+    <div class="mt-10 flex flex-col justify-center gap-3 sm:flex-row">
+      <a routerLink="/" fragment="can-ho" class="btn btn-primary">Xem căn hộ</a>
+      <a routerLink="/contact" class="btn btn-outline">Liên hệ với chúng tôi</a>
+    </div>
+  </div>
+</section>

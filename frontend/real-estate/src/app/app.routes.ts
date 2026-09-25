@@ -35,6 +35,12 @@ export const routes: Routes = [
     title: title('Vị trí'),
   },
   {
+    path: 'about',
+    loadComponent: () => import('./pages/about/about').then((m) => m.About),
+    title: title('Về chúng tôi'),
+    data: { description: `${SITE.name}: căn hộ cho thuê được chọn lọc tại TP. Hồ Chí Minh, giá minh bạch và hỗ trợ tận tâm.` },
+  },
+  {
     path: 'contact',
     loadComponent: () => import('./pages/contact/contact').then((m) => m.Contact),
     title: title('Liên hệ'),

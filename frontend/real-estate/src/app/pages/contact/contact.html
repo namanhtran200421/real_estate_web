@@ -4,25 +4,113 @@
       <p class="section-label mx-auto max-w-sm">Liên hệ</p>
       <h1 class="text-4xl md:text-5xl">Chúng tôi luôn sẵn sàng hỗ trợ</h1>
       <p class="mx-auto mt-4 max-w-lg text-muted-foreground">
-        Gọi điện, nhắn Zalo hoặc gửi email, chúng tôi sẽ phản hồi sớm nhất có thể.
+        Gửi tin nhắn cho chúng tôi, hoặc gọi điện, nhắn Zalo. Chúng tôi sẽ phản hồi sớm nhất có thể.
       </p>
     </div>
 
-    <app-contact-cards class="mt-14 block" />
+    <div class="mt-14 grid gap-10 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,0.7fr)] lg:gap-12">
+      <!-- Form -->
+      <form class="card card-accent-top" (submit)="$event.preventDefault()">
+        <h2 class="text-2xl md:text-3xl">Gửi tin nhắn</h2>
+        <p class="mt-2 text-sm text-muted-foreground">Các mục có dấu * là bắt buộc.</p>
 
-    <div class="mt-16 grid gap-6 md:grid-cols-2">
-      <div class="card">
-        <p class="small-caps text-accent">Đã đặt phòng?</p>
-        <p class="mt-3 font-serif text-2xl">Xem trạng thái đặt phòng</p>
-        <p class="mt-2 text-muted-foreground">Tra cứu bằng mã đặt phòng và email hoặc số điện thoại.</p>
-        <a routerLink="/booking/manage" class="btn btn-outline mt-6">Tra cứu đặt phòng</a>
-      </div>
-      <div class="card">
-        <p class="small-caps text-accent">Chưa đặt phòng?</p>
-        <p class="mt-3 font-serif text-2xl">Xem ngày còn trống</p>
-        <p class="mt-2 text-muted-foreground">Kiểm tra lịch và đặt trực tuyến, không cần nhắn tin hỏi trước.</p>
-        <a routerLink="/availability" class="btn btn-primary mt-6">Xem lịch trống</a>
-      </div>
+        <div class="mt-8 space-y-6">
+          <div>
+            <label class="label" for="contact-name">Họ và tên *</label>
+            <input id="contact-name" class="input" type="text" autocomplete="name" placeholder="Nguyễn Văn A" required />
+          </div>
+
+          <div class="grid gap-6 sm:grid-cols-2">
+            <div>
+              <label class="label" for="contact-phone">Số điện thoại *</label>
+              <input
+                id="contact-phone"
+                class="input"
+                type="tel"
+                inputmode="tel"
+                autocomplete="tel"
+                placeholder="09xx xxx xxx"
+                required
+              />
+            </div>
+            <div>
+              <label class="label" for="contact-email">Email</label>
+              <input
+                id="contact-email"
+                class="input"
+                type="email"
+                inputmode="email"
+                autocomplete="email"
+                placeholder="ban@email.com"
+              />
+            </div>
+          </div>
+
+          <div class="grid gap-6 sm:grid-cols-2">
+            <div>
+              <label class="label" for="contact-topic">Chủ đề</label>
+              <select id="contact-topic" class="input">
+                @for (topic of topics; track topic) {
+                  <option [value]="topic">{{ topic }}</option>
+                }
+              </select>
+            </div>
+            <div>
+              <label class="label" for="contact-apartment">
+                Căn hộ quan tâm <span class="font-normal text-muted-foreground">(không bắt buộc)</span>
+              </label>
+              <select id="contact-apartment" class="input">
+                <option value="">Chưa chọn</option>
+                @for (a of apartments(); track a.id) {
+                  <option [value]="a.slug">{{ a.name }}</option>
+                }
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label class="label" for="contact-message">Lời nhắn *</label>
+            <textarea
+              id="contact-message"
+              class="input min-h-40"
+              placeholder="Bạn cần chúng tôi hỗ trợ điều gì?"
+              required
+            ></textarea>
+          </div>
+        </div>
+
+        <div class="mt-8 flex flex-col gap-4 border-t border-border pt-6 sm:flex-row sm:items-center sm:justify-between">
+          <p class="text-sm text-muted-foreground">Thông tin của bạn chỉ dùng để phản hồi yêu cầu này.</p>
+          <button type="submit" class="btn btn-primary shrink-0">Gửi tin nhắn</button>
+        </div>
+      </form>
+
+      <!-- Direct contact -->
+      <aside class="space-y-6">
+        <div class="card">
+          <p class="small-caps text-accent">Liên hệ trực tiếp</p>
+          <ul class="mt-5 divide-y divide-border border-y border-border">
+            @for (c of contact; track c.label) {
+              <li>
+                <a
+                  [href]="c.href"
+                  class="flex min-h-12 flex-col justify-center py-3 transition-colors duration-200 hover:text-accent"
+                >
+                  <span class="text-sm text-muted-foreground">{{ c.label }}</span>
+                  <span class="font-serif text-lg break-words">{{ c.value }}</span>
+                </a>
+              </li>
+            }
+          </ul>
+        </div>
+
+        <div class="card">
+          <p class="small-caps text-accent">Đã đặt phòng?</p>
+          <p class="mt-3 font-serif text-xl">Xem trạng thái đặt phòng</p>
+          <p class="mt-2 text-sm text-muted-foreground">Tra cứu bằng mã đặt phòng và email hoặc số điện thoại.</p>
+          <a routerLink="/booking/manage" class="btn btn-outline mt-5 w-full">Tra cứu đặt phòng</a>
+        </div>
+      </aside>
     </div>
   </div>
 </section>
