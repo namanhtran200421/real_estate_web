@@ -4,7 +4,7 @@
   <div class="flex items-center justify-between gap-4">
     <button
       type="button"
-      class="grid h-11 w-11 place-items-center rounded-md border border-border transition-colors duration-200 hover:border-accent hover:text-accent disabled:pointer-events-none disabled:opacity-30"
+      class="icon-btn"
       [disabled]="offset() === 0"
       aria-label="Tháng trước"
       (click)="previous()"
@@ -18,7 +18,7 @@
 
     <button
       type="button"
-      class="grid h-11 w-11 place-items-center rounded-md border border-border transition-colors duration-200 hover:border-accent hover:text-accent disabled:pointer-events-none disabled:opacity-30"
+      class="icon-btn"
       [disabled]="offset() === monthsAhead()"
       aria-label="Tháng sau"
       (click)="next()"

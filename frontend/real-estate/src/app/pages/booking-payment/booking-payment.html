@@ -45,7 +45,7 @@
             <legend class="font-serif text-2xl">Phương thức thanh toán</legend>
             <div class="mt-6 divide-y divide-border rounded-lg border border-border bg-card">
               @for (m of methods; track m.id; let first = $first) {
-                <label class="flex cursor-pointer items-center gap-4 px-5 py-4 transition-colors duration-200 hover:bg-muted/50 has-[:checked]:bg-accent-muted">
+                <label class="flex cursor-pointer items-center gap-4 px-5 py-4 transition-colors hover:bg-muted/50 has-[:checked]:bg-accent-muted">
                   <input type="radio" name="method" [value]="m.id" [checked]="first" class="h-4 w-4 shrink-0 accent-accent" />
                   <span>
                     <span class="block font-medium">{{ m.label }}</span>

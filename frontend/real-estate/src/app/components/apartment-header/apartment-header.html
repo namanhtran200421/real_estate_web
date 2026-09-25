@@ -3,7 +3,7 @@
 <div class="pt-8 md:pt-12">
   <div class="container-editorial max-w-6xl">
     <nav aria-label="Breadcrumb" class="small-caps text-muted-foreground">
-      <a routerLink="/" class="transition-colors duration-200 hover:text-foreground">Trang chủ</a>
+      <a routerLink="/" class="link-subtle">Trang chủ</a>
       <span class="mx-2 text-border" aria-hidden="true">/</span>
       <span class="text-foreground" aria-current="page">{{ apt.name }}</span>
     </nav>
@@ -26,10 +26,10 @@
         <a
           [routerLink]="tab.path"
           [queryParams]="{ apt: apt.slug }"
-          routerLinkActive="text-foreground! after:absolute after:inset-x-0 after:-bottom-px after:h-px after:bg-accent"
+          routerLinkActive="is-active"
           [routerLinkActiveOptions]="{ paths: 'exact', queryParams: 'ignored', matrixParams: 'ignored', fragment: 'ignored' }"
           ariaCurrentWhenActive="page"
-          class="small-caps relative shrink-0 py-4 text-muted-foreground transition-colors duration-200 hover:text-foreground"
+          class="nav-link small-caps shrink-0 py-4 [--nav-underline-offset:0px]"
         >
           {{ tab.label }}
         </a>

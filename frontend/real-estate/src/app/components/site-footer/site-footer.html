@@ -13,7 +13,7 @@
             <li>
               <a
                 [routerLink]="link.path"
-                class="inline-flex min-h-11 items-center text-muted-foreground transition-colors duration-200 hover:text-foreground"
+                class="link-subtle inline-flex min-h-11 items-center"
               >
                 {{ link.label }}
               </a>
@@ -29,7 +29,7 @@
             <li>
               <a
                 [href]="c.href"
-                class="flex min-h-11 items-baseline justify-between gap-4 py-3 transition-colors duration-200 hover:text-accent"
+                class="flex min-h-11 items-baseline justify-between gap-4 py-3 transition-colors hover:text-accent"
               >
                 <span class="text-sm text-muted-foreground">{{ c.label }}</span>
                 <span class="font-serif text-lg">{{ c.value }}</span>

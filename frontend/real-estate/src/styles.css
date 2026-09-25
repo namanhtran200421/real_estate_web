@@ -35,8 +35,11 @@
   --shadow-lg: 0 8px 24px rgb(26 26 26 / 0.08);
   --shadow-accent: 0 4px 14px rgb(184 134 11 / 0.25);
 
-  /* Motion: nothing bounces, nothing overshoots */
-  --ease-editorial: cubic-bezier(0.25, 0.1, 0.25, 1);
+  /* Motion: nothing bounces, nothing overshoots. Every Tailwind `transition*`
+     utility inherits this duration and easing unless a template overrides it. */
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+  --default-transition-duration: 250ms;
+  --default-transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
   --animate-fade-in: fade-in 0.6s ease-out both;
 
   @keyframes fade-in {
@@ -52,6 +55,14 @@
 /* ───────────────────────── Base ───────────────────────── */
 
 @layer base {
+  /* Motion scale shared by the component classes below. */
+  :root {
+    --motion-fast: 150ms;
+    --motion-base: 250ms;
+    --motion-slow: 600ms;
+    --motion-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
   html {
     color-scheme: light;
     scroll-padding-top: 6rem;
@@ -198,6 +209,19 @@
  */
 
 @layer components {
+  /* Shared motion: one easing, one timing scale, and only the properties that change. */
+  .btn,
+  .card,
+  .input,
+  .link,
+  .link-subtle,
+  .nav-link,
+  .icon-btn {
+    transition-property: color, background-color, border-color, text-decoration-color, box-shadow, transform;
+    transition-duration: var(--motion-base);
+    transition-timing-function: var(--motion-ease);
+  }
+
   /* Layout */
   .container-editorial {
     width: 100%;
@@ -304,7 +328,6 @@
     text-decoration-thickness: 1px;
     text-underline-offset: 4px;
     text-decoration-color: rgb(184 134 11 / 0.4);
-    transition: all 200ms ease-out;
   }
 
   .link:hover {
@@ -331,7 +354,6 @@
     cursor: pointer;
     user-select: none;
     touch-action: manipulation;
-    transition: all 200ms ease-out;
   }
 
   .btn:disabled,
@@ -350,11 +372,16 @@
   .btn-primary:hover {
     background: var(--color-accent-secondary);
     box-shadow: var(--shadow-accent);
-    transform: translateY(-2px);
+    transform: translateY(-1px);
+  }
+
+  /* Press feedback for every button: a quick, slight settle. */
+  .btn:active {
+    transform: translateY(0) scale(0.98);
+    transition-duration: var(--motion-fast);
   }
 
   .btn-primary:active {
-    transform: translateY(0);
     box-shadow: var(--shadow-sm);
   }
 
@@ -385,8 +412,80 @@
     text-decoration-color: var(--color-accent);
   }
 
+  /* Quiet text link: muted → foreground. */
+  .link-subtle {
+    color: var(--color-muted-foreground);
+  }
+
+  .link-subtle:hover {
+    color: var(--color-foreground);
+  }
+
+  /* Nav links and tabs: a gold underline draws in on hover and stays on the active page. */
+  .nav-link {
+    position: relative;
+    color: var(--color-muted-foreground);
+  }
+
+  .nav-link::after {
+    content: '';
+    position: absolute;
+    inset-inline: 0;
+    bottom: var(--nav-underline-offset, -2px);
+    height: 1px;
+    background: var(--color-accent);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform var(--motion-base) var(--motion-ease);
+  }
+
+  .nav-link:hover,
+  .nav-link.is-active {
+    color: var(--color-foreground);
+  }
+
+  .nav-link:hover::after,
+  .nav-link.is-active::after {
+    transform: scaleX(1);
+  }
+
+  /* Square icon button (menu toggle, calendar arrows). */
+  .icon-btn {
+    display: grid;
+    place-items: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    flex-shrink: 0;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-card);
+    color: var(--color-foreground);
+    cursor: pointer;
+  }
+
+  .icon-btn:hover {
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+  }
+
+  .icon-btn:disabled {
+    opacity: 0.3;
+    pointer-events: none;
+  }
+
+  /* Photo inside a clickable card: a slow, gentle zoom. */
+  .media-zoom {
+    transition: transform var(--motion-slow) var(--motion-ease);
+  }
+
+  .group:hover .media-zoom {
+    transform: scale(1.03);
+  }
+
   @media (prefers-reduced-motion: reduce) {
-    .btn-primary:hover {
+    .btn-primary:hover,
+    .btn:active,
+    .group:hover .media-zoom {
       transform: none;
     }
   }
@@ -398,7 +497,6 @@
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-sm);
     padding: 2rem;
-    transition: all 200ms ease-out;
   }
 
   @media (width >= 48rem) {
@@ -442,7 +540,6 @@
     font-family: var(--font-sans);
     font-size: 1rem;
     line-height: 1.5;
-    transition: all 150ms ease-out;
   }
 
   textarea.input {

@@ -6,10 +6,10 @@
       @for (link of links; track link.path) {
         <a
           [routerLink]="link.path"
-          routerLinkActive="text-foreground! after:absolute after:inset-x-0 after:-bottom-0.5 after:h-px after:bg-accent"
+          routerLinkActive="is-active"
           [routerLinkActiveOptions]="{ exact: true }"
           ariaCurrentWhenActive="page"
-          class="relative whitespace-nowrap py-1 text-sm font-medium tracking-[0.03em] text-muted-foreground transition-colors duration-200 hover:text-foreground"
+          class="nav-link whitespace-nowrap py-1 text-sm font-medium tracking-[0.03em]"
         >
           {{ link.label }}
         </a>
@@ -28,7 +28,7 @@
         <button
           type="button"
           aria-pressed="false"
-          class="min-h-11 px-1.5 text-muted-foreground transition-colors duration-200 hover:text-foreground"
+          class="link-subtle min-h-11 px-1.5"
         >
           EN
         </button>
@@ -43,7 +43,7 @@
       </a>
       <button
         type="button"
-        class="grid h-11 w-11 place-items-center rounded-md border border-border bg-card lg:hidden"
+        class="icon-btn lg:hidden"
         [attr.aria-expanded]="menuOpen()"
         aria-controls="mobile-menu"
         [attr.aria-label]="menuOpen() ? 'Đóng menu' : 'Mở menu'"
@@ -72,7 +72,7 @@
                 routerLinkActive="text-accent!"
                 [routerLinkActiveOptions]="{ exact: true }"
                 ariaCurrentWhenActive="page"
-                class="flex min-h-12 items-center font-serif text-lg"
+                class="flex min-h-12 items-center font-serif text-lg transition-colors hover:text-accent"
                 (click)="menuOpen.set(false)"
               >
                 {{ link.label }}
@@ -80,7 +80,7 @@
             </li>
           }
           <li>
-            <a routerLink="/booking/manage" class="flex min-h-12 items-center font-serif text-lg" (click)="menuOpen.set(false)">
+            <a routerLink="/booking/manage" class="flex min-h-12 items-center font-serif text-lg transition-colors hover:text-accent" (click)="menuOpen.set(false)">
               Tra cứu đặt phòng
             </a>
           </li>
@@ -89,7 +89,7 @@
             <span class="small-caps flex items-center" role="group" aria-label="Ngôn ngữ">
               <button type="button" aria-pressed="true" class="min-h-11 px-1.5 text-foreground">VI</button>
               <span class="text-border" aria-hidden="true">/</span>
-              <button type="button" aria-pressed="false" class="min-h-11 px-1.5 text-muted-foreground">EN</button>
+              <button type="button" aria-pressed="false" class="link-subtle min-h-11 px-1.5">EN</button>
             </span>
           </li>
         </ul>
