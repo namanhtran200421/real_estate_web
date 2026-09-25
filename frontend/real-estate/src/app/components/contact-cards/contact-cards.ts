@@ -7,7 +7,7 @@ import { SITE } from '../../data/site';
     <div class="grid gap-6 md:grid-cols-3">
       @for (c of contact; track c.label) {
         <a [href]="c.href" class="card card-hover block text-center">
-          <p class="small-caps text-accent">{{ c.label }}</p>
+          <p class="small-caps text-accent-deep">{{ c.label }}</p>
           <p class="mt-3 font-serif text-xl break-words">{{ c.value }}</p>
         </a>
       }

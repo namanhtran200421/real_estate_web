@@ -9,7 +9,7 @@
     [attr.aria-expanded]="open()"
     [attr.aria-activedescendant]="open() && activeIndex() >= 0 ? optionId(activeIndex()) : null"
     class="input flex items-center justify-between gap-3 text-left"
-    [class.border-accent]="open()"
+    [class.border-accent-deep]="open()"
     (click)="toggle()"
     (keydown)="onKeydown($event)"
     (keyup.space)="$event.preventDefault()"
@@ -20,7 +20,7 @@
     <svg
       viewBox="0 0 20 20"
       class="h-[1.125rem] w-[1.125rem] shrink-0 transition-[transform,color]"
-      [class]="open() ? 'rotate-180 text-accent' : 'text-muted-foreground'"
+      [class]="open() ? 'rotate-180 text-accent-deep' : 'text-muted-foreground'"
       fill="none"
       stroke="currentColor"
       stroke-width="1.5"
@@ -52,7 +52,7 @@
           class="flex cursor-pointer items-center justify-between gap-3 rounded-md px-3 py-2.5 transition-colors"
           [class]="
             (i === activeIndex() ? 'bg-muted ' : '') +
-            (option.value === value() ? 'font-medium text-accent' : 'text-foreground')
+            (option.value === value() ? 'font-medium text-accent-deep' : 'text-foreground')
           "
           (pointerenter)="activeIndex.set(i)"
           (click)="choose(i)"

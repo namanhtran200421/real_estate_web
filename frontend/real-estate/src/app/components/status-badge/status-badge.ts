@@ -10,12 +10,12 @@ type Status = BookingStatus | PaymentStatus;
 
 // Monochrome + gold only, per the design system: gold = in progress, dark = done, muted = closed.
 const TONES: Record<Status, string> = {
-  pending: 'border-accent/40 bg-accent-muted text-accent',
+  pending: 'border-accent bg-accent-muted text-accent-deep',
   confirmed: 'border-foreground bg-foreground text-background',
   cancelled: 'border-border bg-muted text-muted-foreground line-through',
   completed: 'border-border bg-muted text-muted-foreground',
   unpaid: 'border-border bg-card text-muted-foreground',
-  deposit_paid: 'border-accent/40 bg-accent-muted text-accent',
+  deposit_paid: 'border-accent bg-accent-muted text-accent-deep',
   fully_paid: 'border-foreground bg-foreground text-background',
   refunded: 'border-border bg-muted text-muted-foreground',
 };

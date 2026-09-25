@@ -50,7 +50,7 @@
               class="h-20 w-24 shrink-0 rounded-md bg-muted object-cover"
             />
             <div class="min-w-0">
-              <p class="small-caps text-[0.625rem] text-accent">{{ apt.area }}</p>
+              <p class="small-caps text-[0.625rem] text-accent-deep">{{ apt.area }}</p>
               <p class="mt-1 font-serif text-xl">{{ apt.name }}</p>
               <p class="mt-1 text-sm text-muted-foreground">
                 {{ b.checkIn | date: 'dd/MM/yyyy' }} – {{ b.checkOut | date: 'dd/MM/yyyy' }} · {{ b.guests }} khách
@@ -66,7 +66,7 @@
               </div>
               <div class="border-x border-border">
                 <dt class="small-caps text-[0.625rem] text-muted-foreground">Đã trả</dt>
-                <dd class="mt-2 font-serif text-lg text-accent sm:text-xl">{{ q.deposit | number }} ₫</dd>
+                <dd class="mt-2 font-serif text-lg text-accent-deep sm:text-xl">{{ q.deposit | number }} ₫</dd>
               </div>
               <div>
                 <dt class="small-caps text-[0.625rem] text-muted-foreground">Còn lại</dt>

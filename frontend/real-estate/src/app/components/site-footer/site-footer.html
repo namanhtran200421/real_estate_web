@@ -9,7 +9,7 @@
       </div>
 
       <nav aria-label="Liên kết chân trang">
-        <p class="small-caps text-accent">Khám phá</p>
+        <p class="small-caps text-accent-deep">Khám phá</p>
         <ul class="mt-5 space-y-1">
           @for (link of links; track link.path) {
             <li>
@@ -25,13 +25,13 @@
       </nav>
 
       <div>
-        <p class="small-caps text-accent">Liên hệ</p>
+        <p class="small-caps text-accent-deep">Liên hệ</p>
         <ul class="mt-5 divide-y divide-border border-y border-border">
           @for (c of site.contact; track c.label) {
             <li>
               <a
                 [href]="c.href"
-                class="flex min-h-11 items-baseline justify-between gap-4 py-3 transition-colors hover:text-accent"
+                class="flex min-h-11 items-baseline justify-between gap-4 py-3 transition-colors hover:text-accent-deep"
               >
                 <span class="text-sm text-muted-foreground">{{ c.label }}</span>
                 <span class="font-serif text-lg">{{ c.value }}</span>

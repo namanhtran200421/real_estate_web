@@ -23,9 +23,9 @@
   </a>
 
   <div class="flex flex-col" [class]="featured() ? 'p-8 md:p-10' : 'p-6'">
-    <p class="small-caps text-accent">{{ apt.area }}</p>
+    <p class="small-caps text-accent-deep">{{ apt.area }}</p>
     <h3 class="mt-2 font-normal" [class]="featured() ? 'text-3xl md:text-4xl' : 'text-2xl'">
-      <a routerLink="/apartment" [queryParams]="{ apt: apt.slug }" class="hover:text-accent transition-colors">
+      <a routerLink="/apartment" [queryParams]="{ apt: apt.slug }" class="hover:text-accent-deep transition-colors">
         {{ apt.name }}
       </a>
     </h3>

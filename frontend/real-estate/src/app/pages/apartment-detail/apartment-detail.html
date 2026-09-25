@@ -33,7 +33,7 @@
 
         <!-- Description -->
         <div id="thong-tin" class="mt-16">
-          <p class="small-caps text-accent">Thông tin căn hộ</p>
+          <p class="small-caps text-accent-deep">Thông tin căn hộ</p>
           <h2 class="mt-2 text-3xl md:text-4xl">Giới thiệu</h2>
           <span class="rule-accent mt-6"></span>
           @for (paragraph of apt.description; track $index) {
@@ -43,12 +43,12 @@
 
         <!-- Facilities -->
         <div id="tien-nghi" class="mt-16 border-t border-border pt-16">
-          <p class="small-caps text-accent">Tiện nghi</p>
+          <p class="small-caps text-accent-deep">Tiện nghi</p>
           <h2 class="mt-2 text-3xl md:text-4xl">Mọi thứ bạn cần</h2>
           <ul class="mt-8 grid gap-x-10 gap-y-4 sm:grid-cols-2">
             @for (item of apt.facilities; track item) {
               <li class="flex items-center gap-3">
-                <svg viewBox="0 0 20 20" class="h-4 w-4 shrink-0 text-accent" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                <svg viewBox="0 0 20 20" class="h-4 w-4 shrink-0 text-accent-deep" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
                   <path d="m4 10.5 4 4 8-9" stroke-linecap="round" stroke-linejoin="round" />
                 </svg>
                 {{ item }}
@@ -59,7 +59,7 @@
 
         <!-- Check-in + rules -->
         <div id="noi-quy" class="mt-16 border-t border-border pt-16">
-          <p class="small-caps text-accent">Nội quy</p>
+          <p class="small-caps text-accent-deep">Nội quy</p>
           <h2 class="mt-2 text-3xl md:text-4xl">Nhận phòng &amp; nội quy</h2>
           <div class="mt-8 grid grid-cols-2 gap-4">
             <div class="card p-6 md:p-6">
@@ -80,7 +80,7 @@
 
         <!-- Prices -->
         <div id="bang-gia" class="mt-16 border-t border-border pt-16">
-          <p class="small-caps text-accent">Bảng giá</p>
+          <p class="small-caps text-accent-deep">Bảng giá</p>
           <h2 class="mt-2 text-3xl md:text-4xl">Giá thuê</h2>
           <app-price-list class="mt-8 block" [pricing]="apt.pricing" />
         </div>
@@ -99,10 +99,10 @@
       <div class="mt-10 grid gap-6 md:grid-cols-3">
         @for (item of explore; track item.path) {
           <a [routerLink]="item.path" [queryParams]="{ apt: apt.slug }" class="card card-hover group block">
-            <p class="small-caps text-accent">{{ item.label }}</p>
+            <p class="small-caps text-accent-deep">{{ item.label }}</p>
             <p class="mt-3 flex items-center justify-between gap-4 font-serif text-xl">
               {{ item.text }}
-              <span class="text-accent transition-transform group-hover:translate-x-1" aria-hidden="true">→</span>
+              <span class="text-accent-deep transition-transform group-hover:translate-x-1" aria-hidden="true">→</span>
             </p>
           </a>
         }

@@ -7,20 +7,24 @@
 @import 'tailwindcss';
 
 @theme {
-  /* Color: monochrome with a single burnished-gold accent */
+  /* Color: monochrome with a single brand-gold accent (from the logo).
+     accent = the logo's champagne gold, for fills and decorative lines.
+     accent-deep = the same hue, deeper, for gold text and thin active lines
+     (the light gold is too faint to read on ivory). */
   --color-background: #fafaf8;
   --color-foreground: #1a1a1a;
   --color-muted: #f5f3f0;
   --color-muted-foreground: #6b6b6b;
-  --color-accent: #b8860b;
-  --color-accent-secondary: #d4a84b;
-  --color-accent-foreground: #ffffff;
-  --color-accent-muted: rgb(184 134 11 / 0.06);
+  --color-accent: #ddb37f;
+  --color-accent-secondary: #e6c194;
+  --color-accent-foreground: #1a1a1a;
+  --color-accent-deep: #8a612e;
+  --color-accent-muted: rgb(221 179 127 / 0.12);
   --color-border: #e8e4df;
   --color-border-hover: #d6d0c8;
   --color-input: #e8e4df;
   --color-card: #ffffff;
-  --color-ring: #b8860b;
+  --color-ring: #8a612e;
 
   /* Typography */
   --font-serif: 'Playfair Display', Georgia, serif;
@@ -33,7 +37,7 @@
   --shadow-sm: 0 1px 2px rgb(26 26 26 / 0.04);
   --shadow-md: 0 4px 12px rgb(26 26 26 / 0.06);
   --shadow-lg: 0 8px 24px rgb(26 26 26 / 0.08);
-  --shadow-accent: 0 4px 14px rgb(184 134 11 / 0.25);
+  --shadow-accent: 0 4px 14px rgb(138 97 46 / 0.2);
 
   /* Motion: nothing bounces, nothing overshoots. Every Tailwind `transition*`
      utility inherits this duration and easing unless a template overrides it. */
@@ -116,7 +120,7 @@
     height: 60vmax;
     pointer-events: none;
     /* A gradient instead of filter: blur() so it costs nothing to paint on scroll. */
-    background: radial-gradient(circle, rgb(184 134 11 / 0.05), transparent 65%);
+    background: radial-gradient(circle, rgb(221 179 127 / 0.1), transparent 65%);
   }
 
   *,
@@ -126,7 +130,7 @@
   }
 
   ::selection {
-    background-color: rgb(184 134 11 / 0.18);
+    background-color: rgb(221 179 127 / 0.35);
     color: var(--color-foreground);
   }
 
@@ -282,7 +286,7 @@
     line-height: 1.5;
     letter-spacing: 0.15em;
     text-transform: uppercase;
-    color: var(--color-accent);
+    color: var(--color-accent-deep);
   }
 
   .section-label::before,
@@ -335,15 +339,15 @@
   }
 
   .link {
-    color: var(--color-accent);
+    color: var(--color-accent-deep);
     text-decoration-line: underline;
     text-decoration-thickness: 1px;
     text-underline-offset: 4px;
-    text-decoration-color: rgb(184 134 11 / 0.4);
+    text-decoration-color: rgb(138 97 46 / 0.4);
   }
 
   .link:hover {
-    text-decoration-color: var(--color-accent);
+    text-decoration-color: var(--color-accent-deep);
   }
 
   /* Buttons */
@@ -405,8 +409,8 @@
 
   .btn-outline:hover {
     background: var(--color-muted);
-    border-color: var(--color-accent);
-    color: var(--color-accent);
+    border-color: var(--color-accent-deep);
+    color: var(--color-accent-deep);
   }
 
   .btn-ghost {
@@ -421,7 +425,7 @@
 
   .btn-ghost:hover {
     color: var(--color-foreground);
-    text-decoration-color: var(--color-accent);
+    text-decoration-color: var(--color-accent-deep);
   }
 
   /* Quiet text link: muted → foreground. */
@@ -445,7 +449,7 @@
     inset-inline: 0;
     bottom: var(--nav-underline-offset, -2px);
     height: 1px;
-    background: var(--color-accent);
+    background: var(--color-accent-deep);
     transform: scaleX(0);
     transform-origin: left;
     transition: transform var(--motion-base) var(--motion-ease);
@@ -476,8 +480,8 @@
   }
 
   .icon-btn:hover {
-    border-color: var(--color-accent);
-    color: var(--color-accent);
+    border-color: var(--color-accent-deep);
+    color: var(--color-accent-deep);
   }
 
   .icon-btn:disabled {
@@ -569,7 +573,7 @@
   }
 
   .input:focus-visible {
-    border-color: var(--color-accent);
+    border-color: var(--color-accent-deep);
     outline: 2px solid var(--color-ring);
     outline-offset: 2px;
   }

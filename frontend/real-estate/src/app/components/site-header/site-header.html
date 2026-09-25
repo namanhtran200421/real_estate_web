@@ -79,10 +79,10 @@
             <li>
               <a
                 [routerLink]="link.path"
-                routerLinkActive="text-accent!"
+                routerLinkActive="text-accent-deep!"
                 [routerLinkActiveOptions]="{ exact: true }"
                 ariaCurrentWhenActive="page"
-                class="flex min-h-12 items-center font-serif text-lg transition-colors hover:text-accent"
+                class="flex min-h-12 items-center font-serif text-lg transition-colors hover:text-accent-deep"
                 (click)="menuOpen.set(false)"
               >
                 {{ link.label }}
@@ -90,7 +90,7 @@
             </li>
           }
           <li>
-            <a routerLink="/booking/manage" class="flex min-h-12 items-center font-serif text-lg transition-colors hover:text-accent" (click)="menuOpen.set(false)">
+            <a routerLink="/booking/manage" class="flex min-h-12 items-center font-serif text-lg transition-colors hover:text-accent-deep" (click)="menuOpen.set(false)">
               Tra cứu đặt phòng
             </a>
           </li>
