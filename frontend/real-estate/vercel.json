@@ -1,0 +1,21 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist/real-estate/browser",
+  "regions": ["sin1"],
+  "functions": {
+    "api/index.mjs": {
+      "includeFiles": "dist/real-estate/**"
+    }
+  },
+  "rewrites": [
+    { "source": "/", "destination": "/api" },
+    { "source": "/(.*)", "destination": "/api" }
+  ],
+  "headers": [
+    {
+      "source": "/(chunk-.*|main-.*|polyfills-.*|styles-.*|media/.*)",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
+    }
+  ]
+}

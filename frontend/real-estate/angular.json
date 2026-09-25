@@ -31,7 +31,8 @@
             "outputMode": "server",
             "security": {
               "allowedHosts": [
-                "localhost"
+                "localhost",
+                "*.vercel.app"
               ]
             },
             "ssr": {

@@ -10,12 +10,17 @@ import { APARTMENTS } from './app/data/apartments.mock';
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
 
+// On Vercel every request arrives through Vercel's own proxy, which sets X-Forwarded-Proto.
+const onVercel = !!process.env['VERCEL'];
+
 const app = express();
-const angularApp = new AngularNodeAppEngine();
+// Trust only the protocol header (for https canonical URLs); the host still comes from Host,
+// which is validated against `allowedHosts`.
+const angularApp = new AngularNodeAppEngine({ trustProxyHeaders: ['x-forwarded-proto'] });
 
 app.disable('x-powered-by');
-// Honour X-Forwarded-Proto from a reverse proxy on the same machine (e.g. nginx), for correct https URLs.
-app.set('trust proxy', 'loopback');
+// Honour X-Forwarded-Proto from Vercel, or from a reverse proxy on the same machine (e.g. nginx).
+app.set('trust proxy', onVercel ? true : 'loopback');
 
 const origin = (req: Request) => `${req.protocol}://${req.get('host')}`;
 

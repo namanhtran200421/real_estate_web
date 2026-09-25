@@ -11,5 +11,10 @@ export const serverRoutes: ServerRoute[] = [
   { path: 'booking/:reference/confirmation', ...PRIVATE },
   // Public pages render on the server per request, so `?apt=` and data edited from
   // the owner dashboard are always reflected in the HTML that crawlers receive.
-  { path: '**', renderMode: RenderMode.Server },
+  // The CDN (e.g. Vercel's edge) may reuse a rendered page for 60s and refresh it in the background.
+  {
+    path: '**',
+    renderMode: RenderMode.Server,
+    headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=600' },
+  },
 ];
