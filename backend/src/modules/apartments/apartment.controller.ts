@@ -49,7 +49,12 @@ async function getBySlug(req: Request<{ slug: string }>, res: Response): Promise
 /** GET /apartments/:slug/quote?checkIn=&checkOut=&guests=&promoCode= */
 async function quote(req: Request<{ slug: string }>, res: Response): Promise<void> {
   const input = parse(quoteQuery, req.query);
-  const result = await bookingService.quote({ apartmentSlug: parseSlug(req.params.slug), ...input });
+  const apartmentSlug = parseSlug(req.params.slug);
+  // Unknown slugs share the public listing cache instead of causing a database lookup per quote.
+  if (!(await apartmentService.isPublished(apartmentSlug))) {
+    throw HttpError.notFound('Không tìm thấy căn hộ.');
+  }
+  const result = await bookingService.quote({ apartmentSlug, ...input });
   res.json({ data: result });
 }
 
