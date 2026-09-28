@@ -16,6 +16,23 @@ import { ApiResponse } from '../../core/api';
 import { GuestReview } from '../../models/guest-review';
 import { GuestReviewService } from '../../services/guest-review.service';
 
+type FacilityIcon = 'apartment' | 'furnished' | 'kitchen' | 'bathrooms' | 'wifi' | 'laundry' | 'check';
+
+const FACILITY_ICONS: Record<string, FacilityIcon> = {
+  'Căn hộ 2 phòng ngủ': 'apartment',
+  'Two-bedroom apartment': 'apartment',
+  'Đầy đủ nội thất': 'furnished',
+  'Fully furnished': 'furnished',
+  'Bếp riêng đầy đủ tiện nghi': 'kitchen',
+  'Fully equipped private kitchen': 'kitchen',
+  '2 phòng tắm riêng': 'bathrooms',
+  'Two private bathrooms': 'bathrooms',
+  'Wi-Fi miễn phí': 'wifi',
+  'Free Wi-Fi': 'wifi',
+  'Máy giặt & sấy': 'laundry',
+  'Washer and dryer': 'laundry',
+};
+
 @Component({
   selector: 'app-apartment-detail',
   imports: [DatePipe, RouterLink, TranslocoPipe, ApartmentGallery, ApartmentHeader, ApartmentNotFound, BookingCard, PriceList],
@@ -38,6 +55,9 @@ export class ApartmentDetail {
   protected readonly reviews = computed(() => this.reviewList.value()?.data ?? []);
   protected readonly reviewsLoading = computed(() => this.reviewList.isLoading());
   protected readonly reviewsFailed = computed(() => this.reviewList.status() === 'error');
+  protected facilityIcon(item: string): FacilityIcon {
+    return FACILITY_ICONS[item] ?? 'check';
+  }
   protected readonly mapsLink = computed(() =>
     `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(this.apartment()?.mapQuery ?? '')}`,
   );
