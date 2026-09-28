@@ -83,16 +83,23 @@ export function isPgError(error: unknown, code: string): boolean {
  */
 export async function withTransaction<T>(work: (client: pg.PoolClient) => Promise<T>): Promise<T> {
   const client = await pool.connect();
+  // A connection whose transaction state is unknown (ROLLBACK failed) is destroyed, not reused.
+  let broken = false;
   try {
     await client.query('BEGIN');
     const result = await work(client);
     await client.query('COMMIT');
     return result;
   } catch (error) {
-    await client.query('ROLLBACK');
+    try {
+      await client.query('ROLLBACK');
+    } catch (rollbackError) {
+      broken = true;
+      logger.error('Rollback failed; discarding the connection', { error: rollbackError });
+    }
     throw error;
   } finally {
-    client.release();
+    client.release(broken);
   }
 }
 

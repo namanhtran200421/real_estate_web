@@ -10,14 +10,16 @@
  * POST /:reference/review    → submit { rating, comment } after a completed stay (X-Booking-Token)
  */
 import { Router } from 'express';
+import { requireCaptcha } from '../../middleware/captcha.js';
 import { lookupRateLimiter } from '../../middleware/security.js';
 import { bookingController } from './booking.controller.js';
 import { reviewController } from '../reviews/review.controller.js';
 
 export const bookingRouter = Router();
 
-bookingRouter.post('/', bookingController.create);
-bookingRouter.post('/lookup', lookupRateLimiter, bookingController.lookup);
+// Creating a booking holds dates and looking one up reveals it: both need a solved CAPTCHA.
+bookingRouter.post('/', requireCaptcha, bookingController.create);
+bookingRouter.post('/lookup', lookupRateLimiter, requireCaptcha, bookingController.lookup);
 bookingRouter.get('/:reference', bookingController.get);
 bookingRouter.get('/:reference/transfer', bookingController.transferInstructions);
 bookingRouter.post('/:reference/transfer', bookingController.reportTransfer);

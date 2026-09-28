@@ -130,7 +130,12 @@ ${paragraphsHtml}${rowsHtml}${buttonHtml}
 
   const text = `${layout.heading}\n\n${layout.paragraphs.join('\n\n')}\n${rowsText}${buttonText}\n${env.siteName} · ${env.siteUrl}\n`;
 
-  return { subject: layout.subject, html, text };
+  return { subject: singleLine(layout.subject), html, text };
+}
+
+/** Subjects carry guest-typed names and topics: control characters (line breaks) never reach a header. */
+function singleLine(value: string): string {
+  return value.replace(/[\u0000-\u001f\u007f]+/g, ' ').trim().slice(0, 250);
 }
 
 // ---------------------------------------------------------------------------

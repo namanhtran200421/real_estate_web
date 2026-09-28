@@ -25,6 +25,8 @@ import { sendEmail } from './resend.client.js';
 
 const BATCH_SIZE = 10;
 const MAX_ATTEMPTS = 8;
+/** Sent emails are kept this long for support questions, then deleted. */
+const RETENTION_DAYS = 90;
 
 /** Acknowledgement to the guest; "please check your bank account" to the owner. */
 async function queueTransferReported(booking: BookingEmailContext, transfer: TransferContext, db: Db): Promise<void> {
@@ -81,7 +83,13 @@ async function deliverDueEmails(): Promise<void> {
   }
 }
 
+/** Background job: deletes old delivered (or abandoned) emails. */
+async function purgeOldEmails(): Promise<number> {
+  return emailRepository.purgeFinished(RETENTION_DAYS);
+}
+
 export const emailService = {
+  purgeOldEmails,
   queueTransferReported,
   queueTransferNotReceived,
   queuePaymentReceived,

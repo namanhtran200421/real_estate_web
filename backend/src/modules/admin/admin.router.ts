@@ -22,7 +22,8 @@
  * Apartments, holidays, promo codes, contact messages: see their routers.
  */
 import { Router } from 'express';
-import { loginRateLimiter } from '../../middleware/security.js';
+import { requireCaptcha } from '../../middleware/captcha.js';
+import { loginAccountRateLimiter, loginRateLimiter } from '../../middleware/security.js';
 import { adminAuthController } from '../admin-auth/admin-auth.controller.js';
 import { requireAdmin } from '../admin-auth/require-admin.js';
 import { apartmentAdminRouter } from '../apartments/apartment.admin.router.js';
@@ -33,7 +34,9 @@ import { promoCodeAdminRouter } from '../promo-codes/promo-code.admin.router.js'
 
 export const adminRouter = Router();
 
-adminRouter.post('/auth/login', loginRateLimiter, adminAuthController.login);
+// Per-IP limit first (bounds CAPTCHA checks), then the CAPTCHA, then the per-account limit, so
+// only attempts that solved a challenge count against the owner's account.
+adminRouter.post('/auth/login', loginRateLimiter, requireCaptcha, loginAccountRateLimiter, adminAuthController.login);
 
 // Every route below requires a signed-in admin.
 adminRouter.use(requireAdmin);

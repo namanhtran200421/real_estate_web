@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express';
 import { z } from 'zod';
 import { parse, slug } from '../../lib/validation.js';
+import { PUBLIC_CACHE_CONTROL } from '../apartments/apartment.controller.js';
 import { reviewService } from './review.service.js';
 
 const reference = z.string().trim().toUpperCase().regex(/^RE-\d{4}-[A-Z0-9]{4,8}$/);
@@ -10,7 +11,9 @@ const reviewBody = z.object({
 });
 
 async function list(req: Request<{ slug: string }>, res: Response): Promise<void> {
-  res.json({ data: await reviewService.listForApartment(parse(slug, req.params.slug)) });
+  const reviews = await reviewService.listForApartment(parse(slug, req.params.slug));
+  res.setHeader('Cache-Control', PUBLIC_CACHE_CONTROL);
+  res.json({ data: reviews });
 }
 
 async function getForBooking(req: Request<{ reference: string }>, res: Response): Promise<void> {

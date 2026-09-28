@@ -1,12 +1,17 @@
 import { env } from '../../config/env.js';
 import { isPgError, PG_ERROR } from '../../db/pool.js';
+import { TtlCache } from '../../lib/cache.js';
 import { todayIn } from '../../lib/dates.js';
 import { HttpError } from '../../lib/http-error.js';
+import { apartmentService } from '../apartments/apartment.service.js';
 import { assertAccess } from '../bookings/booking-access.js';
 import { bookingRepository } from '../bookings/booking.repository.js';
 import { canReview } from './review.rules.js';
 import { reviewRepository } from './review.repository.js';
-import type { NewReview } from './review.types.js';
+import type { GuestReview, NewReview } from './review.types.js';
+
+/** Public reviews per apartment slug; a new review invalidates it (see lib/cache.ts). */
+const publicReviews = new TtlCache<GuestReview[]>(60_000, 20);
 
 async function authorizedBooking(reference: string, token: string | undefined) {
   const booking = await bookingRepository.findByReference(reference);
@@ -15,8 +20,10 @@ async function authorizedBooking(reference: string, token: string | undefined) {
   return booking;
 }
 
-async function listForApartment(slug: string) {
-  return reviewRepository.listForApartment(slug);
+/** Unknown or unpublished slugs get an empty list without a query, so they cannot fill the cache. */
+async function listForApartment(slug: string): Promise<GuestReview[]> {
+  if (!(await apartmentService.isPublished(slug))) return [];
+  return publicReviews.get(slug, () => reviewRepository.listForApartment(slug));
 }
 
 async function getForBooking(reference: string, token: string | undefined) {

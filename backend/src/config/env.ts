@@ -165,6 +165,18 @@ export const env = Object.freeze({
   /** Run background jobs (email sending, payment reconciliation, hold expiry) in this process. */
   jobsEnabled: boolean('JOBS_ENABLED', true),
 
+  /**
+   * Cloudflare Turnstile secret. When set, public forms (booking, lookup, contact, admin login)
+   * must carry a solved CAPTCHA in `X-Captcha-Token`. The website needs the matching site key.
+   */
+  captchaSecret: read('TURNSTILE_SECRET_KEY'),
+
+  /**
+   * Load shedding: while the event loop lags more than this many milliseconds, API requests get
+   * 503 + Retry-After instead of queueing up and timing out. 0 disables it.
+   */
+  overloadLagMs: integer('OVERLOAD_LAG_MS', 300, 0, 10_000),
+
   db: Object.freeze({
     url: url('DATABASE_URL', false),
     /** Maximum open connections per app instance. Keep instances × poolMax below the DB's max_connections. */

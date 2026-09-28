@@ -3,7 +3,7 @@
  */
 import type { Request, Response } from 'express';
 import { z } from 'zod';
-import { isoDate, optionalText, parse, slug, text, vnd } from '../../lib/validation.js';
+import { imageSrc, isoDate, optionalText, parse, slug, text, vnd } from '../../lib/validation.js';
 import { apartmentService } from './apartment.service.js';
 
 const time = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Giờ không hợp lệ (HH:MM).');
@@ -18,7 +18,7 @@ const apartmentBody = z.object({
   tagline: text(250),
   description: textList(20, 3_000),
   photos: z
-    .array(z.object({ src: z.url('Đường dẫn ảnh không hợp lệ.').max(2_000), alt: text(250) }))
+    .array(z.object({ src: imageSrc, alt: text(250) }))
     .min(1, 'Cần ít nhất một ảnh.')
     .max(60),
   guests: z.number().int().min(1).max(50),

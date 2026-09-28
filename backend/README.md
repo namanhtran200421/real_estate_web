@@ -58,8 +58,8 @@ src/
 ├── config/env.ts        Typed, validated configuration
 ├── db/                  Pool + transactions, migration runner
 ├── jobs/                In-process scheduler (DB-locked, safe with many instances) and job list
-├── lib/                 Logger, HttpError, validation (zod), dates, crypto, outbound HTTP
-├── middleware/          Request logging, security (helmet, CORS, rate limits), errors
+├── lib/                 Logger, HttpError, validation (zod), dates, crypto, outbound HTTP, cache, CAPTCHA check
+├── middleware/          Request logging, security (helmet, CORS, rate limits, load shedding), CAPTCHA, errors
 ├── scripts/             create-admin
 └── modules/
     ├── apartments/      Public catalogue + availability; admin content, prices, blocked dates
@@ -172,9 +172,20 @@ on restart. Without `RESEND_API_KEY` (development only), emails are written to t
 | expire-holds           | 1 min  | Release dates of unpaid bookings                     |
 | complete-stays         | 15 min | Confirmed stays become completed after check-out     |
 | purge-admin-sessions   | 1 h    | Delete expired admin sessions                        |
+| purge-emails           | 6 h    | Delete sent emails after 90 days (guests' details)   |
 
-Each run takes a Postgres advisory lock, so with several instances only one runs each job.
-Set `JOBS_ENABLED=false` on instances that should not run them.
+Each run takes a transaction-scoped Postgres advisory lock (safe behind Neon's pooler), so with
+several instances only one runs each job. Set `JOBS_ENABLED=false` on instances that should not
+run them.
+
+### Caching
+
+The published apartments with a year of availability, and each apartment's reviews, are cached
+in memory for 30–60 s (`lib/cache.ts`). Concurrent requests share one query, so page renders
+and floods cost the database almost nothing. Every successful write through the API (and a job
+that changes bookings) clears the cache at once; quotes and bookings always re-check
+availability in the database, so a cached calendar can never cause a double booking. Public
+responses also carry `Cache-Control: s-maxage=30` for a CDN, and JSON is compressed.
 
 ## API
 
@@ -189,14 +200,14 @@ Every response has an `X-Request-Id` that matches the logs.
 | GET    | `/apartments/:slug`                       | One apartment or 404                                |
 | GET    | `/apartments/:slug/quote`                 | `?checkIn&checkOut&guests&promoCode`; 409 if taken  |
 | GET    | `/apartments/:slug/reviews`               | Public reviews from completed stays                 |
-| POST   | `/bookings`                               | Creates a held booking → `{ booking, accessToken }` |
-| POST   | `/bookings/lookup`                        | `{ reference, contact }` → `{ booking, accessToken }` |
+| POST   | `/bookings`                               | Creates a held booking → `{ booking, accessToken }` (CAPTCHA) |
+| POST   | `/bookings/lookup`                        | `{ reference, contact }` → `{ booking, accessToken }` (CAPTCHA) |
 | GET    | `/bookings/:reference`                    | `X-Booking-Token`                                   |
 | GET    | `/bookings/:reference/transfer`           | `?option=deposit|full` → account, amount, note, VietQR |
 | POST   | `/bookings/:reference/transfer`           | `{ option }` "I have transferred" → updated booking |
 | GET    | `/bookings/:reference/review`             | Guest's review or null; `X-Booking-Token` required  |
 | POST   | `/bookings/:reference/review`             | `{ rating, comment }` after checkout; one per booking |
-| POST   | `/contact`                                | Contact form (honeypot-protected)                   |
+| POST   | `/contact`                                | Contact form (CAPTCHA + honeypot)                   |
 | GET    | `/health`, `/health/ready`                | Liveness, readiness (outside `/api`)                |
 
 **Admin** (`/api/v1/admin/*`, `Authorization: Bearer <token>`): login/logout/password,
@@ -211,15 +222,25 @@ contact inbox. Full list: `src/modules/admin/admin.router.ts`.
 | Header-based attacks                 | helmet (HSTS, strict CSP, nosniff, frame blocking, no X-Powered-By)                       |
 | Other websites calling the API       | CORS allowlist (`SITE_URL` + `CORS_ORIGINS`)                                            |
 | One client flooding the API          | Per-IP limit on all `/api` requests (`RATE_LIMIT_MAX`), 429 + `Retry-After`              |
-| Booking / form spam                  | Stricter per-IP limit on anonymous writes; max 3 unpaid holds per guest; contact honeypot |
-| Password guessing                    | 10 failed logins / 15 min per IP; scrypt hashes; constant-time checks; no account enumeration |
-| Booking enumeration                  | Random references, lookup needs email/phone, 20 lookups / 15 min per IP, 404 on bad token |
+| Bots and botnets (many IPs)          | Cloudflare Turnstile CAPTCHA on booking, lookup, contact and admin login (`TURNSTILE_SECRET_KEY`); fails closed |
+| Floods that saturate the process     | Load shedding: 503 + `Retry-After` while the event loop lags over `OVERLOAD_LAG_MS`      |
+| Floods that reach the database       | Public reads served from an in-memory cache with single-flight loading; unknown slugs never query |
+| Probe endpoint abuse                 | `/health/ready` reuses one database check for 2 s                                       |
+| Booking / form spam                  | CAPTCHA; stricter per-IP limit on anonymous writes; max 3 unpaid holds per guest; contact honeypot |
+| Password guessing                    | CAPTCHA; 10 failed logins / 15 min per IP **and** per account; scrypt hashes; constant-time checks; no account enumeration |
+| Promo code guessing                  | 30 quotes with a code / 15 min per IP                                                    |
+| Booking enumeration                  | CAPTCHA; random references, lookup needs email/phone, 20 lookups / 15 min per IP, 404 on bad token |
 | Fake "I have transferred" reports    | Nothing is confirmed until the owner sees the money; one open report per booking        |
 | Spoofed client IPs                   | `trust proxy` = exact proxy count (`TRUST_PROXY_HOPS`)                                   |
 | Large bodies / slow clients          | 100 kB JSON limit; 10 s headers, 30 s request timeouts                  |
-| Slow queries piling up               | Postgres `statement_timeout`, bounded pool, fast fail when saturated                    |
-| SQL injection                        | Parameterised queries only; all input validated with zod                                 |
-| Leaking internals / stolen DB dump   | Bare 500s (details only in logs); admin session tokens stored as SHA-256 hashes          |
+| Slow queries piling up               | Postgres `statement_timeout`, bounded pool, fast fail when saturated; broken connections discarded |
+| SQL injection                        | Parameterised queries only; all input validated with zod; length checks in the database too |
+| Stored XSS via listing photos        | Photo addresses must be a site path or `https://` (no `javascript:` / `data:`); the website adds a nonce-based CSP |
+| Email header injection               | Subjects stripped of control characters; every guest value HTML-escaped in bodies        |
+| Leaking internals / stolen DB dump   | Bare 500s (details only in logs); admin session tokens stored as SHA-256 hashes; sent emails purged after 90 days |
+
+In production the API logs a warning at startup when `TURNSTILE_SECRET_KEY`, `TRUST_PROXY_HOPS`
+or `INTERNAL_API_KEY` is missing.
 
 **In front of the app (required in production):** a CDN/WAF with DDoS protection (Cloudflare,
 AWS CloudFront + Shield/WAF, …). Only that layer absorbs network floods.
@@ -250,6 +271,8 @@ Without Docker: `npm ci && npm run build && npm run db:migrate && npm start`.
 - [ ] Fresh secrets: `BOOKING_TOKEN_SECRET`, `INTERNAL_API_KEY` (same value in the website's environment); `openssl rand -base64 48`
 - [ ] `DATABASE_URL` for production, `DB_SSL=true` for managed Postgres; `instances × DB_POOL_MAX` < `max_connections`
 - [ ] `TRUST_PROXY_HOPS` = number of proxies in front of the API (usually 1)
+- [ ] Cloudflare Turnstile widget created for the website's domain(s) → `TURNSTILE_SECRET_KEY` here, `TURNSTILE_SITE_KEY` in the website's build; then submit the contact form once to check
+- [ ] No `level: "warn"` startup lines about weak settings in the production logs
 
 **Data**
 - [ ] `npm run db:migrate` on the production database (includes the Sun Garden A04-12 listing)
@@ -258,7 +281,8 @@ Without Docker: `npm ci && npm run build && npm run db:migrate && npm start`.
 - [ ] Add this year's lunar holidays (Tết, Giỗ Tổ Hùng Vương) and extra days off (Ngày lễ)
 
 **Infrastructure**
-- [ ] CDN / WAF with DDoS protection in front of the API
+- [ ] CDN / WAF with DDoS protection in front of the API (e.g. Cloudflare proxy; then count it in `TRUST_PROXY_HOPS`)
+- [ ] `npm run db:migrate` includes `009_performance_and_hardening.sql` (indexes and length checks)
 - [ ] Health checks: liveness `/health`, readiness `/health/ready`
 - [ ] Daily database backups with point-in-time recovery
 - [ ] Log collection and an alert on `level: "error"` lines

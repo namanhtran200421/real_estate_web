@@ -62,4 +62,16 @@ async function markFailed(id: number, error: string, retryInSeconds: number | nu
   );
 }
 
-export const emailRepository = { enqueue, claimDue, markSent, markFailed };
+/** Deletes delivered or abandoned emails older than `days`; they hold guests' personal data. */
+async function purgeFinished(days: number): Promise<number> {
+  const rows = await query(
+    `DELETE FROM email_outbox
+     WHERE created_at < now() - make_interval(days => $1)
+       AND (sent_at IS NOT NULL OR next_attempt_at = 'infinity')
+     RETURNING id`,
+    [days],
+  );
+  return rows.length;
+}
+
+export const emailRepository = { enqueue, claimDue, markSent, markFailed, purgeFinished };

@@ -19,6 +19,12 @@ const quoteQuery = z.object({
   promoCode: promoCode.optional(),
 });
 
+/**
+ * Public catalogue responses may be reused by a CDN for a few seconds (browsers revalidate with
+ * the ETag every time). Matches the in-process cache in apartment.service.ts.
+ */
+export const PUBLIC_CACHE_CONTROL = 'public, max-age=0, s-maxage=30, stale-while-revalidate=60';
+
 /** Malformed slugs are answered with 404 without touching the database. */
 function parseSlug(value: string): string {
   const result = slugSchema.safeParse(value);
@@ -28,12 +34,15 @@ function parseSlug(value: string): string {
 
 /** GET /apartments */
 async function list(_req: Request, res: Response): Promise<void> {
-  res.json({ data: await apartmentService.listApartments() });
+  const apartments = await apartmentService.listApartments();
+  res.setHeader('Cache-Control', PUBLIC_CACHE_CONTROL);
+  res.json({ data: apartments });
 }
 
 /** GET /apartments/:slug */
 async function getBySlug(req: Request<{ slug: string }>, res: Response): Promise<void> {
   const apartment = await apartmentService.getApartmentBySlug(parseSlug(req.params.slug));
+  res.setHeader('Cache-Control', PUBLIC_CACHE_CONTROL);
   res.json({ data: apartment });
 }
 

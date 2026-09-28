@@ -377,8 +377,9 @@ async function list(filters: AdminBookingFilters): Promise<Page<AdminBookingList
   };
 }
 
+/** Three independent reads, run in parallel on separate pool connections. */
 async function summary(today: string, weekAhead: string): Promise<AdminSummary> {
-  const counts = await queryOne<Omit<AdminSummary, 'arrivalsNext7Days' | 'transfersToCheck'>>(
+  const countsQuery = queryOne<Omit<AdminSummary, 'arrivalsNext7Days' | 'transfersToCheck'>>(
     `SELECT
        (SELECT count(*)::int FROM bookings WHERE status = 'pending' AND amount_paid > 0) AS "awaitingConfirmation",
        (SELECT count(*)::int FROM bookings
@@ -393,7 +394,7 @@ async function summary(today: string, weekAhead: string): Promise<AdminSummary> 
     [today],
   );
 
-  const arrivals = await query<Omit<ListRow, 'total_count'>>(
+  const arrivalsQuery = query<Omit<ListRow, 'total_count'>>(
     `SELECT ${LIST_COLUMNS}
      FROM bookings b JOIN apartments a ON a.id = b.apartment_id
      WHERE b.status IN ('pending', 'confirmed') AND b.check_in BETWEEN $1 AND $2
@@ -403,7 +404,7 @@ async function summary(today: string, weekAhead: string): Promise<AdminSummary> 
     [today, weekAhead],
   );
 
-  const transfers = await query<{
+  const transfersQuery = query<{
     payment_id: string;
     reference: string;
     customer_name: string;
@@ -420,6 +421,8 @@ async function summary(today: string, weekAhead: string): Promise<AdminSummary> 
      WHERE p.state = 'pending'
      ORDER BY p.created_at`,
   );
+
+  const [counts, arrivals, transfers] = await Promise.all([countsQuery, arrivalsQuery, transfersQuery]);
 
   return {
     ...counts!,

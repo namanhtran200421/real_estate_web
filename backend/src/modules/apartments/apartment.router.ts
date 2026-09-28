@@ -7,6 +7,7 @@
  * GET /:slug/reviews → verified reviews from completed stays
  */
 import { Router } from 'express';
+import { promoCodeRateLimiter } from '../../middleware/security.js';
 import { apartmentController } from './apartment.controller.js';
 import { reviewController } from '../reviews/review.controller.js';
 
@@ -14,5 +15,5 @@ export const apartmentRouter = Router();
 
 apartmentRouter.get('/', apartmentController.list);
 apartmentRouter.get('/:slug', apartmentController.getBySlug);
-apartmentRouter.get('/:slug/quote', apartmentController.quote);
+apartmentRouter.get('/:slug/quote', promoCodeRateLimiter, apartmentController.quote);
 apartmentRouter.get('/:slug/reviews', reviewController.list);

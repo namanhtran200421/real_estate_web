@@ -14,6 +14,7 @@
  */
 import { env } from '../../config/env.js';
 import { isPgError, PG_ERROR, withTransaction, type Db } from '../../db/pool.js';
+import { invalidateCaches } from '../../lib/cache.js';
 import { readableCode } from '../../lib/crypto.js';
 import { addDays, nightsOf, todayIn } from '../../lib/dates.js';
 import { HttpError, type FieldIssue } from '../../lib/http-error.js';
@@ -94,14 +95,21 @@ async function priceRequest(request: QuoteRequest, db: Db | undefined, lockPromo
     throw HttpError.unprocessable('TOO_MANY_GUESTS', `Căn hộ này nhận tối đa ${apartment.guests} khách.`);
   }
 
-  const unavailable = await apartmentRepository.findUnavailableDates([apartment.id], request.checkIn, request.checkOut, db);
-  const taken = unavailable.get(apartment.id) ?? [];
+  // Independent lookups, run together (one round trip instead of three on the pool; a
+  // transaction client queues them). All of them finish before any result is used, so no query
+  // outlives a transaction that is rolled back; taken dates are reported before a bad promo code.
+  const [unavailableResult, holidaysResult, promoResult] = await Promise.allSettled([
+    apartmentRepository.findUnavailableDates([apartment.id], request.checkIn, request.checkOut, db),
+    holidayService.holidayDatesBetween(request.checkIn, addDays(request.checkOut, -1), db),
+    request.promoCode ? promoCodeService.resolveForStay(request.promoCode, nights, today, db, lockPromo) : null,
+  ]);
+  if (unavailableResult.status === 'rejected') throw unavailableResult.reason;
+  const taken = unavailableResult.value.get(apartment.id) ?? [];
   if (taken.length > 0) throw datesUnavailable(taken);
-
-  const holidays = await holidayService.holidayDatesBetween(request.checkIn, addDays(request.checkOut, -1), db);
-
-  let promo: Awaited<ReturnType<typeof promoCodeService.resolveForStay>> | null = null;
-  if (request.promoCode) promo = await promoCodeService.resolveForStay(request.promoCode, nights, today, db, lockPromo);
+  if (holidaysResult.status === 'rejected') throw holidaysResult.reason;
+  if (promoResult.status === 'rejected') throw promoResult.reason;
+  const holidays = holidaysResult.value;
+  const promo = promoResult.value;
 
   const price = priceStay(
     nightsOf(request.checkIn, request.checkOut),
@@ -393,12 +401,18 @@ async function summary(): Promise<AdminSummary> {
 // Background jobs
 // ---------------------------------------------------------------------------
 
+// Jobs change bookings outside any request, so they drop the public cache themselves.
+
 async function expireStaleHolds(): Promise<number> {
-  return bookingRepository.expireStaleHolds();
+  const expired = await bookingRepository.expireStaleHolds();
+  if (expired > 0) invalidateCaches();
+  return expired;
 }
 
 async function completeFinishedStays(): Promise<number> {
-  return bookingRepository.completeFinishedStays(todayIn(env.timezone));
+  const completed = await bookingRepository.completeFinishedStays(todayIn(env.timezone));
+  if (completed > 0) invalidateCaches();
+  return completed;
 }
 
 export const bookingService = {

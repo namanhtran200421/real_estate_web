@@ -58,6 +58,20 @@ export function blankAsUndefined<Schema extends z.ZodType>(schema: Schema) {
   }, schema.optional());
 }
 
+/**
+ * Image address shown on the site: a file on this site ("/apartments/…") or an https:// URL.
+ * Anything else, such as `javascript:` or `data:` URLs or protocol-relative "//host" links,
+ * is refused.
+ */
+export const imageSrc = z
+  .string()
+  .trim()
+  .max(2_000)
+  .refine((value) => {
+    if (value.startsWith('/')) return !value.startsWith('//') && !/[\s\\]/.test(value);
+    return /^https:\/\/\S+$/i.test(value) && URL.canParse(value);
+  }, 'Đường dẫn ảnh phải bắt đầu bằng / hoặc https://.');
+
 /** Whole VND amount. */
 export const vnd = z.number().int('Số tiền phải là số nguyên.').min(0).max(2_000_000_000);
 

@@ -6,6 +6,7 @@
  */
 import { env } from '../../config/env.js';
 import { isPgError, PG_ERROR } from '../../db/pool.js';
+import { TtlCache } from '../../lib/cache.js';
 import { addDays, todayIn } from '../../lib/dates.js';
 import { HttpError } from '../../lib/http-error.js';
 import { apartmentRepository } from './apartment.repository.js';
@@ -13,6 +14,13 @@ import type { AdminApartment, Apartment, ApartmentInput, BlockedDate } from './a
 
 /** How far ahead the availability calendar reaches. */
 export const AVAILABILITY_HORIZON_DAYS = 365;
+
+/**
+ * Every page render reads the published apartments with a year of availability. The result is
+ * shared for a short while; writes invalidate it (see lib/cache.ts), and quotes and bookings
+ * always re-check availability in the database, so a stale calendar can never double-book.
+ */
+const published = new TtlCache<Apartment[]>(30_000, 1);
 
 /** Drops admin-only fields. */
 function toPublic(apartment: AdminApartment, unavailableDates: string[]): Apartment {
@@ -38,17 +46,22 @@ function notFound(): HttpError {
 
 /** Published apartments, in display order, with availability. */
 async function listApartments(): Promise<Apartment[]> {
-  const apartments = await apartmentRepository.findAll({ activeOnly: true });
-  return withAvailability(apartments);
+  return published.get('all', async () => withAvailability(await apartmentRepository.findAll({ activeOnly: true })));
 }
 
-/** @throws HttpError 404 when no published apartment has this slug. */
+/**
+ * Served from the published list, so unknown slugs never reach the database.
+ * @throws HttpError 404 when no published apartment has this slug.
+ */
 async function getApartmentBySlug(slug: string): Promise<Apartment> {
-  const apartment = await apartmentRepository.findBySlug(slug);
-  if (!apartment || !apartment.isActive) throw notFound();
+  const apartment = (await listApartments()).find((candidate) => candidate.slug === slug);
+  if (!apartment) throw notFound();
+  return apartment;
+}
 
-  const [withDates] = await withAvailability([apartment]);
-  return withDates;
+/** Whether a published apartment has this slug (cached, no query). */
+async function isPublished(slug: string): Promise<boolean> {
+  return (await listApartments()).some((apartment) => apartment.slug === slug);
 }
 
 // ---------------------------------------------------------------------------
@@ -110,6 +123,7 @@ async function unblockDates(slug: string, dates: string[]): Promise<void> {
 export const apartmentService = {
   listApartments,
   getApartmentBySlug,
+  isPublished,
   listForAdmin,
   getForAdmin,
   create,

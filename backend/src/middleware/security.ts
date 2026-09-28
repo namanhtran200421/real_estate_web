@@ -6,12 +6,13 @@
  * in front of the app (Cloudflare, AWS Shield/WAF, Vercel firewall, …). See README.md,
  * "Security & DDoS mitigation", for the full picture including server timeouts and limits.
  */
-import type { Request } from 'express';
+import type { NextFunction, Request, Response } from 'express';
 import cors from 'cors';
 import { rateLimit, type Options } from 'express-rate-limit';
 import helmet from 'helmet';
 import { env } from '../config/env.js';
 import { safeEqual } from '../lib/crypto.js';
+import { HttpError } from '../lib/http-error.js';
 
 /**
  * Sets protective response headers (HSTS, X-Content-Type-Options, a strict
@@ -41,7 +42,7 @@ export const corsPolicy = cors({
     callback(null, allowed);
   },
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Booking-Token'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Booking-Token', 'X-Captcha-Token'],
   exposedHeaders: ['X-Request-Id', 'RateLimit', 'RateLimit-Policy', 'Retry-After'],
   // Browsers cache the preflight response, saving one OPTIONS round trip per request.
   maxAge: 600,
@@ -107,6 +108,19 @@ export const loginRateLimiter = limiter({
   message: tooManyRequests('Đăng nhập sai quá nhiều lần, vui lòng thử lại sau 15 phút.'),
 });
 
+/**
+ * Admin login, per account: stops guessing one account's password from many IPs. Runs after the
+ * CAPTCHA, so only attempts with a solved challenge count and strangers cannot cheaply lock the
+ * owner out.
+ */
+export const loginAccountRateLimiter = limiter({
+  windowMs: 15 * 60_000,
+  limit: 10,
+  skipSuccessfulRequests: true,
+  keyGenerator: (req) => `login:${String(req.body?.email ?? '').trim().toLowerCase().slice(0, 254)}`,
+  message: tooManyRequests('Tài khoản này đăng nhập sai quá nhiều lần, vui lòng thử lại sau 15 phút.'),
+});
+
 /** Booking lookup by reference + email/phone: stops enumeration of other guests' bookings. */
 export const lookupRateLimiter = limiter({
   windowMs: 15 * 60_000,
@@ -114,3 +128,47 @@ export const lookupRateLimiter = limiter({
   skipSuccessfulRequests: true,
   message: tooManyRequests('Bạn đã tra cứu quá nhiều lần, vui lòng thử lại sau 15 phút.'),
 });
+
+/**
+ * Quotes that carry a promo code: the answer says whether a code exists, so guessing codes is
+ * capped at 30 tries per IP per 15 minutes. Quotes without a code are not affected.
+ */
+export const promoCodeRateLimiter = limiter({
+  windowMs: 15 * 60_000,
+  limit: 30,
+  skip: (req) => !req.query['promoCode'] || isInternalRequest(req),
+  message: tooManyRequests('Bạn đã thử quá nhiều mã khuyến mãi, vui lòng thử lại sau 15 phút.'),
+});
+
+/** How often the event loop's delay is measured. */
+const LAG_SAMPLE_MS = 500;
+
+/**
+ * Load shedding. Under a flood the event loop falls behind, every request slows down and they
+ * all end up timing out. While the loop's delay stays above OVERLOAD_LAG_MS, API requests are
+ * answered 503 + Retry-After at once, which keeps the process responsive and tells clients and
+ * load balancers to back off. The delay is a moving average, so one slow tick does not trip it.
+ */
+function createOverloadGuard(thresholdMs: number) {
+  let lagMs = 0;
+  if (thresholdMs > 0) {
+    let lastTick = performance.now();
+    setInterval(() => {
+      const now = performance.now();
+      const drift = Math.max(0, now - lastTick - LAG_SAMPLE_MS);
+      lastTick = now;
+      lagMs = lagMs / 2 + drift / 2;
+    }, LAG_SAMPLE_MS).unref();
+  }
+
+  return (_req: Request, res: Response, next: NextFunction): void => {
+    if (thresholdMs === 0 || lagMs <= thresholdMs) {
+      next();
+      return;
+    }
+    res.setHeader('Retry-After', '5');
+    next(new HttpError(503, 'OVERLOADED', 'Hệ thống đang quá tải, vui lòng thử lại sau vài giây.'));
+  };
+}
+
+export const overloadGuard = createOverloadGuard(env.overloadLagMs);

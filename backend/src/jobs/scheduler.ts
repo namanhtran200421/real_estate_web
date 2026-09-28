@@ -4,6 +4,10 @@
  * Each job runs on its own interval, never overlaps itself, and takes a Postgres advisory lock
  * for the duration of a run, so when several app instances run the same schedule only one of
  * them executes each run. Failures are logged and retried on the next tick.
+ *
+ * The lock is transaction-scoped (held by an open transaction, released by COMMIT). A
+ * session-scoped lock is unsafe behind a transaction-mode pooler such as Neon's: lock and unlock
+ * can reach different server connections, leaving a lock held forever and the job skipped.
  */
 import { pool } from '../db/pool.js';
 import { logger } from '../lib/logger.js';
@@ -26,20 +30,32 @@ function lockKey(name: string): number {
 }
 
 async function runOnce(job: Job): Promise<void> {
-  const client = await pool.connect();
+  let client;
+  let broken = false;
   try {
-    const { rows } = await client.query<{ locked: boolean }>('SELECT pg_try_advisory_lock($1) AS locked', [lockKey(job.name)]);
-    if (!rows[0].locked) return; // another instance is running it
-    try {
+    client = await pool.connect();
+    await client.query('BEGIN');
+    const { rows } = await client.query<{ locked: boolean }>('SELECT pg_try_advisory_xact_lock($1) AS locked', [
+      lockKey(job.name),
+    ]);
+    // Not locked: another instance is running it. Otherwise the job runs on its own connections.
+    if (rows[0].locked) {
       const result = await job.run();
       logger.debug('Job finished', { job: job.name, result });
-    } finally {
-      await client.query('SELECT pg_advisory_unlock($1)', [lockKey(job.name)]);
     }
   } catch (error) {
     logger.error('Job failed', { job: job.name, error });
   } finally {
-    client.release();
+    if (client) {
+      // Ends the transaction, which releases the lock. A connection that cannot is discarded.
+      try {
+        await client.query('COMMIT');
+      } catch (error) {
+        broken = true;
+        logger.error('Job lock release failed', { job: job.name, error });
+      }
+      client.release(broken);
+    }
   }
 }
 
