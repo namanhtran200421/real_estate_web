@@ -132,6 +132,12 @@ const nodeEnv = oneOf('NODE_ENV', NODE_ENVS, 'development');
 const isProduction = nodeEnv === 'production';
 
 const resendApiKey = read('RESEND_API_KEY');
+const captchaSecret = read('TURNSTILE_SECRET_KEY');
+const turnstileTestSecrets = new Set([
+  '1x0000000000000000000000000000000AA',
+  '2x0000000000000000000000000000000AA',
+  '3x0000000000000000000000000000000AA',
+]);
 
 export const env = Object.freeze({
   nodeEnv,
@@ -171,7 +177,7 @@ export const env = Object.freeze({
    * Cloudflare Turnstile secret. When set, public forms (booking, lookup, contact, admin login)
    * must carry a solved CAPTCHA in `X-Captcha-Token`. The website needs the matching site key.
    */
-  captchaSecret: read('TURNSTILE_SECRET_KEY'),
+  captchaSecret,
 
   /**
    * Load shedding: while the event loop lags more than this many milliseconds, API requests get
@@ -235,6 +241,9 @@ export const env = Object.freeze({
 
 if (isProduction) {
   if (!resendApiKey) problems.push('RESEND_API_KEY is required in production');
+  if (captchaSecret && turnstileTestSecrets.has(captchaSecret)) {
+    problems.push('TURNSTILE_SECRET_KEY is a Cloudflare test key; use a real widget secret in production');
+  }
 }
 
 if (problems.length > 0) {

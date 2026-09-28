@@ -31,8 +31,19 @@ if (!URL.canParse(resolved)) {
 // Cloudflare Turnstile site key (public by design). Empty = no CAPTCHA widget; the API then
 // must not require one either (TURNSTILE_SECRET_KEY unset).
 const turnstileSiteKey = (process.env.TURNSTILE_SITE_KEY ?? '').trim();
+const turnstileTestSiteKeys = new Set([
+  '1x00000000000000000000AA',
+  '2x00000000000000000000AB',
+  '1x00000000000000000000BB',
+  '2x00000000000000000000BB',
+  '3x00000000000000000000FF',
+]);
 if (turnstileSiteKey && !/^[\w-]{10,100}$/.test(turnstileSiteKey)) {
   console.error('TURNSTILE_SITE_KEY does not look like a Turnstile site key');
+  process.exit(1);
+}
+if (process.env.VERCEL_ENV === 'production' && turnstileTestSiteKeys.has(turnstileSiteKey)) {
+  console.error('TURNSTILE_SITE_KEY is a Cloudflare test key; use a real widget site key in production');
   process.exit(1);
 }
 if (!turnstileSiteKey && hosted) {
