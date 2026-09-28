@@ -10,14 +10,34 @@
 
     <div class="mt-14 grid gap-10 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,0.7fr)] lg:gap-12">
       <!-- Form -->
-      <form class="card card-accent-top" (submit)="$event.preventDefault()">
+      @if (sent()) {
+        <div class="card card-accent-top text-center" role="status">
+          <h2 class="text-2xl md:text-3xl">Đã gửi tin nhắn</h2>
+          <p class="mt-4 text-muted-foreground">Cảm ơn bạn. Chúng tôi sẽ phản hồi sớm nhất có thể.</p>
+          <a routerLink="/" class="btn btn-outline mt-8">Về trang chủ</a>
+        </div>
+      } @else {
+      <form class="card card-accent-top" novalidate (submit)="$event.preventDefault(); submit()">
         <h2 class="text-2xl md:text-3xl">Gửi tin nhắn</h2>
         <p class="mt-2 text-sm text-muted-foreground">Các mục có dấu * là bắt buộc.</p>
 
         <div class="mt-8 space-y-6">
           <div>
             <label class="label" for="contact-name">Họ và tên *</label>
-            <input id="contact-name" class="input" type="text" autocomplete="name" placeholder="Nguyễn Văn A" required />
+            <input
+              id="contact-name"
+              class="input"
+              type="text"
+              autocomplete="name"
+              placeholder="Nguyễn Văn A"
+              maxlength="120"
+              required
+              [value]="form().name"
+              (input)="set('name', fromInput($event))"
+            />
+            @if (fieldError('name'); as message) {
+              <p class="mt-2 text-sm text-accent-deep">{{ message }}</p>
+            }
           </div>
 
           <div class="grid gap-6 sm:grid-cols-2">
@@ -30,8 +50,14 @@
                 inputmode="tel"
                 autocomplete="tel"
                 placeholder="09xx xxx xxx"
+                maxlength="20"
                 required
+                [value]="form().phone"
+                (input)="set('phone', fromInput($event))"
               />
+              @if (fieldError('phone'); as message) {
+                <p class="mt-2 text-sm text-accent-deep">{{ message }}</p>
+              }
             </div>
             <div>
               <label class="label" for="contact-email">Email</label>
@@ -42,14 +68,26 @@
                 inputmode="email"
                 autocomplete="email"
                 placeholder="ban@email.com"
+                maxlength="254"
+                [value]="form().email"
+                (input)="set('email', fromInput($event))"
               />
+              @if (fieldError('email'); as message) {
+                <p class="mt-2 text-sm text-accent-deep">{{ message }}</p>
+              }
             </div>
           </div>
 
           <div class="grid gap-6 sm:grid-cols-2">
             <div>
               <label class="label" for="contact-topic">Chủ đề</label>
-              <app-select inputId="contact-topic" name="topic" [options]="topicOptions" value="Đặt phòng" />
+              <app-select
+                inputId="contact-topic"
+                name="topic"
+                [options]="topicOptions"
+                [value]="form().topic"
+                (valueChange)="set('topic', $event)"
+              />
             </div>
             <div>
               <label class="label" for="contact-apartment">
@@ -60,6 +98,8 @@
                 name="apartment"
                 [options]="apartmentOptions()"
                 placeholder="Chưa chọn"
+                [value]="form().apartmentSlug"
+                (valueChange)="set('apartmentSlug', $event)"
               />
             </div>
           </div>
@@ -70,16 +110,48 @@
               id="contact-message"
               class="input min-h-40"
               placeholder="Bạn cần chúng tôi hỗ trợ điều gì?"
+              maxlength="3000"
               required
+              [value]="form().message"
+              (input)="set('message', fromInput($event))"
             ></textarea>
+            @if (fieldError('message'); as message) {
+              <p class="mt-2 text-sm text-accent-deep">{{ message }}</p>
+            }
+          </div>
+
+          <!-- Honeypot: invisible to people and screen readers; filled only by bots. -->
+          <div class="hidden" aria-hidden="true">
+            <label for="contact-website">Website</label>
+            <input
+              id="contact-website"
+              type="text"
+              tabindex="-1"
+              autocomplete="off"
+              [value]="form().website"
+              (input)="set('website', fromInput($event))"
+            />
           </div>
         </div>
 
+        @if (error(); as err) {
+          <p class="mt-6 rounded-md border border-accent bg-accent-muted p-3 text-sm text-accent-deep" role="alert">
+            {{ err.message }}
+          </p>
+        }
+
         <div class="mt-8 flex flex-col gap-4 border-t border-border pt-6 sm:flex-row sm:items-center sm:justify-between">
           <p class="text-sm text-muted-foreground">Thông tin của bạn chỉ dùng để phản hồi yêu cầu này.</p>
-          <button type="submit" class="btn btn-primary shrink-0">Gửi tin nhắn</button>
+          <button type="submit" class="btn btn-primary shrink-0" [disabled]="sending()">
+            @if (sending()) {
+              Đang gửi…
+            } @else {
+              Gửi tin nhắn
+            }
+          </button>
         </div>
       </form>
+      }
 
       <!-- Direct contact -->
       <aside class="space-y-6">

@@ -1,6 +1,5 @@
 @if (apartment(); as apt) {
-  @let q = quote()!;
-  @let b = booking;
+  @let d = draft();
 
   <section class="pb-20 pt-10 md:pb-28 md:pt-14">
     <div class="container-editorial max-w-6xl">
@@ -20,19 +19,19 @@
             <dl class="mt-6 grid gap-x-8 gap-y-5 sm:grid-cols-2">
               <div>
                 <dt class="small-caps text-muted-foreground">Nhận phòng</dt>
-                <dd class="mt-1">{{ b.checkIn | date: 'EEEE, dd/MM/yyyy' }} · từ {{ apt.checkIn }}</dd>
+                <dd class="mt-1">{{ d.checkIn | date: 'EEEE, dd/MM/yyyy' }} · từ {{ apt.checkIn }}</dd>
               </div>
               <div>
                 <dt class="small-caps text-muted-foreground">Trả phòng</dt>
-                <dd class="mt-1">{{ b.checkOut | date: 'EEEE, dd/MM/yyyy' }} · trước {{ apt.checkOut }}</dd>
+                <dd class="mt-1">{{ d.checkOut | date: 'EEEE, dd/MM/yyyy' }} · trước {{ apt.checkOut }}</dd>
               </div>
               <div>
                 <dt class="small-caps text-muted-foreground">Số đêm</dt>
-                <dd class="mt-1">{{ b.nights.length }} đêm</dd>
+                <dd class="mt-1">{{ q()?.nights ?? '…' }} đêm</dd>
               </div>
               <div>
                 <dt class="small-caps text-muted-foreground">Số khách</dt>
-                <dd class="mt-1">{{ b.guests }} khách</dd>
+                <dd class="mt-1">{{ d.guests }} khách</dd>
               </div>
             </dl>
           </div>
@@ -46,20 +45,20 @@
             <dl class="mt-6 grid gap-x-8 gap-y-5 sm:grid-cols-2">
               <div>
                 <dt class="small-caps text-muted-foreground">Họ và tên</dt>
-                <dd class="mt-1">{{ b.customer.name }}</dd>
+                <dd class="mt-1">{{ d.name }}</dd>
               </div>
               <div>
                 <dt class="small-caps text-muted-foreground">Số điện thoại</dt>
-                <dd class="mt-1">{{ b.customer.phone }}</dd>
+                <dd class="mt-1">{{ d.phone }}</dd>
               </div>
               <div class="sm:col-span-2">
                 <dt class="small-caps text-muted-foreground">Email</dt>
-                <dd class="mt-1 break-words">{{ b.customer.email }}</dd>
+                <dd class="mt-1 break-words">{{ d.email }}</dd>
               </div>
-              @if (b.message) {
+              @if (d.message) {
                 <div class="sm:col-span-2">
                   <dt class="small-caps text-muted-foreground">Lời nhắn</dt>
-                  <dd class="mt-1 text-muted-foreground">{{ b.message }}</dd>
+                  <dd class="mt-1 text-muted-foreground">{{ d.message }}</dd>
                 </div>
               }
             </dl>
@@ -68,56 +67,110 @@
           <!-- Price breakdown -->
           <div class="card card-accent-top">
             <h2 class="text-2xl">Chi tiết giá</h2>
-            <ul class="mt-6 divide-y divide-border border-y border-border">
-              @for (line of q.lines; track line.date) {
-                <li class="flex items-baseline justify-between gap-4 py-3">
-                  <span>
-                    {{ line.date | date: 'EEEE, dd/MM' }}
-                    <span class="block text-sm text-muted-foreground sm:inline">· {{ rateLabels[line.rate] }}</span>
-                  </span>
-                  <span class="shrink-0">{{ line.amount | number }} ₫</span>
-                </li>
-              }
-            </ul>
 
-            <dl class="mt-4 space-y-3">
-              <div class="flex justify-between gap-4">
-                <dt class="text-muted-foreground">Tạm tính</dt>
-                <dd>{{ q.subtotal | number }} ₫</dd>
+            @if (quoteError(); as error) {
+              <div class="mt-6 rounded-md border border-accent bg-accent-muted p-4 text-sm text-accent-deep" role="alert">
+                <p>{{ userMessage(error) }}</p>
+                @if (error.code === 'PROMO_CODE_INVALID') {
+                  <button type="button" class="link mt-2" (click)="removePromo()">Bỏ mã khuyến mãi</button>
+                } @else {
+                  <a routerLink="/book" [queryParams]="{ apt: apt.slug }" class="link mt-2 inline-block">Chọn lại ngày</a>
+                }
               </div>
-              @if (q.discount) {
+            } @else if (q(); as q) {
+              <ul class="mt-6 divide-y divide-border border-y border-border">
+                @for (line of q.lines; track line.date) {
+                  <li class="flex items-baseline justify-between gap-4 py-3">
+                    <span>
+                      {{ line.date | date: 'EEEE, dd/MM' }}
+                      <span class="block text-sm text-muted-foreground sm:inline">· {{ rateLabels[line.rate] }}</span>
+                    </span>
+                    <span class="shrink-0">{{ line.amount | number }} ₫</span>
+                  </li>
+                }
+              </ul>
+
+              <dl class="mt-4 space-y-3">
                 <div class="flex justify-between gap-4">
-                  <dt class="text-muted-foreground">Giảm giá ở {{ q.lines.length }} đêm (−{{ q.discountPercent }}%)</dt>
-                  <dd class="text-accent-deep">−{{ q.discount | number }} ₫</dd>
+                  <dt class="text-muted-foreground">Tạm tính</dt>
+                  <dd>{{ q.subtotal | number }} ₫</dd>
                 </div>
+                @if (q.stayDiscount; as discount) {
+                  <div class="flex justify-between gap-4">
+                    @if (discount.kind === 'long_stay') {
+                      <dt class="text-muted-foreground">Giảm giá ở {{ q.nights }} đêm (−{{ discount.percent }}%)</dt>
+                    } @else {
+                      <dt class="text-muted-foreground">Giá theo tuần / tháng</dt>
+                    }
+                    <dd class="text-accent-deep">−{{ discount.amount | number }} ₫</dd>
+                  </div>
+                }
+                @if (q.promo; as promo) {
+                  <div class="flex justify-between gap-4">
+                    <dt class="text-muted-foreground">
+                      Mã <span class="font-mono">{{ promo.code }}</span>
+                      <button type="button" class="link ml-2 text-sm" (click)="removePromo()">Bỏ</button>
+                    </dt>
+                    <dd class="text-accent-deep">−{{ promo.amount | number }} ₫</dd>
+                  </div>
+                }
+              </dl>
+
+              <!-- Promo code -->
+              @if (!q.promo) {
+                <form class="mt-6 rounded-md bg-muted p-4" (submit)="$event.preventDefault(); applyPromo()">
+                  <label class="label" for="promo-code">Mã khuyến mãi</label>
+                  <div class="flex gap-2">
+                    <input
+                      id="promo-code"
+                      class="input bg-card uppercase"
+                      type="text"
+                      placeholder="Nhập mã"
+                      autocomplete="off"
+                      maxlength="32"
+                      [value]="promoInput()"
+                      (input)="setPromoInput($event)"
+                    />
+                    <button type="submit" class="btn btn-outline shrink-0" [disabled]="applyingPromo() || !promoInput()">
+                      Áp dụng
+                    </button>
+                  </div>
+                  @if (promoError(); as error) {
+                    <p class="mt-2 text-sm text-accent-deep" role="alert">{{ error }}</p>
+                  } @else {
+                    <p class="mt-2 text-sm text-muted-foreground">Mỗi mã chỉ sử dụng được một lần.</p>
+                  }
+                </form>
               }
-            </dl>
 
-            <!-- Promo code -->
-            <div class="mt-6 rounded-md bg-muted p-4">
-              <label class="label" for="promo-code">Mã khuyến mãi</label>
-              <div class="flex gap-2">
-                <input id="promo-code" class="input bg-card uppercase" type="text" placeholder="Nhập mã" autocomplete="off" />
-                <button type="button" class="btn btn-outline shrink-0">Áp dụng</button>
+              <hr class="my-6" />
+              <div class="flex items-baseline justify-between gap-4">
+                <span class="small-caps text-muted-foreground">Tổng cộng</span>
+                <span class="display-number">{{ q.total | number }} ₫</span>
               </div>
-              <p class="mt-2 text-sm text-muted-foreground">Mỗi mã chỉ sử dụng được một lần.</p>
-            </div>
-
-            <hr class="my-6" />
-            <div class="flex items-baseline justify-between gap-4">
-              <span class="small-caps text-muted-foreground">Tổng cộng</span>
-              <span class="display-number">{{ q.total | number }} ₫</span>
-            </div>
+            } @else {
+              <p class="mt-6 text-muted-foreground" role="status">Đang tính giá…</p>
+            }
           </div>
+
+          @if (submitError(); as error) {
+            <p class="rounded-md border border-accent bg-accent-muted p-4 text-sm text-accent-deep" role="alert">{{ error }}</p>
+          }
 
           <div class="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:items-center sm:justify-between">
             <a routerLink="/book" [queryParams]="{ apt: apt.slug }" class="btn btn-ghost">← Quay lại</a>
-            <a routerLink="/book/payment" [queryParams]="{ apt: apt.slug }" class="btn btn-primary">Tiếp tục thanh toán</a>
+            <button type="button" class="btn btn-primary" [disabled]="!q() || submitting()" (click)="continue()">
+              @if (submitting()) {
+                Đang giữ chỗ…
+              } @else {
+                Tiếp tục thanh toán
+              }
+            </button>
           </div>
         </div>
 
         <aside class="lg:sticky lg:top-28 lg:self-start">
-          <app-booking-summary [apartment]="apt" [booking]="b" [total]="q.total" />
+          <app-booking-summary [apartment]="apt" [stay]="stay()" [total]="q()?.total" />
         </aside>
       </div>
     </div>

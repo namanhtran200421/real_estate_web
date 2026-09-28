@@ -46,6 +46,8 @@ export interface Apartment {
   checkOut: string;
   rules: string[];
   pricing: Pricing;
+  /** Share of the total a guest can pay upfront to secure a booking. */
+  depositPercent: number;
   /** ISO dates (yyyy-mm-dd) that are booked or blocked. */
   unavailableDates: string[];
   nearby: NearbyPlace[];

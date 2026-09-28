@@ -21,7 +21,7 @@
 
   <hr class="my-5" />
 
-  @if (booking(); as b) {
+  @if (stay(); as b) {
     <dl class="space-y-3 text-sm">
       <div class="flex justify-between gap-4">
         <dt class="text-muted-foreground">Nhận phòng</dt>
@@ -33,7 +33,7 @@
       </div>
       <div class="flex justify-between gap-4">
         <dt class="text-muted-foreground">Số đêm</dt>
-        <dd>{{ b.nights.length }} đêm</dd>
+        <dd>{{ b.nights }} đêm</dd>
       </div>
       <div class="flex justify-between gap-4">
         <dt class="text-muted-foreground">Số khách</dt>

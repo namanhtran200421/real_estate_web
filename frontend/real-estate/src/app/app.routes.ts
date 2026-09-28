@@ -7,12 +7,13 @@ const title = (page: string) => `${page} · ${SITE.name}`;
 const NOINDEX = { robots: 'noindex, nofollow' };
 
 // Every page is lazy-loaded into its own chunk. Apartment-specific pages read
-// `?apt=<slug>`; without it they show the first apartment.
+// `?apt=<slug>`; without it they show the first apartment. The payment page reads `?ref=`
+// (the booking reference).
 export const routes: Routes = [
   {
     path: '',
     loadComponent: () => import('./pages/home/home').then((m) => m.Home),
-    title: `${SITE.name} · Căn hộ cho thuê tại TP. Hồ Chí Minh`,
+    title: `${SITE.name} · Căn hộ Sun Garden Đà Lạt`,
   },
   {
     path: 'apartment',
@@ -38,7 +39,7 @@ export const routes: Routes = [
     path: 'about',
     loadComponent: () => import('./pages/about/about').then((m) => m.About),
     title: title('Về chúng tôi'),
-    data: { description: `${SITE.name}: căn hộ cho thuê được chọn lọc tại TP. Hồ Chí Minh, giá minh bạch và hỗ trợ tận tâm.` },
+    data: { description: `${SITE.name}: căn hộ Sun Garden A04-12 tại Đà Lạt, 78 m², 2 phòng ngủ và 2 phòng tắm.` },
   },
   {
     path: 'contact',
@@ -75,6 +76,11 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./pages/booking-confirmation/booking-confirmation').then((m) => m.BookingConfirmation),
     title: title('Xác nhận đặt phòng'),
+    data: NOINDEX,
+  },
+  {
+    path: 'admin',
+    loadChildren: () => import('./admin/admin.routes').then((m) => m.adminRoutes),
     data: NOINDEX,
   },
   { path: '**', redirectTo: '' },

@@ -6,7 +6,7 @@ import {
 } from '@angular/ssr/node';
 import express, { Request } from 'express';
 import { join } from 'node:path';
-import { APARTMENTS } from './app/data/apartments.mock';
+import { environment } from './environments/environment';
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
 
@@ -24,6 +24,23 @@ app.set('trust proxy', onVercel ? true : 'loopback');
 
 const origin = (req: Request) => `${req.protocol}://${req.get('host')}`;
 
+const apiUrl = (process.env['SERVER_API_URL'] || environment.apiUrl).replace(/\/+$/, '');
+const internalApiKey = process.env['INTERNAL_API_KEY'] ?? '';
+
+/** Slugs of the published apartments, for the sitemap. Empty if the API is unreachable. */
+async function apartmentSlugs(): Promise<string[]> {
+  try {
+    const headers: Record<string, string> = {};
+    if (internalApiKey) headers['X-Internal-Key'] = internalApiKey;
+    const response = await fetch(`${apiUrl}/api/v1/apartments`, { headers, signal: AbortSignal.timeout(5_000) });
+    if (!response.ok) return [];
+    const body = (await response.json()) as { data: { slug: string }[] };
+    return body.data.map((apartment) => apartment.slug);
+  } catch {
+    return [];
+  }
+}
+
 /**
  * SEO: robots.txt + sitemap.xml, built from the live apartment list and the requesting domain.
  * The booking flow is private, so crawlers are kept out of it.
@@ -32,17 +49,20 @@ app.get('/robots.txt', (req, res) => {
   res
     .type('text/plain')
     .set('Cache-Control', 'public, max-age=3600')
-    .send(`User-agent: *\nAllow: /\nDisallow: /book\n\nSitemap: ${origin(req)}/sitemap.xml\n`);
+    .send(
+      `User-agent: *\nAllow: /\nDisallow: /book\nDisallow: /admin\n\nSitemap: ${origin(req)}/sitemap.xml\n`,
+    );
 });
 
-app.get('/sitemap.xml', (req, res) => {
+app.get('/sitemap.xml', async (req, res) => {
   const base = origin(req);
+  const slugs = await apartmentSlugs();
   const paths = [
     '/',
     '/about',
     '/contact',
-    ...APARTMENTS.flatMap((a) =>
-      ['/apartment', '/gallery', '/availability', '/location'].map((p) => `${p}?apt=${a.slug}`),
+    ...slugs.flatMap((slug) =>
+      ['/apartment', '/gallery', '/availability', '/location'].map((p) => `${p}?apt=${slug}`),
     ),
   ];
   const urls = paths

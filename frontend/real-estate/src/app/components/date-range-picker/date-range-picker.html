@@ -1,0 +1,97 @@
+<div class="card p-4 sm:p-6">
+  <!-- What to do next / what is selected -->
+  <div class="flex min-h-12 flex-wrap items-center justify-between gap-3 border-b border-border pb-4" aria-live="polite">
+    @if (nights()) {
+      <p>
+        <span class="font-serif text-xl">{{ nights() }} đêm</span>
+        <span class="ml-2 text-muted-foreground">
+          {{ checkIn() | date: 'EEE dd/MM' }} → {{ checkOut() | date: 'EEE dd/MM/yyyy' }}
+        </span>
+      </p>
+      <button type="button" class="link text-sm" (click)="clear()">Chọn lại</button>
+    } @else if (choosingCheckOut()) {
+      <p>
+        <span class="font-medium">Chọn ngày trả phòng</span>
+        <span class="block text-sm text-muted-foreground">
+          Nhận phòng {{ checkIn() | date: 'EEEE, dd/MM' }}
+          @if (lastCheckOut(); as last) {
+            · trả phòng muộn nhất {{ last | date: 'dd/MM' }}
+          }
+        </span>
+      </p>
+      <button type="button" class="link text-sm" (click)="clear()">Chọn lại</button>
+    } @else {
+      <p class="font-medium">Chọn ngày nhận phòng</p>
+    }
+  </div>
+
+  <div class="relative mt-5">
+    <button
+      type="button"
+      class="icon-btn absolute left-0 top-0"
+      [disabled]="!canGoBack()"
+      aria-label="Tháng trước"
+      (click)="previous()"
+    >
+      <svg viewBox="0 0 20 20" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+        <path d="m12.5 4.5-5.5 5.5 5.5 5.5" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+    </button>
+    <button
+      type="button"
+      class="icon-btn absolute right-0 top-0"
+      [disabled]="!canGoForward()"
+      aria-label="Tháng sau"
+      (click)="next()"
+    >
+      <svg viewBox="0 0 20 20" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+        <path d="m7.5 4.5 5.5 5.5-5.5 5.5" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+    </button>
+
+    <div class="grid gap-8 sm:grid-cols-2 sm:gap-6" (mouseleave)="hovered.set(undefined)">
+      @for (month of months(); track month.key) {
+        <div>
+          <p class="flex h-11 items-center justify-center font-serif text-xl">{{ month.label }}</p>
+          <div class="mt-3 grid grid-cols-7 gap-1 text-center" role="group" [attr.aria-label]="month.label">
+            @for (day of weekdays; track day) {
+              <span class="small-caps pb-1 text-[0.625rem] text-muted-foreground" aria-hidden="true">{{ day }}</span>
+            }
+            @for (blank of month.blanks; track blank) {
+              <span></span>
+            }
+            @for (cell of month.days; track cell.date) {
+              <button
+                type="button"
+                class="h-11 rounded-md text-sm transition-colors"
+                [class]="cell.classes"
+                [attr.data-date]="cell.date"
+                [attr.aria-label]="cell.label"
+                [attr.aria-disabled]="cell.disabled"
+                [attr.aria-pressed]="cell.selected"
+                [tabIndex]="cell.tabIndex"
+                (click)="select(cell)"
+                (keydown)="onKeydown($event, cell.date)"
+                (mouseenter)="hovered.set(cell.date)"
+              >
+                {{ cell.day }}
+              </button>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+
+  <div class="mt-6 flex flex-wrap justify-center gap-x-6 gap-y-2 border-t border-border pt-4 text-sm text-muted-foreground">
+    <span class="flex items-center gap-2">
+      <span class="h-3.5 w-3.5 rounded-sm border border-border bg-card"></span> Còn trống
+    </span>
+    <span class="flex items-center gap-2">
+      <span class="h-3.5 w-3.5 rounded-sm bg-muted"></span> Đã có người đặt
+    </span>
+    <span class="flex items-center gap-2">
+      <span class="h-3.5 w-3.5 rounded-sm bg-foreground"></span> Ngày bạn chọn
+    </span>
+  </div>
+</div>

@@ -1,0 +1,357 @@
+<a routerLink="/admin/bookings" class="link text-sm">← Danh sách đặt phòng</a>
+
+@if (b(); as b) {
+  <div class="mt-6 flex flex-wrap items-center gap-4">
+    <h1 class="font-mono text-3xl tracking-[0.06em]">{{ b.reference }}</h1>
+    <app-status-badge [status]="b.status" />
+    <app-status-badge [status]="b.paymentStatus" />
+  </div>
+
+  @if (error(); as message) {
+    <p class="mt-6 rounded-md border border-accent bg-accent-muted p-4 text-sm text-accent-deep" role="alert">{{ message }}</p>
+  }
+
+  <!-- Actions -->
+  <div class="mt-6 flex flex-wrap gap-3">
+    @if (b.status === 'pending' && b.amountPaid > 0) {
+      <button type="button" class="btn btn-primary" [disabled]="busy()" (click)="confirm()">Xác nhận và gửi email cho khách</button>
+    }
+    @if (b.status === 'confirmed') {
+      <button type="button" class="btn btn-primary" [disabled]="busy()" (click)="complete()">Đánh dấu hoàn thành</button>
+    }
+    @if ((b.status === 'pending' || b.status === 'confirmed') && !cancelling()) {
+      <button type="button" class="btn btn-outline" [disabled]="busy()" (click)="cancelling.set(true)">Huỷ đặt phòng</button>
+    }
+  </div>
+
+  @if (cancelling()) {
+    <form class="card mt-6 max-w-xl" (submit)="$event.preventDefault(); cancel()">
+      <label class="label" for="cancel-reason">Lý do huỷ (gửi cho khách)</label>
+      <textarea
+        id="cancel-reason"
+        class="input"
+        maxlength="500"
+        required
+        [value]="cancelReason()"
+        (input)="cancelReason.set(value($event))"
+      ></textarea>
+      <p class="mt-2 text-sm text-muted-foreground">Huỷ không tự hoàn tiền. Hoàn tiền ở mục Thanh toán bên dưới.</p>
+      <div class="mt-4 flex gap-3">
+        <button type="submit" class="btn btn-primary" [disabled]="busy() || !cancelReason().trim()">Xác nhận huỷ</button>
+        <button type="button" class="btn btn-ghost" (click)="cancelling.set(false)">Thôi</button>
+      </div>
+    </form>
+  }
+
+  <div class="mt-10 grid gap-8 lg:grid-cols-[minmax(0,1fr)_24rem]">
+    <div class="min-w-0 space-y-8">
+      <!-- Stay & guest -->
+      <div class="card">
+        <h2 class="text-2xl">Lưu trú</h2>
+        <dl class="mt-6 grid gap-x-8 gap-y-5 sm:grid-cols-2">
+          <div class="sm:col-span-2">
+            <dt class="small-caps text-muted-foreground">Căn hộ</dt>
+            <dd class="mt-1">{{ b.apartmentName }}</dd>
+          </div>
+          <div>
+            <dt class="small-caps text-muted-foreground">Nhận phòng</dt>
+            <dd class="mt-1">{{ b.checkIn | date: 'EEEE, dd/MM/yyyy' }}</dd>
+          </div>
+          <div>
+            <dt class="small-caps text-muted-foreground">Trả phòng</dt>
+            <dd class="mt-1">{{ b.checkOut | date: 'EEEE, dd/MM/yyyy' }}</dd>
+          </div>
+          <div>
+            <dt class="small-caps text-muted-foreground">Số đêm · khách</dt>
+            <dd class="mt-1">{{ b.quote.nights }} đêm · {{ b.guests }} khách</dd>
+          </div>
+          <div>
+            <dt class="small-caps text-muted-foreground">Đặt lúc</dt>
+            <dd class="mt-1">{{ b.createdAt | date: 'dd/MM/yyyy HH:mm' }}</dd>
+          </div>
+          @if (b.holdExpiresAt && b.status === 'pending') {
+            <div class="sm:col-span-2">
+              <dt class="small-caps text-muted-foreground">Giữ chỗ đến</dt>
+              <dd class="mt-1">{{ b.holdExpiresAt | date: 'dd/MM HH:mm' }} (chưa thanh toán thì tự huỷ)</dd>
+            </div>
+          }
+          @if (b.cancellationReason) {
+            <div class="sm:col-span-2">
+              <dt class="small-caps text-muted-foreground">Lý do huỷ</dt>
+              <dd class="mt-1">{{ b.cancellationReason }}</dd>
+            </div>
+          }
+        </dl>
+      </div>
+
+      <div class="card">
+        <h2 class="text-2xl">Khách</h2>
+        <dl class="mt-6 grid gap-x-8 gap-y-5 sm:grid-cols-2">
+          <div>
+            <dt class="small-caps text-muted-foreground">Họ tên</dt>
+            <dd class="mt-1">{{ b.customer.name }}</dd>
+          </div>
+          <div>
+            <dt class="small-caps text-muted-foreground">Điện thoại</dt>
+            <dd class="mt-1"><a class="link" [href]="'tel:' + b.customer.phone">{{ b.customer.phone }}</a></dd>
+          </div>
+          <div class="sm:col-span-2">
+            <dt class="small-caps text-muted-foreground">Email</dt>
+            <dd class="mt-1 break-words"><a class="link" [href]="'mailto:' + b.customer.email">{{ b.customer.email }}</a></dd>
+          </div>
+          @if (b.message) {
+            <div class="sm:col-span-2">
+              <dt class="small-caps text-muted-foreground">Lời nhắn</dt>
+              <dd class="mt-1 whitespace-pre-line">{{ b.message }}</dd>
+            </div>
+          }
+        </dl>
+      </div>
+
+      <!-- Payments -->
+      <div class="card">
+        <h2 class="text-2xl">Thanh toán</h2>
+        @if (b.payments.length) {
+          <ul class="mt-6 divide-y divide-border border-y border-border">
+            @for (p of b.payments; track p.id) {
+              <li class="py-4">
+                <div class="flex flex-wrap items-baseline justify-between gap-3">
+                  <span>
+                    <span class="font-medium">{{ providerLabels[p.provider] }}</span>
+                    <span class="text-muted-foreground"> · {{ stateLabels[p.state] }}</span>
+                    <span class="block text-sm text-muted-foreground">
+                      {{ p.paidAt ?? p.createdAt | date: 'dd/MM/yyyy HH:mm' }}
+                      @if (p.recordedBy) {
+                        · ghi bởi {{ p.recordedBy }}
+                      }
+                    </span>
+                    @if (p.note && p.state !== 'pending') {
+                      <span class="block text-sm text-muted-foreground">{{ p.note }}</span>
+                    }
+                    @if (p.failureReason) {
+                      <span class="block text-sm text-accent-deep">{{ p.failureReason }}</span>
+                    }
+                  </span>
+                  <span class="font-serif text-xl">{{ p.amount | number }} ₫</span>
+                </div>
+
+                @if (p.state === 'pending') {
+                  <!-- Guest reported a transfer: the owner checks the bank app -->
+                  <div class="mt-4 space-y-4 rounded-md border border-accent bg-accent-muted p-4">
+                    <p class="text-sm">
+                      Mở ứng dụng ngân hàng và tìm khoản chuyển
+                      <span class="font-medium">{{ p.amount | number }} ₫</span> với nội dung
+                      <span class="font-mono font-medium text-accent-deep">{{ p.note }}</span>.
+                    </p>
+                    @if (rejectingId() === p.id) {
+                      <form class="space-y-3" (submit)="$event.preventDefault(); reject(p)">
+                        <label class="label" [for]="'reject-reason-' + p.id">Ghi chú gửi khách</label>
+                        <input
+                          [id]="'reject-reason-' + p.id"
+                          class="input bg-card"
+                          type="text"
+                          maxlength="500"
+                          placeholder="Chưa thấy khoản chuyển trong tài khoản"
+                          [value]="rejectReason()"
+                          (input)="rejectReason.set(value($event))"
+                        />
+                        <div class="flex gap-3">
+                          <button type="submit" class="btn btn-primary" [disabled]="busy() || !rejectReason().trim()">Báo chưa nhận được</button>
+                          <button type="button" class="btn btn-ghost" (click)="rejectingId.set(undefined)">Thôi</button>
+                        </div>
+                      </form>
+                    } @else {
+                      <div class="flex flex-wrap items-end gap-3">
+                        <div>
+                          <label class="label" [for]="'verify-amount-' + p.id">Số tiền thực nhận (₫)</label>
+                          <input
+                            [id]="'verify-amount-' + p.id"
+                            class="input w-44 bg-card"
+                            type="number"
+                            min="1"
+                            step="1000"
+                            [placeholder]="p.amount"
+                            [value]="verifyAmount() ?? ''"
+                            (input)="verifyAmount.set(amountValue($event))"
+                          />
+                        </div>
+                        <button type="button" class="btn btn-primary" [disabled]="busy()" (click)="verify(p)">
+                          Đã nhận {{ verifyAmount() ?? p.amount | number }} ₫ · xác nhận và gửi email
+                        </button>
+                        <button type="button" class="btn btn-outline" [disabled]="busy()" (click)="startReject(p)">Chưa nhận được</button>
+                      </div>
+                    }
+                  </div>
+                }
+
+                @for (r of p.refunds; track r.id) {
+                  <p class="mt-2 text-sm text-muted-foreground">
+                    Đã hoàn {{ r.amount | number }} ₫ · {{ r.createdAt | date: 'dd/MM/yyyy' }} · {{ r.reason }}
+                  </p>
+                }
+
+                <div class="mt-3 flex flex-wrap gap-3">
+                  @if (p.refundable > 0 && refundFor() !== p.id) {
+                    <button type="button" class="link text-sm" (click)="startRefund(p)">Hoàn tiền</button>
+                  }
+                </div>
+
+                @if (refundFor() === p.id) {
+                  <form class="mt-4 space-y-4 rounded-md bg-muted p-4" (submit)="$event.preventDefault(); refund(p)">
+                    <div class="grid gap-4 sm:grid-cols-2">
+                      <div>
+                        <label class="label" [for]="'refund-amount-' + p.id">Số tiền hoàn (tối đa {{ p.refundable | number }} ₫)</label>
+                        <input
+                          [id]="'refund-amount-' + p.id"
+                          class="input bg-card"
+                          type="number"
+                          min="1000"
+                          [max]="p.refundable"
+                          step="1000"
+                          [value]="refundAmount()"
+                          (input)="refundAmount.set(amountValue($event))"
+                        />
+                      </div>
+                      <div>
+                        <label class="label" [for]="'refund-reason-' + p.id">Lý do</label>
+                        <input
+                          [id]="'refund-reason-' + p.id"
+                          class="input bg-card"
+                          type="text"
+                          maxlength="500"
+                          [value]="refundReason()"
+                          (input)="refundReason.set(value($event))"
+                        />
+                      </div>
+                    </div>
+                    <p class="text-sm text-muted-foreground">
+                      Chuyển trả tiền cho khách từ ứng dụng ngân hàng, rồi ghi nhận tại đây. Khách sẽ nhận email xác nhận hoàn tiền.
+                    </p>
+                    <div class="flex gap-3">
+                      <button type="submit" class="btn btn-primary" [disabled]="busy() || !refundAmount() || !refundReason().trim()">
+                        Ghi nhận hoàn tiền
+                      </button>
+                      <button type="button" class="btn btn-ghost" (click)="refundFor.set(undefined)">Thôi</button>
+                    </div>
+                  </form>
+                }
+              </li>
+            }
+          </ul>
+        } @else {
+          <p class="mt-4 text-muted-foreground">Chưa có thanh toán.</p>
+        }
+
+        @if (b.status !== 'cancelled' && b.status !== 'expired') {
+          <form class="mt-8 space-y-4" (submit)="$event.preventDefault(); recordPayment()">
+            <h3>Ghi nhận thanh toán trực tiếp</h3>
+            <p class="text-sm text-muted-foreground">Chỉ ghi nhận số tiền đã thực nhận. Đặt phòng đang chờ sẽ được xác nhận và khách nhận email.</p>
+            <div class="grid gap-4 sm:grid-cols-3">
+              <div>
+                <label class="label" for="manual-method">Hình thức</label>
+                <select id="manual-method" class="input" [value]="manualMethod()" (change)="setManualMethod($event)">
+                  <option value="cash">Tiền mặt</option>
+                  <option value="bank_transfer">Chuyển khoản</option>
+                </select>
+              </div>
+              <div>
+                <label class="label" for="manual-amount">Số tiền (₫)</label>
+                <input
+                  id="manual-amount"
+                  class="input"
+                  type="number"
+                  min="1"
+                  step="1000"
+                  [placeholder]="b.amountDue"
+                  [value]="manualAmount() ?? ''"
+                  (input)="manualAmount.set(amountValue($event))"
+                />
+              </div>
+              <div>
+                <label class="label" for="manual-note">Ghi chú</label>
+                <input id="manual-note" class="input" type="text" maxlength="500" [value]="manualNote()" (input)="manualNote.set(value($event))" />
+              </div>
+            </div>
+            <button type="submit" class="btn btn-outline" [disabled]="busy() || (!manualAmount() && !b.amountDue)">
+              Ghi nhận {{ manualAmount() ?? b.amountDue | number }} ₫
+            </button>
+          </form>
+        }
+      </div>
+
+      <!-- History -->
+      <div class="card">
+        <h2 class="text-2xl">Lịch sử</h2>
+        <ol class="mt-6 space-y-3">
+          @for (e of b.events; track $index) {
+            <li class="grid gap-1 text-sm sm:grid-cols-[9rem_minmax(0,1fr)]">
+              <span class="text-muted-foreground">{{ e.createdAt | date: 'dd/MM HH:mm:ss' }}</span>
+              <span>
+                {{ eventLabel(e.type) }} <span class="text-muted-foreground">· {{ e.actor }}</span>
+                @let d = eventDetails(e);
+                @if (d.amount) {
+                  <span class="text-muted-foreground"> · {{ d.amount | number }} ₫</span>
+                }
+                @if (d.method) {
+                  <span class="text-muted-foreground"> · {{ d.method }}</span>
+                }
+                @if (d.reason) {
+                  <span class="block text-muted-foreground">{{ d.reason }}</span>
+                }
+              </span>
+            </li>
+          }
+        </ol>
+      </div>
+    </div>
+
+    <!-- Money summary -->
+    <aside class="lg:sticky lg:top-24 lg:self-start">
+      <div class="card card-accent-top">
+        <h2 class="text-2xl">Tiền phòng</h2>
+        <ul class="mt-4 space-y-2 text-sm">
+          @for (line of b.quote.lines; track line.date) {
+            <li class="flex justify-between gap-4">
+              <span class="text-muted-foreground">{{ line.date | date: 'EEE dd/MM' }} · {{ rateLabels[line.rate] }}</span>
+              <span>{{ line.amount | number }}</span>
+            </li>
+          }
+        </ul>
+        <dl class="mt-4 space-y-2 border-t border-border pt-4 text-sm">
+          <div class="flex justify-between gap-4">
+            <dt class="text-muted-foreground">Tạm tính</dt>
+            <dd>{{ b.quote.subtotal | number }} ₫</dd>
+          </div>
+          @if (b.quote.stayDiscount; as d) {
+            <div class="flex justify-between gap-4">
+              <dt class="text-muted-foreground">Giảm giá lưu trú</dt>
+              <dd>−{{ d.amount | number }} ₫</dd>
+            </div>
+          }
+          @if (b.quote.promo; as promo) {
+            <div class="flex justify-between gap-4">
+              <dt class="text-muted-foreground">Mã {{ promo.code }}</dt>
+              <dd>−{{ promo.amount | number }} ₫</dd>
+            </div>
+          }
+          <div class="flex justify-between gap-4 border-t border-border pt-2 text-base">
+            <dt>Tổng</dt>
+            <dd class="font-serif text-xl">{{ b.quote.total | number }} ₫</dd>
+          </div>
+          <div class="flex justify-between gap-4">
+            <dt class="text-muted-foreground">Đã nhận (trừ hoàn)</dt>
+            <dd class="text-accent-deep">{{ b.amountPaid | number }} ₫</dd>
+          </div>
+          <div class="flex justify-between gap-4">
+            <dt class="text-muted-foreground">Còn lại</dt>
+            <dd>{{ b.amountDue | number }} ₫</dd>
+          </div>
+        </dl>
+      </div>
+    </aside>
+  </div>
+} @else if (booking.error()) {
+  <p class="mt-8 text-accent-deep" role="alert">Không tìm thấy đặt phòng.</p>
+} @else {
+  <p class="mt-8 text-muted-foreground" role="status">Đang tải…</p>
+}

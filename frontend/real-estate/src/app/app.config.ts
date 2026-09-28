@@ -6,6 +6,7 @@ import {
   provideBrowserGlobalErrorListeners,
 } from '@angular/core';
 import { IMAGE_LOADER, ViewportScroller, registerLocaleData } from '@angular/common';
+import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
 import localeVi from '@angular/common/locales/vi';
 import {
   provideClientHydration,
@@ -22,6 +23,8 @@ import {
 } from '@angular/router';
 
 import { routes } from './app.routes';
+import { adminAuthInterceptor } from './admin/admin-auth.service';
+import { apiInterceptor } from './core/api';
 import { imageLoader } from './image-loader';
 import { SeoTitleStrategy } from './services/seo-title.strategy';
 
@@ -40,6 +43,8 @@ export const appConfig: ApplicationConfig = {
     ),
     // Server HTML is reused instead of re-rendered; clicks before hydration are replayed.
     provideClientHydration(withEventReplay(), withIncrementalHydration()),
+    // API calls; GET responses made during server rendering are embedded in the page and reused.
+    provideHttpClient(withFetch(), withInterceptors([apiInterceptor, adminAuthInterceptor])),
     { provide: TitleStrategy, useClass: SeoTitleStrategy },
     { provide: IMAGE_LOADER, useValue: imageLoader },
     // Keep #anchor targets clear of the sticky header.

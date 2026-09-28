@@ -1,0 +1,90 @@
+<h1 class="text-4xl">Đặt phòng</h1>
+
+<form class="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4" role="search" (submit)="$event.preventDefault()">
+  <div>
+    <label class="label" for="filter-search">Tìm kiếm</label>
+    <input
+      id="filter-search"
+      class="input"
+      type="search"
+      placeholder="Mã, tên, SĐT, email"
+      [value]="search()"
+      (change)="filter(() => search.set(value($event)))"
+    />
+  </div>
+  <div>
+    <label class="label" for="filter-status">Trạng thái</label>
+    <select id="filter-status" class="input" [value]="status()" (change)="filter(() => status.set(value($event)))">
+      <option value="">Tất cả</option>
+      @for (s of statuses; track s[0]) {
+        <option [value]="s[0]">{{ s[1] }}</option>
+      }
+    </select>
+  </div>
+  <div>
+    <label class="label" for="filter-apartment">Căn hộ</label>
+    <select id="filter-apartment" class="input" [value]="apartment()" (change)="filter(() => apartment.set(value($event)))">
+      <option value="">Tất cả</option>
+      @for (a of apartments(); track a.slug) {
+        <option [value]="a.slug">{{ a.name }}</option>
+      }
+    </select>
+  </div>
+  <div>
+    <label class="label" for="filter-sort">Sắp xếp</label>
+    <select id="filter-sort" class="input" [value]="sort()" (change)="filter(() => setSort(value($event)))">
+      <option value="created_at">Mới đặt nhất</option>
+      <option value="check_in">Ngày nhận phòng</option>
+    </select>
+  </div>
+</form>
+
+@if (bookings.hasValue()) {
+  @let result = bookings.value();
+  <p class="mt-8 text-sm text-muted-foreground">{{ result.total }} đặt phòng</p>
+
+  @if (result.items.length) {
+    <ul class="mt-3 divide-y divide-border rounded-lg border border-border bg-card">
+      @for (b of result.items; track b.reference) {
+        <li>
+          <a
+            [routerLink]="['/admin/bookings', b.reference]"
+            class="grid gap-2 px-5 py-4 hover:bg-muted/50 md:grid-cols-[9rem_minmax(0,1fr)_10rem_auto] md:items-center md:gap-6"
+          >
+            <span>
+              <span class="block font-mono text-sm">{{ b.reference }}</span>
+              <span class="block text-xs text-muted-foreground">Đặt {{ b.createdAt | date: 'dd/MM HH:mm' }}</span>
+            </span>
+            <span class="min-w-0">
+              <span class="block truncate">{{ b.customerName }} · {{ b.customerPhone }}</span>
+              <span class="block truncate text-sm text-muted-foreground">
+                {{ b.apartmentName }} · {{ b.checkIn | date: 'dd/MM' }} – {{ b.checkOut | date: 'dd/MM/yyyy' }} · {{ b.guests }} khách
+              </span>
+            </span>
+            <span class="text-sm md:text-right">
+              <span class="block">{{ b.totalAmount | number }} ₫</span>
+              <span class="block text-muted-foreground">Đã trả {{ b.amountPaid | number }} ₫</span>
+            </span>
+            <span class="flex flex-wrap gap-2">
+              <app-status-badge [status]="b.status" />
+              <app-status-badge [status]="b.paymentStatus" />
+            </span>
+          </a>
+        </li>
+      }
+    </ul>
+
+    <nav class="mt-6 flex items-center justify-between" aria-label="Phân trang">
+      <button type="button" class="btn btn-outline" [disabled]="page() === 1" (click)="page.set(page() - 1)">← Trước</button>
+      <span class="text-sm text-muted-foreground">Trang {{ page() }} / {{ pages() }}</span>
+      <button type="button" class="btn btn-outline" [disabled]="page() >= pages()" (click)="page.set(page() + 1)">Sau →</button>
+    </nav>
+  } @else {
+    <p class="mt-6 text-muted-foreground">Không có đặt phòng nào.</p>
+  }
+} @else if (bookings.error()) {
+  <p class="mt-8 text-accent-deep" role="alert">Không tải được danh sách.</p>
+  <button type="button" class="btn btn-outline mt-4" (click)="bookings.reload()">Thử lại</button>
+} @else {
+  <p class="mt-8 text-muted-foreground" role="status">Đang tải…</p>
+}

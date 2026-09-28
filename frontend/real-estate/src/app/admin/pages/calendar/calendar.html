@@ -1,0 +1,86 @@
+<h1 class="text-4xl">Lịch</h1>
+<p class="mt-2 text-muted-foreground">Chạm vào ngày trống để đóng (khách không đặt được), chạm lần nữa để mở lại.</p>
+
+<div class="mt-8 grid gap-4 sm:grid-cols-2">
+  <div>
+    <label class="label" for="calendar-apartment">Căn hộ</label>
+    <select id="calendar-apartment" class="input" [value]="slug()" (change)="slug.set(value($event))">
+      @for (a of apartments(); track a.slug) {
+        <option [value]="a.slug">{{ a.name }}</option>
+      }
+    </select>
+  </div>
+  <div>
+    <label class="label" for="calendar-reason">Lý do khi đóng ngày (không bắt buộc)</label>
+    <input
+      id="calendar-reason"
+      class="input"
+      type="text"
+      maxlength="200"
+      placeholder="Bảo trì, khách quen, đặt qua kênh khác…"
+      [value]="reason()"
+      (input)="reason.set(value($event))"
+    />
+  </div>
+</div>
+
+@if (error(); as message) {
+  <p class="mt-6 text-sm text-accent-deep" role="alert">{{ message }}</p>
+}
+
+@let m = month();
+<div class="card mt-8 max-w-3xl p-5 sm:p-8">
+  <div class="flex items-center justify-between gap-4">
+    <button type="button" class="icon-btn" [disabled]="offset() === 0" aria-label="Tháng trước" (click)="offset.set(offset() - 1)">←</button>
+    <h2 class="text-2xl" aria-live="polite">{{ m.label }}</h2>
+    <button type="button" class="icon-btn" [disabled]="offset() >= 12" aria-label="Tháng sau" (click)="offset.set(offset() + 1)">→</button>
+  </div>
+
+  <div class="mt-8 grid grid-cols-7 gap-1 text-center sm:gap-2" [class.opacity-60]="data.isLoading() || busy()">
+    @for (day of weekdays; track day) {
+      <span class="small-caps pb-2 text-muted-foreground">{{ day }}</span>
+    }
+    @for (blank of m.blanks; track blank) {
+      <span></span>
+    }
+    @for (d of days(); track d.date) {
+      @switch (d.state) {
+        @case ('free') {
+          <button
+            type="button"
+            class="h-12 rounded-md border border-border bg-card hover:border-accent-deep sm:h-14"
+            [attr.aria-label]="'Đóng ngày ' + d.date"
+            [disabled]="busy()"
+            (click)="toggle(d.date, d.state)"
+          >
+            {{ d.day }}
+          </button>
+        }
+        @case ('blocked') {
+          <button
+            type="button"
+            class="h-12 rounded-md border border-accent-deep bg-accent-muted text-accent-deep sm:h-14"
+            [attr.aria-label]="'Mở lại ngày ' + d.date"
+            [title]="d.reason ?? 'Đã đóng'"
+            [disabled]="busy()"
+            (click)="toggle(d.date, d.state)"
+          >
+            {{ d.day }}
+          </button>
+        }
+        @case ('booked') {
+          <span class="grid h-12 place-items-center rounded-md bg-foreground text-background sm:h-14" title="Đã có khách đặt">{{ d.day }}</span>
+        }
+        @default {
+          <span class="grid h-12 place-items-center text-muted-foreground/40 sm:h-14">{{ d.day }}</span>
+        }
+      }
+    }
+  </div>
+
+  <div class="mt-8 flex flex-wrap justify-center gap-x-8 gap-y-2 border-t border-border pt-6 text-sm text-muted-foreground">
+    <span class="flex items-center gap-2"><span class="h-3.5 w-3.5 rounded-sm border border-border bg-card"></span> Trống</span>
+    <span class="flex items-center gap-2"><span class="h-3.5 w-3.5 rounded-sm bg-foreground"></span> Đã đặt</span>
+    <span class="flex items-center gap-2"><span class="h-3.5 w-3.5 rounded-sm border border-accent-deep bg-accent-muted"></span> Đã đóng</span>
+  </div>
+</div>

@@ -25,7 +25,7 @@ export class SeoService {
   update(data: SeoData): void {
     const description = data.description ?? SITE.description;
     const url = this.origin() + data.path;
-    const image = socialImage(data.image ?? SITE.defaultImage);
+    const image = new URL(socialImage(data.image ?? SITE.defaultImage), this.origin()).href;
 
     this.title.setTitle(data.title);
     this.meta.updateTag({ name: 'description', content: description });
@@ -60,7 +60,7 @@ export class SeoService {
         name: apt.name,
         description: apt.description.join(' '),
         url: `${this.origin()}/apartment?apt=${apt.slug}`,
-        image: apt.photos.map((p) => socialImage(p.src)),
+        image: apt.photos.map((p) => new URL(socialImage(p.src), this.origin()).href),
         numberOfRooms: apt.bedrooms,
         numberOfBedrooms: apt.bedrooms,
         numberOfBathroomsTotal: apt.bathrooms,
@@ -68,7 +68,8 @@ export class SeoService {
         address: {
           '@type': 'PostalAddress',
           streetAddress: apt.address,
-          addressRegion: 'TP. Hồ Chí Minh',
+          addressLocality: 'Đà Lạt',
+          addressRegion: 'Lâm Đồng',
           addressCountry: 'VN',
         },
         amenityFeature: apt.facilities.map((name) => ({

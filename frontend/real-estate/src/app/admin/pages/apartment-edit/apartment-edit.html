@@ -1,0 +1,183 @@
+<a routerLink="/admin/apartments" class="link text-sm">← Danh sách căn hộ</a>
+
+@let f = form();
+<h1 class="mt-6 text-4xl">
+  @if (slug()) {
+    {{ f.name || 'Sửa căn hộ' }}
+  } @else {
+    Thêm căn hộ
+  }
+</h1>
+
+@if (loading()) {
+  <p class="mt-8 text-muted-foreground" role="status">Đang tải…</p>
+} @else {
+  <form class="mt-8 max-w-4xl space-y-10" (submit)="$event.preventDefault(); save()">
+    <fieldset class="card space-y-6">
+      <legend class="font-serif text-2xl">Hiển thị</legend>
+      <label class="flex items-center gap-3">
+        <input type="checkbox" class="h-4 w-4 accent-accent-deep" [checked]="f.isActive" (change)="toggleActive($event)" />
+        <span>Hiển thị trên website (khách xem và đặt được)</span>
+      </label>
+      <div class="grid gap-6 sm:grid-cols-2">
+        <div>
+          <label class="label" for="apt-slug">Đường dẫn (slug)</label>
+          <input id="apt-slug" class="input font-mono" [value]="f.slug" (input)="text('slug', $event)" placeholder="can-ho-sen" />
+          <p class="mt-2 text-sm text-muted-foreground">Chữ thường, số, dấu gạch ngang. Dùng trong địa chỉ ?apt=</p>
+        </div>
+        <div>
+          <label class="label" for="apt-order">Thứ tự hiển thị</label>
+          <input id="apt-order" class="input" type="number" min="0" [value]="f.sortOrder" (input)="number('sortOrder', $event)" />
+          <p class="mt-2 text-sm text-muted-foreground">Số nhỏ nhất là căn hộ nổi bật trên trang chủ.</p>
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset class="card space-y-6">
+      <legend class="font-serif text-2xl">Thông tin</legend>
+      <div class="grid gap-6 sm:grid-cols-2">
+        <div>
+          <label class="label" for="apt-name">Tên</label>
+          <input id="apt-name" class="input" [value]="f.name" (input)="text('name', $event)" />
+        </div>
+        <div>
+          <label class="label" for="apt-area">Khu vực</label>
+          <input id="apt-area" class="input" [value]="f.area" (input)="text('area', $event)" placeholder="Nam Hồ · Đà Lạt" />
+        </div>
+        <div>
+          <label class="label" for="apt-address">Địa chỉ</label>
+          <input id="apt-address" class="input" [value]="f.address" (input)="text('address', $event)" />
+        </div>
+        <div>
+          <label class="label" for="apt-map">Tìm trên bản đồ</label>
+          <input id="apt-map" class="input" [value]="f.mapQuery" (input)="text('mapQuery', $event)" placeholder="Nguyen Hue Walking Street, Ho Chi Minh City" />
+        </div>
+      </div>
+      <div>
+        <label class="label" for="apt-tagline">Giới thiệu ngắn (hiện trên thẻ căn hộ)</label>
+        <input id="apt-tagline" class="input" [value]="f.tagline" (input)="text('tagline', $event)" />
+      </div>
+      <div>
+        <label class="label" for="apt-description">Mô tả (các đoạn cách nhau một dòng trống)</label>
+        <textarea id="apt-description" class="input min-h-40" [value]="f.description" (input)="text('description', $event)"></textarea>
+      </div>
+      <div class="grid gap-6 sm:grid-cols-4">
+        <div>
+          <label class="label" for="apt-guests">Khách tối đa</label>
+          <input id="apt-guests" class="input" type="number" min="1" [value]="f.guests" (input)="number('guests', $event)" />
+        </div>
+        <div>
+          <label class="label" for="apt-bedrooms">Phòng ngủ</label>
+          <input id="apt-bedrooms" class="input" type="number" min="0" [value]="f.bedrooms" (input)="number('bedrooms', $event)" />
+        </div>
+        <div>
+          <label class="label" for="apt-beds">Giường</label>
+          <input id="apt-beds" class="input" type="number" min="0" [value]="f.beds" (input)="number('beds', $event)" />
+        </div>
+        <div>
+          <label class="label" for="apt-bathrooms">Phòng tắm</label>
+          <input id="apt-bathrooms" class="input" type="number" min="0" [value]="f.bathrooms" (input)="number('bathrooms', $event)" />
+        </div>
+        <div>
+          <label class="label" for="apt-check-in">Nhận phòng từ</label>
+          <input id="apt-check-in" class="input" type="time" [value]="f.checkIn" (input)="text('checkIn', $event)" />
+        </div>
+        <div>
+          <label class="label" for="apt-check-out">Trả phòng trước</label>
+          <input id="apt-check-out" class="input" type="time" [value]="f.checkOut" (input)="text('checkOut', $event)" />
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset class="card space-y-6">
+      <legend class="font-serif text-2xl">Giá (₫)</legend>
+      <div class="grid gap-6 sm:grid-cols-3">
+        <div>
+          <label class="label" for="apt-weekday">Thứ Hai – Thứ Năm / đêm</label>
+          <input id="apt-weekday" class="input" type="number" min="0" step="1000" [value]="f.weekday" (input)="number('weekday', $event)" />
+        </div>
+        <div>
+          <label class="label" for="apt-weekend">Thứ Sáu – Chủ Nhật / đêm</label>
+          <input id="apt-weekend" class="input" type="number" min="0" step="1000" [value]="f.weekend" (input)="number('weekend', $event)" />
+        </div>
+        <div>
+          <label class="label" for="apt-holiday">Ngày lễ / đêm</label>
+          <input id="apt-holiday" class="input" type="number" min="0" step="1000" [value]="f.holiday" (input)="number('holiday', $event)" />
+        </div>
+        <div>
+          <label class="label" for="apt-weekly">Theo tuần (7 đêm, 0 = không áp dụng)</label>
+          <input id="apt-weekly" class="input" type="number" min="0" step="1000" [value]="f.weekly" (input)="number('weekly', $event)" />
+        </div>
+        <div>
+          <label class="label" for="apt-monthly">Theo tháng (30 đêm, 0 = không áp dụng)</label>
+          <input id="apt-monthly" class="input" type="number" min="0" step="1000" [value]="f.monthly" (input)="number('monthly', $event)" />
+        </div>
+        <div>
+          <label class="label" for="apt-deposit">Đặt cọc (%)</label>
+          <input id="apt-deposit" class="input" type="number" min="0" max="100" [value]="f.depositPercent" (input)="number('depositPercent', $event)" />
+        </div>
+      </div>
+      <div>
+        <label class="label" for="apt-discounts">Giảm giá ở dài ngày: mỗi dòng "số đêm | % giảm"</label>
+        <textarea id="apt-discounts" class="input font-mono" placeholder="3 | 5&#10;7 | 15" [value]="f.longStayDiscounts" (input)="text('longStayDiscounts', $event)"></textarea>
+        <p class="mt-2 text-sm text-muted-foreground">Khách được mức cao nhất đủ điều kiện, không áp dụng cho đêm ngày lễ.</p>
+      </div>
+    </fieldset>
+
+    <fieldset class="card space-y-6">
+      <legend class="font-serif text-2xl">Ảnh</legend>
+      <div>
+        <label class="label" for="apt-photos">Mỗi dòng "đường dẫn ảnh | mô tả ảnh"; ảnh đầu tiên là ảnh bìa</label>
+        <textarea id="apt-photos" class="input min-h-40 font-mono text-sm" [value]="f.photos" (input)="text('photos', $event)"></textarea>
+      </div>
+    </fieldset>
+
+    <fieldset class="card space-y-6">
+      <legend class="font-serif text-2xl">Tiện nghi, nội quy, lân cận</legend>
+      <div class="grid gap-6 sm:grid-cols-2">
+        <div>
+          <label class="label" for="apt-key">Tiện nghi nổi bật (mỗi dòng một mục)</label>
+          <textarea id="apt-key" class="input min-h-32" [value]="f.keyFacilities" (input)="text('keyFacilities', $event)"></textarea>
+        </div>
+        <div>
+          <label class="label" for="apt-facilities">Tất cả tiện nghi (mỗi dòng một mục)</label>
+          <textarea id="apt-facilities" class="input min-h-32" [value]="f.facilities" (input)="text('facilities', $event)"></textarea>
+        </div>
+        <div>
+          <label class="label" for="apt-rules">Nội quy (mỗi dòng một mục)</label>
+          <textarea id="apt-rules" class="input min-h-32" [value]="f.rules" (input)="text('rules', $event)"></textarea>
+        </div>
+        <div>
+          <label class="label" for="apt-nearby">Lân cận: mỗi dòng "địa điểm | khoảng cách"</label>
+          <textarea id="apt-nearby" class="input min-h-32" [value]="f.nearby" (input)="text('nearby', $event)"></textarea>
+        </div>
+      </div>
+    </fieldset>
+
+    @if (error(); as err) {
+      <div class="rounded-md border border-accent bg-accent-muted p-4 text-sm text-accent-deep" role="alert">
+        <p>{{ err.message }}</p>
+        @if (err.details?.length) {
+          <ul class="mt-2 list-disc pl-5">
+            @for (detail of err.details; track detail.path) {
+              <li><span class="font-mono">{{ detail.path }}</span>: {{ detail.message }}</li>
+            }
+          </ul>
+        }
+      </div>
+    }
+
+    <div class="flex items-center gap-4">
+      <button type="submit" class="btn btn-primary" [disabled]="saving()">
+        @if (saving()) {
+          Đang lưu…
+        } @else {
+          Lưu
+        }
+      </button>
+      @if (saved()) {
+        <span class="text-sm text-accent-deep" role="status">Đã lưu</span>
+      }
+    </div>
+  </form>
+}

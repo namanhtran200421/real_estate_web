@@ -24,8 +24,8 @@ export class Home {
       text: 'Giá được tính tự động theo ngày và hiển thị đầy đủ trước khi thanh toán.',
     },
     {
-      title: 'Thanh toán trực tuyến',
-      text: 'Đặt cọc hoặc thanh toán toàn bộ, nhận xác nhận qua email.',
+      title: 'Chuyển khoản qua VietQR',
+      text: 'Quét mã để chuyển khoản đặt cọc hoặc thanh toán toàn bộ. Chủ căn hộ xác nhận khi nhận được tiền.',
     },
   ];
 }

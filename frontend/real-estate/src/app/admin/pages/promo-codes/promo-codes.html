@@ -1,0 +1,98 @@
+<h1 class="text-4xl">Mã khuyến mãi</h1>
+
+@let f = form();
+<form class="card mt-8 max-w-4xl space-y-6" (submit)="$event.preventDefault(); create()">
+  <h2 class="text-2xl">Tạo mã mới</h2>
+  <div class="grid gap-6 sm:grid-cols-3">
+    <div>
+      <label class="label" for="promo-code-input">Mã</label>
+      <input id="promo-code-input" class="input font-mono uppercase" maxlength="32" placeholder="CHAOHE10" [value]="f.code" (input)="set('code', $event)" />
+    </div>
+    <div>
+      <label class="label" for="promo-kind">Loại giảm</label>
+      <select id="promo-kind" class="input" [value]="f.kind" (change)="set('kind', $event)">
+        <option value="percent">Theo phần trăm</option>
+        <option value="amount">Số tiền cố định</option>
+      </select>
+    </div>
+    <div>
+      <label class="label" for="promo-value">
+        @if (f.kind === 'percent') {
+          Giảm (%)
+        } @else {
+          Giảm (₫)
+        }
+      </label>
+      <input id="promo-value" class="input" type="number" min="1" [value]="f.value" (input)="set('value', $event)" />
+    </div>
+    <div>
+      <label class="label" for="promo-max">Số lần dùng tối đa</label>
+      <input id="promo-max" class="input" type="number" min="1" [value]="f.maxRedemptions" (input)="set('maxRedemptions', $event)" />
+    </div>
+    <div>
+      <label class="label" for="promo-nights">Số đêm tối thiểu</label>
+      <input id="promo-nights" class="input" type="number" min="1" [value]="f.minNights" (input)="set('minNights', $event)" />
+    </div>
+    <div>
+      <label class="label" for="promo-description">Ghi chú nội bộ</label>
+      <input id="promo-description" class="input" maxlength="200" [value]="f.description" (input)="set('description', $event)" />
+    </div>
+    <div>
+      <label class="label" for="promo-from">Áp dụng từ ngày</label>
+      <input id="promo-from" class="input" type="date" [value]="f.validFrom" (input)="set('validFrom', $event)" />
+    </div>
+    <div>
+      <label class="label" for="promo-until">Đến ngày</label>
+      <input id="promo-until" class="input" type="date" [value]="f.validUntil" (input)="set('validUntil', $event)" />
+    </div>
+  </div>
+
+  @if (error(); as err) {
+    <p class="text-sm text-accent-deep" role="alert">
+      {{ err.message }}
+      @for (detail of err.details; track detail.path) {
+        <span class="block">{{ detail.message }}</span>
+      }
+    </p>
+  }
+
+  <button type="submit" class="btn btn-primary" [disabled]="busy() || !f.code.trim()">Tạo mã</button>
+</form>
+
+@if (codes.hasValue()) {
+  @if (codes.value().length) {
+    <ul class="mt-10 max-w-4xl divide-y divide-border rounded-lg border border-border bg-card">
+      @for (p of codes.value(); track p.id) {
+        <li class="flex flex-wrap items-center gap-x-6 gap-y-2 px-5 py-4">
+          <span class="w-40 font-mono">{{ p.code }}</span>
+          <span class="min-w-0 flex-1 text-sm">
+            @if (p.discountPercent) {
+              Giảm {{ p.discountPercent }}%
+            } @else {
+              Giảm {{ p.discountAmount | number }} ₫
+            }
+            · đã dùng {{ p.redemptions }}/{{ p.maxRedemptions }}
+            @if (p.minNights > 1) {
+              · từ {{ p.minNights }} đêm
+            }
+            @if (p.validFrom || p.validUntil) {
+              · {{ p.validFrom | date: 'dd/MM/yy' }} – {{ p.validUntil | date: 'dd/MM/yy' }}
+            }
+            @if (p.description) {
+              <span class="block text-muted-foreground">{{ p.description }}</span>
+            }
+          </span>
+          <button type="button" class="btn btn-outline" [disabled]="busy()" (click)="toggle(p)">
+            @if (p.isActive) {
+              Tắt
+            } @else {
+              Bật lại
+            }
+          </button>
+        </li>
+      }
+    </ul>
+  } @else {
+    <p class="mt-10 text-muted-foreground">Chưa có mã khuyến mãi.</p>
+  }
+}

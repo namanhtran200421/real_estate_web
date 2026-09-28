@@ -1,24 +1,38 @@
-import { Injectable, signal } from '@angular/core';
-import { APARTMENTS } from '../data/apartments.mock';
+import { Injectable, computed, inject } from '@angular/core';
+import { httpResource } from '@angular/common/http';
+import { API_URL, ApiResponse } from '../core/api';
 import { Apartment } from '../models/apartment';
 
 /**
- * Single source of apartment data for every page.
- * Serves mock data for now. Swap the internals for HttpClient calls to the
- * backend API later without touching the components.
+ * Single source of apartment data for every page, loaded once from the API.
+ * During server-side rendering the response is embedded in the page, so the browser
+ * reuses it instead of fetching again.
  */
 @Injectable({ providedIn: 'root' })
 export class ApartmentService {
-  private readonly apartments = signal<Apartment[]>(APARTMENTS);
+  private readonly apiUrl = inject(API_URL);
+  private readonly list = httpResource<ApiResponse<Apartment[]>>(() => `${this.apiUrl}/api/v1/apartments`);
 
-  readonly all = this.apartments.asReadonly();
+  readonly all = computed<Apartment[]>(() => {
+    if (!this.list.hasValue()) return [];
+    return this.list.value().data;
+  });
+
+  /** True until the first response (or error) arrives. */
+  readonly loading = computed(() => this.list.isLoading() && !this.list.hasValue());
+  readonly failed = computed(() => this.list.status() === 'error');
+
+  reload(): void {
+    this.list.reload();
+  }
 
   bySlug(slug: string): Apartment | undefined {
-    return this.apartments().find((a) => a.slug === slug);
+    return this.all().find((a) => a.slug === slug);
   }
 
   /** Resolves the `?apt=` query param; without one, the first apartment is the default. */
   resolve(slug?: string): Apartment | undefined {
-    return slug ? this.bySlug(slug) : this.apartments()[0];
+    if (slug) return this.bySlug(slug);
+    return this.all()[0];
   }
 }

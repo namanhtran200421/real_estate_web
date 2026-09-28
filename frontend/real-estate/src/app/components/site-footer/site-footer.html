@@ -42,6 +42,10 @@
       </div>
     </div>
 
-    <p class="mt-16 text-sm text-muted-foreground">&copy; {{ year }} {{ site.name }}. Bảo lưu mọi quyền.</p>
+    <div class="mt-16 flex flex-wrap items-center justify-between gap-4 text-sm text-muted-foreground">
+      <p>&copy; {{ year }} {{ site.name }}. Bảo lưu mọi quyền.</p>
+      <!-- Owner sign-in; opens the dashboard directly when already signed in. -->
+      <a routerLink="/admin" class="link-subtle inline-flex min-h-11 items-center" rel="nofollow">Quản lý</a>
+    </div>
   </div>
 </footer>

@@ -9,6 +9,9 @@ export const serverRoutes: ServerRoute[] = [
   { path: 'book/payment', ...PRIVATE },
   { path: 'booking/manage', ...PRIVATE },
   { path: 'booking/:reference/confirmation', ...PRIVATE },
+  // Owner administration: browser-only, never cached or indexed.
+  { path: 'admin', ...PRIVATE },
+  { path: 'admin/**', ...PRIVATE },
   // Public pages render on the server per request, so `?apt=` and data edited from
   // the owner dashboard are always reflected in the HTML that crawlers receive.
   // The CDN (e.g. Vercel's edge) may reuse a rendered page for 60s and refresh it in the background.

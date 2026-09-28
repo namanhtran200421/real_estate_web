@@ -14,6 +14,7 @@ const TONES: Record<Status, string> = {
   confirmed: 'border-foreground bg-foreground text-background',
   cancelled: 'border-border bg-muted text-muted-foreground line-through',
   completed: 'border-border bg-muted text-muted-foreground',
+  expired: 'border-border bg-muted text-muted-foreground line-through',
   unpaid: 'border-border bg-card text-muted-foreground',
   deposit_paid: 'border-accent bg-accent-muted text-accent-deep',
   fully_paid: 'border-foreground bg-foreground text-background',

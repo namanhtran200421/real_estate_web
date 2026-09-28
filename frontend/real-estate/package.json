@@ -3,9 +3,13 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
+    "prestart": "node scripts/write-env.mjs",
     "start": "ng serve",
+    "prebuild": "node scripts/write-env.mjs",
     "build": "ng build",
+    "prewatch": "node scripts/write-env.mjs",
     "watch": "ng build --watch --configuration development",
+    "pretest": "node scripts/write-env.mjs",
     "test": "ng test",
     "serve:ssr:real-estate": "node dist/real-estate/server/server.mjs"
   },
@@ -37,5 +41,8 @@
     "tailwindcss": "^4.1.12",
     "typescript": "~6.0.2",
     "vitest": "^4.0.8"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }

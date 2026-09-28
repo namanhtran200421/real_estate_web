@@ -1,92 +1,232 @@
-@if (apartment(); as apt) {
-  @let q = quote()!;
-  @let b = booking;
+<section class="pb-20 pt-10 md:pb-28 md:pt-14">
+  <div class="container-editorial max-w-6xl">
+    <app-booking-steps [current]="3" />
 
-  <section class="pb-20 pt-10 md:pb-28 md:pt-14">
-    <div class="container-editorial max-w-6xl">
-      <app-booking-steps [current]="3" />
+    <h1 class="mt-12 text-4xl md:text-5xl">Thanh toán</h1>
 
-      <h1 class="mt-12 text-4xl md:text-5xl">Thanh toán</h1>
-      <p class="mt-3 text-muted-foreground">Chọn số tiền và phương thức thanh toán.</p>
+    @if (b(); as b) {
+      @let options = b.paymentOptions;
 
-      <div class="mt-10 grid gap-10 lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-14">
-        <form class="min-w-0 space-y-12" (submit)="$event.preventDefault()">
-          <!-- Amount -->
-          <fieldset>
-            <legend class="font-serif text-2xl">Số tiền thanh toán</legend>
-            <div class="mt-6 grid gap-4 sm:grid-cols-2">
-              <label
-                class="card flex cursor-pointer gap-4 p-6 has-[:checked]:border-accent-deep has-[:checked]:bg-accent-muted md:p-6"
-              >
-                <input type="radio" name="amount" value="deposit" checked class="mt-1.5 h-4 w-4 shrink-0 accent-accent" />
-                <span>
-                  <span class="block font-medium">Đặt cọc {{ b.depositPercent }}%</span>
-                  <span class="mt-2 block font-serif text-2xl">{{ q.deposit | number }} ₫</span>
-                  <span class="mt-1 block text-sm text-muted-foreground">
-                    Còn lại {{ q.remaining | number }} ₫ thanh toán khi nhận phòng
-                  </span>
-                </span>
-              </label>
-              <label
-                class="card flex cursor-pointer gap-4 p-6 has-[:checked]:border-accent-deep has-[:checked]:bg-accent-muted md:p-6"
-              >
-                <input type="radio" name="amount" value="full" class="mt-1.5 h-4 w-4 shrink-0 accent-accent" />
-                <span>
-                  <span class="block font-medium">Thanh toán toàn bộ</span>
-                  <span class="mt-2 block font-serif text-2xl">{{ q.total | number }} ₫</span>
-                  <span class="mt-1 block text-sm text-muted-foreground">Không cần thanh toán thêm khi nhận phòng</span>
-                </span>
-              </label>
-            </div>
-          </fieldset>
+      @if (b.pendingTransfer; as pending) {
+        <!-- Already reported: waiting for the owner -->
+        <div class="card mt-10 max-w-2xl">
+          <h2 class="text-2xl">Chủ nhà đang kiểm tra chuyển khoản</h2>
+          <p class="mt-3 text-muted-foreground">
+            Bạn đã báo chuyển {{ pending.amount | number }} ₫ lúc {{ pending.reportedAt | date: 'HH:mm dd/MM' }}.
+            Ngày của bạn được giữ trong khi chủ nhà kiểm tra, bạn sẽ nhận email khi đặt phòng được xác nhận.
+          </p>
+          <a [routerLink]="['/booking', b.reference, 'confirmation']" class="btn btn-primary mt-6">Xem đặt phòng</a>
+        </div>
+      } @else if (options.full === null) {
+        <!-- Nothing to pay: expired hold, cancelled, or already paid -->
+        <div class="card mt-10 max-w-2xl">
+          @if (b.status === 'expired') {
+            <h2 class="text-2xl">Đã hết thời gian giữ chỗ</h2>
+            <p class="mt-3 text-muted-foreground">
+              Đặt phòng {{ b.reference }} chưa được thanh toán kịp nên ngày đã được mở lại cho khách khác.
+              Bạn có thể đặt lại nếu ngày vẫn còn trống.
+            </p>
+            <a routerLink="/book" [queryParams]="{ apt: b.apartmentSlug }" class="btn btn-primary mt-6">Đặt lại</a>
+          } @else if (b.amountDue === 0) {
+            <h2 class="text-2xl">Đặt phòng đã được thanh toán đủ</h2>
+            <a [routerLink]="['/booking', b.reference, 'confirmation']" class="btn btn-primary mt-6">Xem đặt phòng</a>
+          } @else {
+            <h2 class="text-2xl">Không thể thanh toán lúc này</h2>
+            <p class="mt-3 text-muted-foreground">Vui lòng liên hệ chủ nhà để được hỗ trợ.</p>
+            <a routerLink="/contact" class="btn btn-outline mt-6">Liên hệ</a>
+          }
+        </div>
+      } @else {
+        <p class="mt-3 text-muted-foreground">Chuyển khoản ngân hàng bằng mã VietQR, sau đó bấm "Tôi đã chuyển khoản".</p>
 
-          <!-- Method -->
-          <fieldset>
-            <legend class="font-serif text-2xl">Phương thức thanh toán</legend>
-            <div class="mt-6 divide-y divide-border rounded-lg border border-border bg-card">
-              @for (m of methods; track m.id; let first = $first) {
-                <label class="flex cursor-pointer items-center gap-4 px-5 py-4 transition-colors hover:bg-muted/50 has-[:checked]:bg-accent-muted">
-                  <input type="radio" name="method" [value]="m.id" [checked]="first" class="h-4 w-4 shrink-0 accent-accent" />
+        <div class="mt-10 grid gap-10 lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-14">
+          <div class="min-w-0 space-y-12">
+            @if (minutesLeft() !== undefined) {
+              <p class="rounded-md border border-accent bg-accent-muted p-4 text-sm text-accent-deep" role="status">
+                Chúng tôi giữ ngày cho bạn đến {{ b.holdExpiresAt | date: 'HH:mm' }} (còn {{ minutesLeft() }} phút).
+                Hãy chuyển khoản và bấm "Tôi đã chuyển khoản" trước thời gian này.
+              </p>
+            }
+
+            <!-- Amount -->
+            <fieldset>
+              <legend class="font-serif text-2xl">Số tiền thanh toán</legend>
+              <div class="mt-6 grid gap-4 sm:grid-cols-2">
+                @if (options.deposit !== null) {
+                  <label
+                    class="card flex cursor-pointer gap-4 p-6 has-[:checked]:border-accent-deep has-[:checked]:bg-accent-muted md:p-6"
+                  >
+                    <input
+                      type="radio"
+                      name="amount"
+                      value="deposit"
+                      [checked]="option() === 'deposit'"
+                      (change)="option.set('deposit')"
+                      class="mt-1.5 h-4 w-4 shrink-0 accent-accent-deep"
+                    />
+                    <span>
+                      <span class="block font-medium">Đặt cọc {{ b.quote.depositPercent }}%</span>
+                      <span class="mt-2 block font-serif text-2xl">{{ options.deposit | number }} ₫</span>
+                      <span class="mt-1 block text-sm text-muted-foreground">
+                        Còn lại {{ options.full - options.deposit | number }} ₫ thanh toán khi nhận phòng
+                      </span>
+                    </span>
+                  </label>
+                }
+                <label
+                  class="card flex cursor-pointer gap-4 p-6 has-[:checked]:border-accent-deep has-[:checked]:bg-accent-muted md:p-6"
+                >
+                  <input
+                    type="radio"
+                    name="amount"
+                    value="full"
+                    [checked]="option() === 'full' || options.deposit === null"
+                    (change)="option.set('full')"
+                    class="mt-1.5 h-4 w-4 shrink-0 accent-accent-deep"
+                  />
                   <span>
-                    <span class="block font-medium">{{ m.label }}</span>
-                    <span class="block text-sm text-muted-foreground">{{ m.text }}</span>
+                    @if (b.amountPaid > 0) {
+                      <span class="block font-medium">Thanh toán phần còn lại</span>
+                    } @else {
+                      <span class="block font-medium">Thanh toán toàn bộ</span>
+                    }
+                    <span class="mt-2 block font-serif text-2xl">{{ options.full | number }} ₫</span>
+                    <span class="mt-1 block text-sm text-muted-foreground">Không cần thanh toán thêm khi nhận phòng</span>
                   </span>
                 </label>
-              }
-            </div>
-          </fieldset>
+              </div>
+            </fieldset>
 
-          <!-- Amount due -->
-          <div class="card card-accent-top card-elevated">
-            <div class="flex items-baseline justify-between gap-4">
-              <span class="small-caps text-muted-foreground">Thanh toán hôm nay</span>
-              <span class="display-number">{{ q.deposit | number }} ₫</span>
-            </div>
-            <p class="mt-3 text-sm text-muted-foreground">
-              Tổng tiền đặt phòng {{ q.total | number }} ₫. Số tiền còn lại
-              {{ q.remaining | number }} ₫ thanh toán khi nhận phòng.
-            </p>
-            <a
-              [routerLink]="['/booking', b.reference, 'confirmation']"
-              [queryParams]="{ apt: apt.slug }"
-              class="btn btn-primary mt-6 w-full"
-            >
-              Thanh toán {{ q.deposit | number }} ₫
-            </a>
-            <p class="mt-4 text-center text-xs text-muted-foreground">
-              Bằng việc thanh toán, bạn đồng ý với nội quy của căn hộ.
+            <!-- Transfer -->
+            <section aria-labelledby="transfer-heading">
+              <h2 id="transfer-heading" class="font-serif text-2xl">Chuyển khoản</h2>
+
+              <div class="card card-accent-top card-elevated mt-6">
+                @if (t(); as t) {
+                  <div class="grid gap-8 sm:grid-cols-[13rem_minmax(0,1fr)] sm:items-start">
+                    <div class="text-center">
+                      <img
+                        [src]="t.qrImage"
+                        width="208"
+                        height="208"
+                        class="mx-auto h-52 w-52 rounded-md border border-border bg-white"
+                        [alt]="'Mã VietQR chuyển ' + (t.amount | number) + ' đồng tới ' + t.accountName"
+                      />
+                      <a
+                        [href]="t.qrImage"
+                        [download]="'vietqr-' + t.note + '.png'"
+                        class="link mt-3 inline-block text-sm"
+                      >
+                        Lưu mã QR
+                      </a>
+                    </div>
+
+                    <dl class="divide-y divide-border border-y border-border text-sm">
+                      <div class="flex items-center justify-between gap-4 py-3">
+                        <dt class="text-muted-foreground">Ngân hàng</dt>
+                        <dd class="font-medium">{{ t.bankName }}</dd>
+                      </div>
+                      <div class="flex items-center justify-between gap-4 py-3">
+                        <dt class="text-muted-foreground">Chủ tài khoản</dt>
+                        <dd class="font-medium">{{ t.accountName }}</dd>
+                      </div>
+                      <div class="flex items-center justify-between gap-4 py-3">
+                        <dt class="text-muted-foreground">Số tài khoản</dt>
+                        <dd class="flex items-center gap-3">
+                          <span class="font-mono text-base">{{ t.accountNumber }}</span>
+                          <button type="button" class="link text-xs" (click)="copy('account', t.accountNumber)">
+                            @if (copied() === 'account') { Đã chép } @else { Sao chép }
+                          </button>
+                        </dd>
+                      </div>
+                      <div class="flex items-center justify-between gap-4 py-3">
+                        <dt class="text-muted-foreground">Số tiền</dt>
+                        <dd class="flex items-center gap-3">
+                          <span class="font-serif text-xl">{{ t.amount | number }} ₫</span>
+                          <button type="button" class="link text-xs" (click)="copy('amount', '' + t.amount)">
+                            @if (copied() === 'amount') { Đã chép } @else { Sao chép }
+                          </button>
+                        </dd>
+                      </div>
+                      <div class="flex items-center justify-between gap-4 py-3">
+                        <dt class="text-muted-foreground">Nội dung</dt>
+                        <dd class="flex items-center gap-3">
+                          <span class="font-mono text-base font-medium text-accent-deep">{{ t.note }}</span>
+                          <button type="button" class="link text-xs" (click)="copy('note', t.note)">
+                            @if (copied() === 'note') { Đã chép } @else { Sao chép }
+                          </button>
+                        </dd>
+                      </div>
+                    </dl>
+                  </div>
+
+                  <ol class="mt-8 list-decimal space-y-2 pl-5 text-sm text-muted-foreground">
+                    <li>Mở ứng dụng ngân hàng, chọn quét mã QR. Số tiền và nội dung đã được điền sẵn.</li>
+                    <li>
+                      Đang dùng điện thoại? Bấm "Lưu mã QR" (hoặc chụp màn hình), rồi chọn ảnh trong mục quét mã của
+                      ứng dụng ngân hàng. Hoặc chuyển khoản thủ công với thông tin ở trên.
+                    </li>
+                    <li>Giữ đúng nội dung <span class="font-mono text-foreground">{{ t.note }}</span> để chủ nhà xác nhận nhanh.</li>
+                    <li>Sau khi chuyển, bấm nút bên dưới.</li>
+                  </ol>
+                } @else if (transfer.error()) {
+                  <p class="text-sm text-accent-deep" role="alert">Chưa tải được thông tin chuyển khoản.</p>
+                  <button type="button" class="btn btn-outline mt-4" (click)="transfer.reload()">Thử lại</button>
+                } @else {
+                  <p class="text-muted-foreground" role="status">Đang tạo mã QR…</p>
+                }
+
+                @if (reportError(); as error) {
+                  <p class="mt-6 rounded-md border border-accent bg-accent-muted p-3 text-sm text-accent-deep" role="alert">
+                    {{ error }}
+                  </p>
+                }
+
+                <button type="button" class="btn btn-primary mt-8 w-full" [disabled]="!t() || reporting()" (click)="report()">
+                  @if (reporting()) {
+                    Đang gửi…
+                  } @else {
+                    Báo đã chuyển khoản {{ t()?.amount | number }} ₫
+                  }
+                </button>
+                <p class="mt-4 text-center text-xs text-muted-foreground">
+                  Nút này chỉ báo cho chủ nhà kiểm tra. Khoản tiền và đặt phòng chưa được xác nhận cho đến khi chủ nhà thấy tiền trong tài khoản. Bằng việc thanh toán, bạn đồng ý với nội quy của căn hộ.
+                </p>
+              </div>
+            </section>
+
+            <p class="text-sm text-muted-foreground">
+              Mã đặt phòng: <span class="font-mono">{{ b.reference }}</span>
             </p>
           </div>
 
-          <a routerLink="/book/review" [queryParams]="{ apt: apt.slug }" class="btn btn-ghost">← Quay lại</a>
-        </form>
-
-        <aside class="lg:sticky lg:top-28 lg:self-start">
-          <app-booking-summary [apartment]="apt" [booking]="b" [total]="q.total" />
-        </aside>
+          <aside class="lg:sticky lg:top-28 lg:self-start">
+            @if (apartment(); as apt) {
+              <app-booking-summary [apartment]="apt" [stay]="stay()" [total]="b.quote.total" />
+            }
+          </aside>
+        </div>
+      }
+    } @else if (loadError(); as error) {
+      <div class="card mt-10 max-w-2xl">
+        @if (error.code === 'NOT_FOUND') {
+          <h2 class="text-2xl">Không mở được đặt phòng</h2>
+          <p class="mt-3 text-muted-foreground">
+            Trình duyệt này chưa có quyền xem đặt phòng. Tra cứu bằng mã đặt phòng và email hoặc số điện thoại.
+          </p>
+          <a routerLink="/booking/manage" [queryParams]="{ ref: ref() }" class="btn btn-primary mt-6">Tra cứu đặt phòng</a>
+        } @else {
+          <p class="text-muted-foreground" role="alert">{{ error.message }}</p>
+          <button type="button" class="btn btn-outline mt-6" (click)="booking.reload()">Thử lại</button>
+        }
       </div>
-    </div>
-  </section>
-} @else {
-  <app-apartment-not-found />
-}
+    } @else if (!ref()) {
+      <div class="card mt-10 max-w-2xl">
+        <p class="text-muted-foreground">Chưa có đặt phòng để thanh toán.</p>
+        <a routerLink="/book" class="btn btn-primary mt-6">Đặt lịch</a>
+      </div>
+    } @else {
+      <p class="mt-10 text-muted-foreground" role="status">Đang tải đặt phòng…</p>
+    }
+  </div>
+</section>

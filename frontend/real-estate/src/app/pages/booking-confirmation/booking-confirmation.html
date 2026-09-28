@@ -1,50 +1,107 @@
-@let b = booking;
-
 <section class="pb-20 pt-10 md:pb-28 md:pt-14">
   <div class="container-editorial max-w-3xl">
     <app-booking-steps [current]="4" />
 
-    <div class="mt-14 text-center">
-      <span class="mx-auto grid h-16 w-16 place-items-center rounded-full border border-accent bg-accent-muted text-accent-deep">
-        <svg viewBox="0 0 20 20" class="h-7 w-7" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
-          <path d="m4 10.5 4 4 8-9" stroke-linecap="round" stroke-linejoin="round" />
-        </svg>
-      </span>
-      <p class="small-caps mt-6 text-accent-deep">Đặt phòng thành công</p>
-      <h1 class="mt-3 text-4xl md:text-5xl">Cảm ơn bạn, {{ b.customer.name }}</h1>
-      <p class="mx-auto mt-4 max-w-lg text-muted-foreground">
-        Chúng tôi đã gửi email xác nhận tới <span class="text-foreground">{{ b.customer.email }}</span>.
-        Chủ nhà sẽ xác nhận đặt phòng của bạn sớm nhất.
-      </p>
-    </div>
-
-    <div class="card card-accent-top card-elevated mt-12">
-      <div class="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <p class="small-caps text-muted-foreground">Mã đặt phòng</p>
-          <p class="mt-1 font-mono text-2xl tracking-[0.1em]">{{ reference() }}</p>
-        </div>
-        <div class="flex flex-wrap gap-2">
-          <app-status-badge [status]="b.status" />
-          <app-status-badge [status]="b.paymentStatus" />
-        </div>
+    @if (needsLookup()) {
+      <!-- Returned on another browser/app: prove it is their booking -->
+      <div class="mt-14 text-center">
+        <h1 class="text-4xl md:text-5xl">Xem đặt phòng</h1>
+        <p class="mx-auto mt-4 max-w-lg text-muted-foreground">
+          Nhập email hoặc số điện thoại đã dùng khi đặt phòng <span class="font-mono text-foreground">{{ reference() }}</span>.
+        </p>
+      </div>
+      <form class="card mx-auto mt-10 max-w-lg" (submit)="$event.preventDefault(); lookup()">
+        <label class="label" for="confirm-contact">Email hoặc số điện thoại</label>
+        <input
+          id="confirm-contact"
+          class="input"
+          type="text"
+          autocomplete="email"
+          maxlength="254"
+          [value]="lookupContact()"
+          (input)="setContact($event)"
+        />
+        @if (lookupError(); as error) {
+          <p class="mt-2 text-sm text-accent-deep" role="alert">{{ error }}</p>
+        }
+        <button type="submit" class="btn btn-primary mt-6 w-full" [disabled]="lookingUp() || !lookupContact()">Xem đặt phòng</button>
+      </form>
+    } @else if (loadError(); as error) {
+      <div class="card mt-14 text-center">
+        <p class="text-muted-foreground" role="alert">{{ error }}</p>
+        <button type="button" class="btn btn-outline mt-6" (click)="booking.reload()">Thử lại</button>
+      </div>
+    } @else if (b(); as b) {
+      <div class="mt-14 text-center">
+        @if (b.pendingTransfer; as pending) {
+          <span class="mx-auto grid h-16 w-16 place-items-center rounded-full border border-accent bg-accent-muted text-accent-deep">
+            <svg viewBox="0 0 20 20" class="h-7 w-7" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+              <circle cx="10" cy="10" r="7.25" />
+              <path d="M10 6v4l2.5 2" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </span>
+          <p class="small-caps mt-6 text-accent-deep" role="status">Chưa xác nhận thanh toán</p>
+          <h1 class="mt-3 text-4xl md:text-5xl">Đã nhận báo chuyển khoản</h1>
+          <p class="mx-auto mt-4 max-w-lg text-muted-foreground">
+            {{ b.customer.name }}, chúng tôi đã ghi nhận thông báo chuyển {{ pending.amount | number }} ₫, chưa xác nhận tiền đã đến.
+            Chủ nhà sẽ kiểm tra tài khoản. Sau khi nhận được tiền, bạn sẽ nhận email xác nhận tại
+            <span class="text-foreground">{{ b.customer.email }}</span>. Ngày của bạn được giữ trong thời gian này.
+          </p>
+        } @else if (b.amountPaid > 0 && b.status === 'confirmed') {
+          <span class="mx-auto grid h-16 w-16 place-items-center rounded-full border border-accent bg-accent-muted text-accent-deep">
+            <svg viewBox="0 0 20 20" class="h-7 w-7" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+              <path d="m4 10.5 4 4 8-9" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </span>
+          <p class="small-caps mt-6 text-accent-deep">Đặt phòng đã được xác nhận</p>
+          <h1 class="mt-3 text-4xl md:text-5xl">Hẹn gặp bạn, {{ b.customer.name }}</h1>
+          <p class="mx-auto mt-4 max-w-lg text-muted-foreground">
+            Chủ nhà đã nhận thanh toán của bạn. Thông tin đặt phòng đã được gửi tới
+            <span class="text-foreground">{{ b.customer.email }}</span>.
+          </p>
+        } @else if (b.status === 'cancelled' || b.status === 'expired') {
+          <p class="small-caps text-muted-foreground">Đặt phòng không còn hiệu lực</p>
+          <h1 class="mt-3 text-4xl md:text-5xl">Đặt phòng {{ b.reference }}</h1>
+          <a routerLink="/book" [queryParams]="{ apt: b.apartmentSlug }" class="btn btn-primary mt-8">Đặt lại</a>
+        } @else if (b.paymentOptions.full !== null) {
+          <p class="small-caps text-accent-deep">Chưa thanh toán</p>
+          <h1 class="mt-3 text-4xl md:text-5xl">Đặt phòng {{ b.reference }}</h1>
+          <p class="mx-auto mt-4 max-w-lg text-muted-foreground">Đặt phòng được xác nhận sau khi chủ nhà nhận được thanh toán.</p>
+          <a routerLink="/book/payment" [queryParams]="{ ref: b.reference }" class="btn btn-primary mt-8">Thanh toán</a>
+        } @else {
+          <p class="small-caps text-accent-deep">Đặt phòng của bạn</p>
+          <h1 class="mt-3 text-4xl md:text-5xl">Đặt phòng {{ b.reference }}</h1>
+        }
       </div>
 
-      <hr class="my-6" />
-
-      @if (apartment(); as apt) {
-        <dl class="grid gap-x-8 gap-y-5 sm:grid-cols-2">
-          <div class="sm:col-span-2">
-            <dt class="small-caps text-muted-foreground">Căn hộ</dt>
-            <dd class="mt-1 font-serif text-xl">{{ apt.name }} <span class="font-sans text-base text-muted-foreground">· {{ apt.area }}</span></dd>
+      <div class="card card-accent-top card-elevated mt-12">
+        <div class="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <p class="small-caps text-muted-foreground">Mã đặt phòng</p>
+            <p class="mt-1 font-mono text-2xl tracking-[0.1em]">{{ b.reference }}</p>
           </div>
+          <div class="flex flex-wrap gap-2">
+            <app-status-badge [status]="b.status" />
+            <app-status-badge [status]="b.paymentStatus" />
+          </div>
+        </div>
+
+        <hr class="my-6" />
+
+        <dl class="grid gap-x-8 gap-y-5 sm:grid-cols-2">
+          @if (apartment(); as apt) {
+            <div class="sm:col-span-2">
+              <dt class="small-caps text-muted-foreground">Căn hộ</dt>
+              <dd class="mt-1 font-serif text-xl">{{ apt.name }} <span class="font-sans text-base text-muted-foreground">· {{ apt.area }}</span></dd>
+            </div>
+          }
           <div>
             <dt class="small-caps text-muted-foreground">Nhận phòng</dt>
-            <dd class="mt-1">{{ b.checkIn | date: 'EEEE, dd/MM/yyyy' }} · từ {{ apt.checkIn }}</dd>
+            <dd class="mt-1">{{ b.checkIn | date: 'EEEE, dd/MM/yyyy' }} · từ {{ apartment()?.checkIn }}</dd>
           </div>
           <div>
             <dt class="small-caps text-muted-foreground">Trả phòng</dt>
-            <dd class="mt-1">{{ b.checkOut | date: 'EEEE, dd/MM/yyyy' }} · trước {{ apt.checkOut }}</dd>
+            <dd class="mt-1">{{ b.checkOut | date: 'EEEE, dd/MM/yyyy' }} · trước {{ apartment()?.checkOut }}</dd>
           </div>
           <div>
             <dt class="small-caps text-muted-foreground">Số khách</dt>
@@ -56,28 +113,36 @@
           </div>
         </dl>
 
-        @if (quote(); as q) {
-          <div class="mt-8 space-y-3 rounded-md bg-muted p-5">
-            <div class="flex justify-between gap-4">
-              <span class="text-muted-foreground">Tổng tiền</span>
-              <span>{{ q.total | number }} ₫</span>
-            </div>
-            <div class="flex justify-between gap-4">
-              <span class="text-muted-foreground">Đã thanh toán</span>
-              <span class="text-accent-deep">{{ q.deposit | number }} ₫</span>
-            </div>
-            <div class="flex items-baseline justify-between gap-4 border-t border-border pt-3">
-              <span class="font-medium">Còn lại khi nhận phòng</span>
-              <span class="font-serif text-2xl">{{ q.remaining | number }} ₫</span>
-            </div>
+        <div class="mt-8 space-y-3 rounded-md bg-muted p-5">
+          <div class="flex justify-between gap-4">
+            <span class="text-muted-foreground">Tổng tiền</span>
+            <span>{{ b.quote.total | number }} ₫</span>
           </div>
-        }
-      }
-    </div>
+          @for (p of b.payments; track p.id) {
+            @if (p.state === 'succeeded') {
+              <div class="flex justify-between gap-4 text-sm">
+                <span class="text-muted-foreground">Đã thanh toán qua {{ providerLabels[p.provider] }} · {{ p.paidAt | date: 'dd/MM HH:mm' }}</span>
+                <span class="text-accent-deep">{{ p.amount | number }} ₫</span>
+              </div>
+            }
+          }
+          <div class="flex items-baseline justify-between gap-4 border-t border-border pt-3">
+            <span class="font-medium">
+              @if (b.pendingTransfer) { Chưa xác nhận thanh toán }
+              @else if (b.status === 'confirmed') { Còn lại khi nhận phòng }
+              @else { Chưa thanh toán }
+            </span>
+            <span class="font-serif text-2xl">{{ b.amountDue | number }} ₫</span>
+          </div>
+        </div>
+      </div>
 
-    <div class="mt-10 flex flex-col justify-center gap-3 sm:flex-row">
-      <a routerLink="/booking/manage" class="btn btn-outline">Tra cứu đặt phòng</a>
-      <a routerLink="/" class="btn btn-primary">Về trang chủ</a>
-    </div>
+      <div class="mt-10 flex flex-col justify-center gap-3 sm:flex-row">
+        <a routerLink="/booking/manage" [queryParams]="{ ref: b.reference }" class="btn btn-outline">Tra cứu đặt phòng</a>
+        <a routerLink="/" class="btn btn-primary">Về trang chủ</a>
+      </div>
+    } @else {
+      <p class="mt-14 text-center text-muted-foreground" role="status">Đang tải đặt phòng…</p>
+    }
   </div>
 </section>

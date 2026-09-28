@@ -1,10 +1,14 @@
-<app-site-header />
-
-<main>
+@if (inAdmin()) {
   <router-outlet />
-</main>
+} @else {
+  <app-site-header />
 
-<!-- Footer HTML comes from the server; its JS only loads when it scrolls into view. -->
-@defer (hydrate on viewport) {
-  <app-site-footer />
+  <main>
+    <router-outlet />
+  </main>
+
+  <!-- Footer HTML comes from the server; its JS only loads when it scrolls into view. -->
+  @defer (hydrate on viewport) {
+    <app-site-footer />
+  }
 }
