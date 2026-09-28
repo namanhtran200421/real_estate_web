@@ -2,6 +2,8 @@ import { Injectable, computed, inject } from '@angular/core';
 import { httpResource } from '@angular/common/http';
 import { API_URL, ApiResponse } from '../core/api';
 import { Apartment } from '../models/apartment';
+import { LANG } from '../i18n/i18n';
+import { localizeSunGarden } from '../data/sun-garden-en';
 
 /**
  * Single source of apartment data for every page, loaded once from the API.
@@ -11,11 +13,13 @@ import { Apartment } from '../models/apartment';
 @Injectable({ providedIn: 'root' })
 export class ApartmentService {
   private readonly apiUrl = inject(API_URL);
+  private readonly lang = inject(LANG);
   private readonly list = httpResource<ApiResponse<Apartment[]>>(() => `${this.apiUrl}/api/v1/apartments`);
 
   readonly all = computed<Apartment[]>(() => {
     if (!this.list.hasValue()) return [];
-    return this.list.value().data;
+    const apartments = this.list.value().data;
+    return this.lang === 'en' ? apartments.map(localizeSunGarden) : apartments;
   });
 
   /** True until the first response (or error) arrives. */

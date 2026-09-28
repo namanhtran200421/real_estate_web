@@ -6,8 +6,8 @@ export const SITE = {
   defaultImage: '/apartments/sun-garden-a04-12/02.jpg',
   /** `label` is a translation key. */
   contact: [
-    { label: 'site.contact.phone', value: '0919 8888 21', href: 'tel:+84919888821' },
+    { label: 'site.contact.phone', value: '0869 141 104', href: 'tel:+84869141104' },
     { label: 'site.contact.zalo', value: '0919 8888 21', href: 'https://zalo.me/0919888821' },
-    { label: 'site.contact.email', value: 'haihoangdo14112004@gmail.com', href: 'mailto:haihoangdo14112004@gmail.com' },
+    { label: 'site.contact.email', value: 'vnbookinghub@gmail.com', href: 'mailto:vnbookinghub@gmail.com' },
   ],
 };

@@ -1,5 +1,6 @@
 import { Component, computed, effect, inject, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { DomSanitizer } from '@angular/platform-browser';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { ApartmentGallery } from '../../components/apartment-gallery/apartment-gallery';
 import { ApartmentHeader } from '../../components/apartment-header/apartment-header';
@@ -7,6 +8,7 @@ import { ApartmentNotFound } from '../../components/apartment-not-found/apartmen
 import { BookingCard } from '../../components/booking-card/booking-card';
 import { PriceList } from '../../components/price-list/price-list';
 import { ApartmentService } from '../../services/apartment.service';
+import { SUN_GARDEN_AMENITIES } from '../../data/sun-garden-amenities';
 import { SeoService } from '../../services/seo.service';
 
 @Component({
@@ -16,11 +18,21 @@ import { SeoService } from '../../services/seo.service';
 })
 export class ApartmentDetail {
   private readonly apartments = inject(ApartmentService);
+  private readonly sanitizer = inject(DomSanitizer);
+  protected readonly amenityGroups = SUN_GARDEN_AMENITIES;
 
   /** Bound from the `?apt=` query param. */
   readonly slug = input<string>(undefined, { alias: 'apt' });
 
   protected readonly apartment = computed(() => this.apartments.resolve(this.slug()));
+  protected readonly mapsLink = computed(() =>
+    `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(this.apartment()?.mapQuery ?? '')}`,
+  );
+  protected readonly mapUrl = computed(() =>
+    this.sanitizer.bypassSecurityTrustResourceUrl(
+      `https://www.google.com/maps?q=${encodeURIComponent(this.apartment()?.mapQuery ?? '')}&output=embed`,
+    ),
+  );
 
   constructor() {
     const seo = inject(SeoService);

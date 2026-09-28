@@ -134,6 +134,13 @@
   "apartment": {
     "capacity": "{{ guests }} [[ plural({{ guests }}, guest, guests) ]] · {{ bedrooms }} [[ plural({{ bedrooms }}, bedroom, bedrooms) ]] · {{ beds }} [[ plural({{ beds }}, bed, beds) ]] · {{ bathrooms }} [[ plural({{ bathrooms }}, bathroom, bathrooms) ]]",
     "viewDetails": "View details",
+    "previousPhoto": "Previous photo",
+    "nextPhoto": "Next photo",
+    "locationEyebrow": "Apartment location",
+    "locationTitle": "Find Sun Garden",
+    "openMap": "Open Google Maps",
+    "reviewsTitle": "Reviews from past guests",
+    "reviewsPending": "No verified guest reviews yet.",
     "sections": "Apartment sections",
     "tabs": {
       "overview": "Overview",
@@ -161,6 +168,15 @@
       "availability": "Check which dates are free",
       "location": "Map and places nearby"
     }
+  },
+  "amenities": {
+    "bathrooms": { "title": "2 bathrooms", "waterHeater": "Hot water", "shower": "Shower", "toiletries": "Complimentary toiletries", "toiletPaper": "Toilet paper" },
+    "living": { "title": "Living room", "sofa": "Sofa", "desk": "Desk", "television": "Flat-screen TV", "ceilingFan": "Ceiling fan" },
+    "kitchen": { "title": "Kitchen", "fridge": "Refrigerator", "inductionHob": "Double induction hob", "extractor": "Extractor hood", "tableware": "Tableware", "cookware": "Cookware", "kettle": "Electric kettle" },
+    "bedrooms": { "title": "2 bedrooms", "doubleBed": "Large double bed", "bedding": "Bedding", "wardrobe": "Wardrobe", "clothesRack": "Clothes rack", "standingFan": "Standing fan" },
+    "shared": { "title": "Shared amenities", "washerDryer": "Washer and dryer", "dryingRack": "Drying rack", "hangers": "Hangers", "slippers": "Four pairs of slippers", "wifi": "Free Wi-Fi" },
+    "building": { "title": "Building facilities", "lift": "Lift", "extinguisher": "Fire extinguisher", "paidParking": "Paid parking", "noPets": "No pets" },
+    "safety": { "title": "Safety", "smokeAlarm": "Smoke alarm" }
   },
   "notFound": {
     "connectionError": "Connection error",
