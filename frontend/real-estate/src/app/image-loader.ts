@@ -1,12 +1,20 @@
 import { ImageLoaderConfig } from '@angular/common';
+import imageWidths from './image-widths.json';
 
 const UNSPLASH = 'https://images.unsplash.com/';
+/** Photos in public/apartments, resized to WebP at build time by scripts/optimize-images.mjs. */
+const LOCAL_PHOTO = /^\/?apartments\/(.+)\.(?:jpe?g|png)$/i;
 
 /**
- * NgOptimizedImage loader: asks the image CDN for the exact width the browser needs,
+ * NgOptimizedImage loader: serves the smallest copy that covers the width the browser needs,
  * in a modern format (WebP/AVIF). Other sources are returned unchanged.
  */
 export function imageLoader({ src, width, loaderParams }: ImageLoaderConfig): string {
+  const local = LOCAL_PHOTO.exec(src);
+  if (local) {
+    const fit = imageWidths.find((w) => w >= (width ?? Infinity)) ?? imageWidths.at(-1);
+    return `/optimized/apartments/${local[1]}-${fit}.webp`;
+  }
   if (!src.startsWith(UNSPLASH)) return src;
   const url = new URL(src);
   // `loaderParams.ar` (e.g. '6:5') crops to a fixed aspect ratio; otherwise keep the original shape.

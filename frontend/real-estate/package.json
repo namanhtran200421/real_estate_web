@@ -3,11 +3,11 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
-    "prestart": "node scripts/write-env.mjs",
+    "prestart": "node scripts/write-env.mjs && node scripts/optimize-images.mjs",
     "start": "ng serve",
-    "prebuild": "node scripts/write-env.mjs",
+    "prebuild": "node scripts/write-env.mjs && node scripts/optimize-images.mjs",
     "build": "ng build",
-    "prewatch": "node scripts/write-env.mjs",
+    "prewatch": "node scripts/write-env.mjs && node scripts/optimize-images.mjs",
     "watch": "ng build --watch --configuration development",
     "pretest": "node scripts/write-env.mjs",
     "test": "ng test",
@@ -38,6 +38,7 @@
     "jsdom": "^28.0.0",
     "postcss": "^8.5.3",
     "prettier": "^3.8.1",
+    "sharp": "^0.35.5",
     "tailwindcss": "^4.1.12",
     "typescript": "~6.0.2",
     "vitest": "^4.0.8"
