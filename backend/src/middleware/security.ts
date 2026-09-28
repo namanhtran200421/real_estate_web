@@ -20,17 +20,26 @@ import { safeEqual } from '../lib/crypto.js';
  */
 export const securityHeaders = helmet();
 
-function allowedOrigins(): string[] {
-  // The production Vercel alias must work even before Render's SITE_URL is updated.
-  return [...new Set([env.siteUrl, ...env.corsOrigins, 'https://real-estate-web-one-gamma.vercel.app'])];
-}
+const configuredOrigins = new Set([
+  env.siteUrl,
+  ...env.corsOrigins,
+  'https://real-estate-web-one-gamma.vercel.app',
+  'https://real-estate-web-hobby213123213.vercel.app',
+  'https://real-estate-web-git-main-hobby213123213.vercel.app',
+]);
+
+// Each production deploy gets a new URL under this project and Vercel team.
+const vercelDeploymentOrigin = /^https:\/\/real-estate-[a-z0-9]+-hobby213123213\.vercel\.app$/;
 
 /**
  * Lets only the website's origin(s) call the API from a browser.
  * Server-to-server calls (Angular SSR) send no Origin header and are unaffected.
  */
 export const corsPolicy = cors({
-  origin: allowedOrigins(),
+  origin: (origin, callback) => {
+    const allowed = !origin || configuredOrigins.has(origin) || vercelDeploymentOrigin.test(origin);
+    callback(null, allowed);
+  },
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Booking-Token'],
   exposedHeaders: ['X-Request-Id', 'RateLimit', 'RateLimit-Policy', 'Retry-After'],
