@@ -21,8 +21,8 @@ import { safeEqual } from '../lib/crypto.js';
 export const securityHeaders = helmet();
 
 function allowedOrigins(): string[] {
-  if (env.corsOrigins.length > 0) return env.corsOrigins;
-  return [env.siteUrl];
+  // The production Vercel alias must work even before Render's SITE_URL is updated.
+  return [...new Set([env.siteUrl, ...env.corsOrigins, 'https://real-estate-web-one-gamma.vercel.app'])];
 }
 
 /**

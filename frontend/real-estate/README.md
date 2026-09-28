@@ -21,7 +21,7 @@ fresh clone.
 
 | Variable           | When           | Purpose                                                                 |
 | ------------------ | -------------- | ----------------------------------------------------------------------- |
-| `API_URL`          | Build          | Public URL of the API. Bundled into browser code. Required on Vercel/CI. |
+| `API_URL`          | Build          | Public URL of the API. Bundled into browser code. Vercel defaults to the Render API; other CI builds require it. |
 | `INTERNAL_API_KEY` | Runtime (SSR)  | Same value as the API's; server rendering is then not rate limited per IP. Never sent to browsers. |
 | `SERVER_API_URL`   | Runtime (SSR)  | Optional private address the renderer uses to reach the API.            |
 
@@ -52,7 +52,7 @@ so the browser does not fetch them again. Booking and admin pages render in the 
 
 `vercel.json` runs the SSR server as a function. In the Vercel project settings:
 
-1. Set `API_URL` (build) and `INTERNAL_API_KEY` (runtime) environment variables.
+1. The build uses the Render API by default. Set `API_URL` to override it, and optionally set `INTERNAL_API_KEY` at runtime to match the API.
 2. **Add your domain to `security.allowedHosts` in `angular.json`** (e.g. `"vnbookinghub.vn"`,
    `"www.vnbookinghub.vn"`). Server rendering rejects requests for hosts not on that list.
 3. Set the API's `SITE_URL` to this site's URL (CORS and email links).

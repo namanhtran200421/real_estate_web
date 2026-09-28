@@ -9,9 +9,11 @@ import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 
 if (existsSync('.env')) process.loadEnvFile('.env');
 
-// Hosted builds (Vercel, CI) must say where the API lives; local builds default to the dev API.
+// The public Render API is the default for Vercel; API_URL can override it per deployment.
+// Other CI builds must still supply API_URL, and local builds use the dev API.
 const hosted = Boolean(process.env.VERCEL || process.env.CI);
-const apiUrl = (process.env.API_URL ?? '').trim().replace(/\/+$/, '');
+const vercelApiUrl = process.env.VERCEL ? 'https://real-estate-web-1ahe.onrender.com' : '';
+const apiUrl = ((process.env.API_URL ?? '').trim() || vercelApiUrl).replace(/\/+$/, '');
 
 if (!apiUrl && hosted) {
   console.error('API_URL is not set. Set it to the public URL of the backend API, e.g. https://api.example.com');
