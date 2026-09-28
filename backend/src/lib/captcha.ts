@@ -13,11 +13,14 @@ const TIMEOUT_MS = 5_000;
 
 interface SiteverifyResponse {
   success: boolean;
+  hostname?: string;
   'error-codes'?: string[];
 }
 
 export interface CaptchaResult {
   success: boolean;
+  /** Hostname where the visitor solved the widget, supplied by Cloudflare. */
+  hostname?: string;
   /** Cloudflare's reasons, e.g. "timeout-or-duplicate", "invalid-input-secret". */
   errorCodes: string[];
 }
@@ -29,5 +32,11 @@ export async function verifyCaptcha(secret: string, token: string, ip: string | 
     { secret, response: token, remoteip: ip },
     { timeoutMs: TIMEOUT_MS },
   );
-  return { success: result.success === true, errorCodes: result['error-codes'] ?? [] };
+  return { success: result.success === true, hostname: result.hostname, errorCodes: result['error-codes'] ?? [] };
+}
+
+/** A shared widget's token is accepted only when it was solved on one of our configured sites. */
+export function captchaHostnameAllowed(hostname: string | undefined, origins: readonly string[]): boolean {
+  if (!hostname) return false;
+  return origins.some((origin) => URL.canParse(origin) && new URL(origin).hostname === hostname.toLowerCase());
 }

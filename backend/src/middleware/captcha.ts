@@ -8,9 +8,10 @@
  */
 import type { NextFunction, Request, Response } from 'express';
 import { env } from '../config/env.js';
-import { verifyCaptcha } from '../lib/captcha.js';
+import { captchaHostnameAllowed, verifyCaptcha } from '../lib/captcha.js';
 import { HttpError } from '../lib/http-error.js';
 import { logger } from '../lib/logger.js';
+import { configuredOrigins } from './security.js';
 
 /** Turnstile tokens are at most 2048 characters. */
 const MAX_TOKEN_LENGTH = 2_048;
@@ -38,10 +39,10 @@ export async function requireCaptcha(req: Request, res: Response, next: NextFunc
     throw new HttpError(503, 'CAPTCHA_UNAVAILABLE', 'Chưa kiểm tra được xác minh chống robot, vui lòng thử lại sau ít phút.');
   }
 
-  if (!result.success) {
+  if (!result.success || !captchaHostnameAllowed(result.hostname, [...configuredOrigins])) {
     const misconfigured = result.errorCodes.some((code) => CONFIGURATION_ERRORS.has(code));
     const log = misconfigured ? logger.error : logger.warn;
-    log('CAPTCHA rejected', { requestId: res.locals.requestId, errorCodes: result.errorCodes });
+    log('CAPTCHA rejected', { requestId: res.locals.requestId, errorCodes: result.errorCodes, hostname: result.hostname });
     throw new HttpError(400, 'CAPTCHA_FAILED', 'Xác minh chống robot không hợp lệ hoặc đã hết hạn, vui lòng thử lại.');
   }
   next();

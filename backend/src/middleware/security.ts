@@ -21,7 +21,7 @@ import { HttpError } from '../lib/http-error.js';
  */
 export const securityHeaders = helmet();
 
-const configuredOrigins = new Set([
+export const configuredOrigins = new Set([
   env.siteUrl,
   ...env.corsOrigins,
   'https://real-estate-web-one-gamma.vercel.app',

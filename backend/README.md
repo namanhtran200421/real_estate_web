@@ -272,6 +272,10 @@ Without Docker: `npm ci && npm run build && npm run db:migrate && npm start`.
 - [ ] `DATABASE_URL` for production, `DB_SSL=true` for managed Postgres; `instances × DB_POOL_MAX` < `max_connections`
 - [ ] `TRUST_PROXY_HOPS` = number of trusted proxies in front of the API (defaults to 1 on Render, 0 locally); override if your setup differs
 - [ ] Cloudflare Turnstile widget created for the website's domain(s) → `TURNSTILE_SECRET_KEY` here, `TURNSTILE_SITE_KEY` in the website's build; then submit the contact form once to check
+
+An existing Turnstile widget can be reused after its hostname list includes this website.
+The API checks the hostname returned by Cloudflare against its approved website origins, so
+tokens solved on another website sharing the widget are refused.
 - [ ] No `level: "warn"` startup lines about weak settings in the production logs
 
 **Data**
