@@ -30,7 +30,10 @@ if (!URL.canParse(resolved)) {
 
 // Cloudflare Turnstile site key (public by design). Empty = no CAPTCHA widget; the API then
 // must not require one either (TURNSTILE_SECRET_KEY unset).
-const turnstileSiteKey = (process.env.TURNSTILE_SITE_KEY ?? '').trim();
+// This public widget is registered for the production Vercel hostname. Environment config can
+// override it; the matching secret is never included in the website build.
+const vercelSiteKey = process.env.VERCEL ? '0x4AAAAAAFIFAEn4ALL2_1A0' : '';
+const turnstileSiteKey = (process.env.TURNSTILE_SITE_KEY ?? '').trim() || vercelSiteKey;
 const turnstileTestSiteKeys = new Set([
   '1x00000000000000000000AA',
   '2x00000000000000000000AB',
