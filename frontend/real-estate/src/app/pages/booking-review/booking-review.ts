@@ -1,4 +1,4 @@
-import { Component, computed, effect, inject, input, signal } from '@angular/core';
+import { Component, computed, effect, inject, input, signal, viewChild } from '@angular/core';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { httpResource } from '@angular/common/http';
 import { Router, RouterLink } from '@angular/router';
@@ -6,6 +6,7 @@ import { TranslocoPipe } from '@jsverse/transloco';
 import { ApartmentNotFound } from '../../components/apartment-not-found/apartment-not-found';
 import { BookingSteps } from '../../components/booking-steps/booking-steps';
 import { BookingSummary } from '../../components/booking-summary/booking-summary';
+import { CAPTCHA_ENABLED, Captcha } from '../../components/captcha/captcha';
 import { ApiErrorMessages, ApiResponse, toApiError } from '../../core/api';
 import { Quote, Stay } from '../../models/booking';
 import { ApartmentService } from '../../services/apartment.service';
@@ -15,7 +16,7 @@ import { BookingService } from '../../services/booking.service';
 /** Step 2: check details and the price breakdown, apply a promo code, create the booking. */
 @Component({
   selector: 'app-booking-review',
-  imports: [DatePipe, DecimalPipe, RouterLink, TranslocoPipe, ApartmentNotFound, BookingSteps, BookingSummary],
+  imports: [DatePipe, DecimalPipe, RouterLink, TranslocoPipe, ApartmentNotFound, BookingSteps, BookingSummary, Captcha],
   templateUrl: './booking-review.html',
 })
 export class BookingReview {
@@ -65,6 +66,15 @@ export class BookingReview {
 
   protected readonly submitting = signal(false);
   protected readonly submitError = signal<string | undefined>(undefined);
+
+  private readonly captcha = viewChild(Captcha);
+  protected readonly captchaToken = signal('');
+  /** A booking already made from this exact draft is reopened, so it needs no new CAPTCHA. */
+  protected readonly reusesBooking = computed(() => {
+    const existing = this.drafts.existingBooking();
+    return existing !== undefined && this.bookings.hasAccess(existing);
+  });
+  protected readonly awaitingCaptcha = computed(() => CAPTCHA_ENABLED && !this.reusesBooking() && !this.captchaToken());
 
   constructor() {
     // Arriving here without complete details (refresh after the draft expired, direct link): back to step 1.
@@ -120,20 +130,25 @@ export class BookingReview {
     this.submitting.set(true);
     this.submitError.set(undefined);
     try {
-      const booking = await this.bookings.create({
-        apartmentSlug: draft.apartmentSlug,
-        checkIn: draft.checkIn,
-        checkOut: draft.checkOut,
-        guests: draft.guests,
-        promoCode: draft.promoCode || undefined,
-        customer: { name: draft.name.trim(), phone: draft.phone.trim(), email: draft.email.trim() },
-        message: draft.message.trim() || undefined,
-      });
+      const booking = await this.bookings.create(
+        {
+          apartmentSlug: draft.apartmentSlug,
+          checkIn: draft.checkIn,
+          checkOut: draft.checkOut,
+          guests: draft.guests,
+          promoCode: draft.promoCode || undefined,
+          customer: { name: draft.name.trim(), phone: draft.phone.trim(), email: draft.email.trim() },
+          message: draft.message.trim() || undefined,
+        },
+        this.captchaToken(),
+      );
       this.drafts.rememberBooking(booking.reference);
       void this.router.navigate(['/book/payment'], { queryParams: { ref: booking.reference } });
     } catch (error) {
       this.submitError.set(this.errorMessages.message(toApiError(error)));
       this.quote.reload();
+      // Each CAPTCHA token works once; a retry needs a fresh one.
+      this.captcha()?.reset();
     } finally {
       this.submitting.set(false);
     }

@@ -1,7 +1,8 @@
-import { Component, computed, effect, inject, input, signal } from '@angular/core';
+import { Component, computed, effect, inject, input, signal, viewChild } from '@angular/core';
 import { DatePipe, DecimalPipe, NgOptimizedImage } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
+import { CAPTCHA_ENABLED, Captcha } from '../../components/captcha/captcha';
 import { StatusBadge } from '../../components/status-badge/status-badge';
 import { ApiErrorMessages, toApiError } from '../../core/api';
 import { Booking } from '../../models/booking';
@@ -13,7 +14,7 @@ import { GuestReviewService } from '../../services/guest-review.service';
 /** Find a booking by reference + email or phone (also the landing page of email links). */
 @Component({
   selector: 'app-booking-lookup',
-  imports: [DatePipe, DecimalPipe, NgOptimizedImage, RouterLink, TranslocoPipe, StatusBadge],
+  imports: [DatePipe, DecimalPipe, NgOptimizedImage, RouterLink, TranslocoPipe, Captcha, StatusBadge],
   templateUrl: './booking-lookup.html',
 })
 export class BookingLookup {
@@ -36,6 +37,10 @@ export class BookingLookup {
   protected readonly rating = signal(0);
   protected readonly comment = signal('');
   protected readonly submittingReview = signal(false);
+
+  private readonly captcha = viewChild(Captcha);
+  protected readonly captchaToken = signal('');
+  protected readonly awaitingCaptcha = computed(() => CAPTCHA_ENABLED && !this.captchaToken());
 
   protected readonly apartment = computed(() => {
     const booking = this.booking();
@@ -63,13 +68,15 @@ export class BookingLookup {
     this.booking.set(undefined);
     this.review.set(undefined);
     try {
-      const booking = await this.bookings.lookup(this.reference().trim(), this.contact().trim());
+      const booking = await this.bookings.lookup(this.reference().trim(), this.contact().trim(), this.captchaToken());
       this.booking.set(booking);
       void this.loadReview(booking);
     } catch (error) {
       this.error.set(this.errorMessages.message(toApiError(error)));
     } finally {
       this.searching.set(false);
+      // Each CAPTCHA token works once; another search needs a fresh one.
+      this.captcha()?.reset();
     }
   }
 

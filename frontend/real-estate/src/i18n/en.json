@@ -472,6 +472,9 @@
     "checkStatus": "Check your booking status",
     "lookupHint": "Look it up with your booking reference and email or phone number."
   },
+  "captcha": {
+    "failed": "The robot check couldn’t load. Check your connection; it will retry by itself."
+  },
   "apiErrors": {
     "NETWORK": "Couldn’t reach the server. Please check your connection and try again.",
     "UNKNOWN": "Something went wrong. Please try again.",
@@ -489,6 +492,10 @@
     "REVIEW_ALREADY_SUBMITTED": "This booking already has a review.",
     "TOO_MANY_REQUESTS": "Too many requests. Please wait a moment and try again.",
     "UPSTREAM_ERROR": "A connected service isn’t responding. Please try again later.",
+    "CAPTCHA_REQUIRED": "Please complete the check that you’re not a robot.",
+    "CAPTCHA_FAILED": "The robot check expired or failed. Please try again.",
+    "CAPTCHA_UNAVAILABLE": "We couldn’t verify the robot check right now. Please try again in a few minutes.",
+    "OVERLOADED": "The site is very busy right now. Please try again in a few seconds.",
     "bookedDates": "Booked dates: {{ dates }}.",
     "fields": {
       "name": "Enter your full name.",

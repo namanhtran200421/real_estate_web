@@ -1,11 +1,12 @@
-import { Component, inject, input, signal } from '@angular/core';
+import { Component, computed, inject, input, signal, viewChild } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
+import { CAPTCHA_ENABLED, Captcha } from '../../../components/captcha/captcha';
 import { toApiError } from '../../../core/api';
 import { AdminAuthService } from '../../admin-auth.service';
 
 @Component({
   selector: 'app-admin-login',
-  imports: [RouterLink],
+  imports: [RouterLink, Captcha],
   template: `
     <section class="section">
       <div class="container-editorial max-w-md">
@@ -38,10 +39,11 @@ import { AdminAuthService } from '../../admin-auth.service';
               (input)="password.set(value($event))"
             />
           </div>
+          <app-captcha action="admin-login" (token)="captchaToken.set($event)" />
           @if (error(); as message) {
             <p class="text-sm text-accent-deep" role="alert">{{ message }}</p>
           }
-          <button type="submit" class="btn btn-primary w-full" [disabled]="busy() || !email() || !password()">
+          <button type="submit" class="btn btn-primary w-full" [disabled]="busy() || !email() || !password() || awaitingCaptcha()">
             Đăng nhập
           </button>
         </form>
@@ -61,6 +63,10 @@ export class AdminLogin {
   protected readonly busy = signal(false);
   protected readonly error = signal<string | undefined>(undefined);
 
+  private readonly captcha = viewChild(Captcha);
+  protected readonly captchaToken = signal('');
+  protected readonly awaitingCaptcha = computed(() => CAPTCHA_ENABLED && !this.captchaToken());
+
   protected value(event: Event): string {
     return (event.target as HTMLInputElement).value;
   }
@@ -69,7 +75,7 @@ export class AdminLogin {
     this.busy.set(true);
     this.error.set(undefined);
     try {
-      await this.auth.login(this.email().trim(), this.password());
+      await this.auth.login(this.email().trim(), this.password(), this.captchaToken());
       let target = '/admin';
       // Only follow in-app admin paths, never an arbitrary URL.
       const next = this.next();
@@ -78,6 +84,8 @@ export class AdminLogin {
     } catch (error) {
       this.error.set(toApiError(error).message);
       this.password.set('');
+      // Each CAPTCHA token works once; the next attempt needs a fresh one.
+      this.captcha()?.reset();
     } finally {
       this.busy.set(false);
     }

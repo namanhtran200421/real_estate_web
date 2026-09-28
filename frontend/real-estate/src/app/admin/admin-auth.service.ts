@@ -2,7 +2,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { HttpClient, HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { CanActivateFn, Router } from '@angular/router';
 import { catchError, firstValueFrom, throwError } from 'rxjs';
-import { API_URL, ApiResponse } from '../core/api';
+import { API_URL, ApiResponse, captchaHeaders } from '../core/api';
 import { readJson, removeItem, writeJson } from '../services/browser-storage';
 
 export interface AdminIdentity {
@@ -45,9 +45,13 @@ export class AdminAuthService {
     return session.token;
   }
 
-  async login(email: string, password: string): Promise<void> {
+  async login(email: string, password: string, captchaToken?: string): Promise<void> {
     const response = await firstValueFrom(
-      this.http.post<ApiResponse<AdminSession>>(`${this.api}/login`, { email, password }),
+      this.http.post<ApiResponse<AdminSession>>(
+        `${this.api}/login`,
+        { email, password },
+        { headers: captchaHeaders(captchaToken) },
+      ),
     );
     this.session.set(response.data);
     writeJson('local', STORAGE_KEY, response.data);
@@ -74,9 +78,13 @@ export class AdminAuthService {
   }
 }
 
-/** Adds the admin token to admin API calls; an expired session sends the user back to sign-in. */
+/**
+ * Adds the admin token to admin API calls; an expired session sends the user back to sign-in.
+ * Only requests to this site's own API get it, so the token can never leak to another host.
+ */
 export const adminAuthInterceptor: HttpInterceptorFn = (req, next) => {
-  if (!req.url.includes('/api/v1/admin/') || req.url.endsWith('/auth/login')) return next(req);
+  const adminApi = `${inject(API_URL)}/api/v1/admin/`;
+  if (!req.url.startsWith(adminApi) || req.url.endsWith('/auth/login')) return next(req);
 
   const auth = inject(AdminAuthService);
   const router = inject(Router);

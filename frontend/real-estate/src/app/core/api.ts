@@ -1,4 +1,4 @@
-import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
+import { HttpErrorResponse, HttpHeaders, HttpInterceptorFn } from '@angular/common/http';
 import { Injectable, InjectionToken, inject } from '@angular/core';
 import { TranslocoService } from '@jsverse/transloco';
 import { environment } from '../../environments/environment';
@@ -106,6 +106,12 @@ export class ApiErrorMessages {
   private translate(key: string, fallback: string): string {
     return this.transloco.translate(key in this.transloco.getTranslation(this.lang) ? key : fallback);
   }
+}
+
+/** The solved CAPTCHA for forms the API protects (see components/captcha). */
+export function captchaHeaders(token: string | undefined): HttpHeaders {
+  if (!token) return new HttpHeaders();
+  return new HttpHeaders({ 'X-Captcha-Token': token });
 }
 
 /** Adds the renderer's key to API calls made during server-side rendering. */

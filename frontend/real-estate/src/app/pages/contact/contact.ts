@@ -1,10 +1,11 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal, viewChild } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { RouterLink } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { firstValueFrom } from 'rxjs';
+import { CAPTCHA_ENABLED, Captcha } from '../../components/captcha/captcha';
 import { Select, SelectOption } from '../../components/select/select';
-import { API_URL, ApiError, ApiErrorMessages, toApiError } from '../../core/api';
+import { API_URL, ApiError, ApiErrorMessages, captchaHeaders, toApiError } from '../../core/api';
 import { SITE } from '../../data/site';
 import { ApartmentService } from '../../services/apartment.service';
 
@@ -21,7 +22,7 @@ interface ContactForm {
 
 @Component({
   selector: 'app-contact',
-  imports: [RouterLink, TranslocoPipe, Select],
+  imports: [RouterLink, TranslocoPipe, Captcha, Select],
   templateUrl: './contact.html',
 })
 export class Contact {
@@ -59,6 +60,10 @@ export class Contact {
   protected readonly sent = signal(false);
   protected readonly error = signal<ApiError | undefined>(undefined);
 
+  private readonly captcha = viewChild(Captcha);
+  protected readonly captchaToken = signal('');
+  protected readonly awaitingCaptcha = computed(() => CAPTCHA_ENABLED && !this.captchaToken());
+
   protected set<K extends keyof ContactForm>(field: K, value: ContactForm[K]): void {
     this.form.update((form) => ({ ...form, [field]: value }));
   }
@@ -75,10 +80,14 @@ export class Contact {
     this.sending.set(true);
     this.error.set(undefined);
     try {
-      await firstValueFrom(this.http.post(`${this.apiUrl}/api/v1/contact`, this.form()));
+      await firstValueFrom(
+        this.http.post(`${this.apiUrl}/api/v1/contact`, this.form(), { headers: captchaHeaders(this.captchaToken()) }),
+      );
       this.sent.set(true);
     } catch (error) {
       this.error.set(toApiError(error));
+      // Each CAPTCHA token works once; a retry needs a fresh one.
+      this.captcha()?.reset();
     } finally {
       this.sending.set(false);
     }

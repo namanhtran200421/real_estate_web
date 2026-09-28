@@ -79,7 +79,8 @@ export const routes: Routes = [
   {
     path: 'admin',
     loadChildren: () => import('./admin/admin.routes').then((m) => m.adminRoutes),
-    data: NOINDEX,
+    // Owner only: never preloaded for guests (see core/preloading.ts).
+    data: { ...NOINDEX, preload: false },
   },
   { path: '**', redirectTo: '' },
 ];

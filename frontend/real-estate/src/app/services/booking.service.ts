@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
-import { API_URL, ApiResponse } from '../core/api';
+import { API_URL, ApiResponse, captchaHeaders } from '../core/api';
 import { Booking, PaymentOption, Quote, TransferInstructions } from '../models/booking';
 import { readJson, writeJson } from './browser-storage';
 
@@ -50,9 +50,11 @@ export class BookingService {
     return response.data;
   }
 
-  async create(booking: NewBooking): Promise<Booking> {
+  async create(booking: NewBooking, captchaToken?: string): Promise<Booking> {
     const response = await firstValueFrom(
-      this.http.post<ApiResponse<{ booking: Booking; accessToken: string }>>(`${this.api}/bookings`, booking),
+      this.http.post<ApiResponse<{ booking: Booking; accessToken: string }>>(`${this.api}/bookings`, booking, {
+        headers: captchaHeaders(captchaToken),
+      }),
     );
     this.rememberToken(response.data.booking.reference, response.data.accessToken);
     return response.data.booking;
@@ -68,12 +70,13 @@ export class BookingService {
   }
 
   /** Finds a booking by reference + email or phone, and remembers its token on this device. */
-  async lookup(reference: string, contact: string): Promise<Booking> {
+  async lookup(reference: string, contact: string, captchaToken?: string): Promise<Booking> {
     const response = await firstValueFrom(
-      this.http.post<ApiResponse<{ booking: Booking; accessToken: string }>>(`${this.api}/bookings/lookup`, {
-        reference,
-        contact,
-      }),
+      this.http.post<ApiResponse<{ booking: Booking; accessToken: string }>>(
+        `${this.api}/bookings/lookup`,
+        { reference, contact },
+        { headers: captchaHeaders(captchaToken) },
+      ),
     );
     this.rememberToken(response.data.booking.reference, response.data.accessToken);
     return response.data.booking;

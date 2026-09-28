@@ -253,15 +253,15 @@
     "bookDirect": "Đặt trực tiếp",
     "promises": {
       "availability": {
-        "title": "Lịch trống cập nhật liên tục",
+        "title": "Lịch trống dễ đặt - Liên tục cập nhật",
         "text": "Xem ngày còn trống và đặt ngay, không cần nhắn tin hỏi trước."
       },
       "prices": {
-        "title": "Giá rõ ràng",
+        "title": "Giá cả rõ ràng - Nhanh tay hốt hàng",
         "text": "Giá được tính tự động theo ngày và hiển thị đầy đủ trước khi thanh toán."
       },
       "vietqr": {
-        "title": "Chuyển khoản qua VietQR",
+        "title": "Dễ chuyển khoản qua - Mã VietQR",
         "text": "Quét mã để chuyển khoản đặt cọc hoặc thanh toán toàn bộ. Chủ căn hộ xác nhận khi nhận được tiền."
       }
     }
@@ -472,6 +472,9 @@
     "checkStatus": "Xem trạng thái đặt phòng",
     "lookupHint": "Tra cứu bằng mã đặt phòng và email hoặc số điện thoại."
   },
+  "captcha": {
+    "failed": "Chưa tải được bước xác minh chống robot. Vui lòng kiểm tra kết nối, hệ thống sẽ tự thử lại."
+  },
   "apiErrors": {
     "NETWORK": "Không kết nối được máy chủ. Vui lòng kiểm tra mạng và thử lại.",
     "UNKNOWN": "Đã có lỗi xảy ra. Vui lòng thử lại.",
@@ -489,6 +492,10 @@
     "REVIEW_ALREADY_SUBMITTED": "Đặt phòng này đã có đánh giá.",
     "TOO_MANY_REQUESTS": "Bạn thao tác quá nhanh. Vui lòng chờ một lát rồi thử lại.",
     "UPSTREAM_ERROR": "Dịch vụ liên kết chưa phản hồi. Vui lòng thử lại sau.",
+    "CAPTCHA_REQUIRED": "Vui lòng xác nhận bạn không phải là robot.",
+    "CAPTCHA_FAILED": "Xác minh chống robot không hợp lệ hoặc đã hết hạn, vui lòng thử lại.",
+    "CAPTCHA_UNAVAILABLE": "Chưa kiểm tra được xác minh chống robot, vui lòng thử lại sau ít phút.",
+    "OVERLOADED": "Hệ thống đang quá tải, vui lòng thử lại sau vài giây.",
     "bookedDates": "Ngày đã có người đặt: {{ dates }}.",
     "fields": {
       "name": "Nhập họ và tên.",

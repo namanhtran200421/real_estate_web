@@ -20,6 +20,15 @@
     {
       "source": "/(apartments|optimized|brand)/(.*)",
       "headers": [{ "key": "Cache-Control", "value": "public, max-age=604800, stale-while-revalidate=86400" }]
+    },
+    {
+      "source": "/(chunk-.*|main-.*|polyfills-.*|styles-.*|media/.*|apartments/.*|optimized/.*|brand/.*|favicon\\.ico|index\\.csr\\.html)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+        { "key": "Strict-Transport-Security", "value": "max-age=63072000" }
+      ]
     }
   ]
 }

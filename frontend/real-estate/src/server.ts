@@ -4,9 +4,12 @@ import {
   isMainModule,
   writeResponseToNodeResponse,
 } from '@angular/ssr/node';
-import express, { Request } from 'express';
+import { isDevMode } from '@angular/core';
+import express, { NextFunction, Request, Response as ExpressResponse } from 'express';
+import { randomBytes } from 'node:crypto';
 import { join } from 'node:path';
 import { LANGS, Lang, RenderContext, splitLangPrefix, withLangPrefix } from './app/i18n/lang';
+import { contentSecurityPolicy, stampScriptNonces } from './csp';
 import { environment } from './environments/environment';
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
@@ -22,11 +25,47 @@ const angularApp = new AngularNodeAppEngine({ trustProxyHeaders: ['x-forwarded-p
 app.disable('x-powered-by');
 // Honour X-Forwarded-Proto from Vercel, or from a reverse proxy on the same machine (e.g. nginx).
 app.set('trust proxy', onVercel ? true : 'loopback');
+app.use(securityHeaders);
 
 const origin = (req: Request) => `${req.protocol}://${req.get('host')}`;
 
 const apiUrl = (process.env['SERVER_API_URL'] || environment.apiUrl).replace(/\/+$/, '');
 const internalApiKey = process.env['INTERNAL_API_KEY'] ?? '';
+
+/**
+ * Hardening headers on every response (pages, files, robots, sitemap): no MIME sniffing, no
+ * framing (clickjacking, e.g. of /admin), no full URLs leaked to other sites, powerful browser
+ * features off, and HTTPS remembered by the browser.
+ */
+function securityHeaders(req: Request, res: ExpressResponse, next: NextFunction): void {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=(), usb=()');
+  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+  if (req.secure) res.setHeader('Strict-Transport-Security', 'max-age=63072000');
+  next();
+}
+
+const apiOrigin = new URL(environment.apiUrl).origin;
+
+/** Adds the CSP (with a fresh nonce) to an HTML page; other responses pass through unchanged. */
+async function withContentSecurityPolicy(response: Response, https: boolean): Promise<Response> {
+  if (isDevMode() || !response.headers.get('content-type')?.includes('text/html')) return response;
+
+  const nonce = randomBytes(16).toString('base64');
+  const html = stampScriptNonces(await response.text(), nonce);
+  const headers = new Headers(response.headers);
+  headers.set('Content-Security-Policy', contentSecurityPolicy(nonce, apiOrigin, https));
+  headers.delete('content-length');
+  return new Response(html, { status: response.status, statusText: response.statusText, headers });
+}
+
+const XML_ESCAPES: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' };
+
+function escapeXml(value: string): string {
+  return value.replace(/[&<>"']/g, (char) => XML_ESCAPES[char]);
+}
 
 /** Slugs of the published apartments, for the sitemap. Empty if the API is unreachable. */
 async function apartmentSlugs(): Promise<string[]> {
@@ -66,7 +105,7 @@ app.get('/sitemap.xml', async (req, res) => {
       ['/apartment', '/gallery', '/availability', '/location'].map((p) => `${p}?apt=${slug}`),
     ),
   ];
-  const xmlUrl = (lang: Lang, p: string) => (base + withLangPrefix(lang, p)).replace(/&/g, '&amp;');
+  const xmlUrl = (lang: Lang, p: string) => escapeXml(base + withLangPrefix(lang, p));
   // Every page in each language, each listing its translations (hreflang) for search engines.
   const urls = paths
     .flatMap((p) => {
@@ -111,7 +150,10 @@ app.use((req, res, next) => {
   const context: RenderContext = { lang };
   angularApp
     .handle(req, context)
-    .then((response) => (response ? writeResponseToNodeResponse(response, res) : next()))
+    .then(async (response) => {
+      if (!response) return next();
+      return writeResponseToNodeResponse(await withContentSecurityPolicy(response, req.secure), res);
+    })
     .catch(next);
 });
 

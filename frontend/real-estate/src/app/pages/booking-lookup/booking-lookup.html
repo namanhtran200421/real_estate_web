@@ -39,10 +39,15 @@
           />
         </div>
       </div>
+      <app-captcha class="mt-6 block" action="lookup" (token)="captchaToken.set($event)" />
       @if (error(); as message) {
         <p class="mt-4 text-sm text-accent-deep" role="alert">{{ message }}</p>
       }
-      <button type="submit" class="btn btn-primary mt-6 w-full sm:w-auto" [disabled]="searching() || !reference() || !contact()">
+      <button
+        type="submit"
+        class="btn btn-primary mt-6 w-full sm:w-auto"
+        [disabled]="searching() || !reference() || !contact() || awaitingCaptcha()"
+      >
         @if (searching()) {
           {{ 'lookup.searching' | transloco }}
         } @else {
