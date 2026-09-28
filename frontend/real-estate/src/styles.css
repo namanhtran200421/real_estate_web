@@ -512,17 +512,26 @@
 
   .carousel-control {
     display: grid;
-    width: 2.75rem;
-    height: 2.75rem;
+    position: absolute;
+    top: 50%;
+    z-index: 20;
+    width: 3rem;
+    height: 3rem;
     place-items: center;
     border-radius: 999px;
+    border: 1px solid rgb(255 255 255 / 0.6);
+    background-color: rgb(255 255 255 / 0.88);
+    color: #1c1c1c;
+    box-shadow: 0 4px 20px rgb(0 0 0 / 0.18);
+    backdrop-filter: blur(8px);
     cursor: pointer;
-    transition: background-color 180ms ease, transform 180ms ease;
+    transform: translateY(-50%);
+    transition: background-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
   }
 
-  .carousel-control:hover { background-color: rgb(255 255 255 / 0.2); }
-  .carousel-control:active { transform: scale(0.94); }
-  .carousel-control:focus-visible { outline: 2px solid white; outline-offset: 2px; }
+  .carousel-control:hover { background-color: white; box-shadow: 0 6px 24px rgb(0 0 0 / 0.24); }
+  .carousel-control:active { transform: translateY(-50%) scale(0.94); }
+  .carousel-control:focus-visible { outline: 2px solid white; outline-offset: 3px; }
 
   .group:hover .media-zoom {
     transform: scale(1.03);

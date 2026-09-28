@@ -13,5 +13,5 @@ The storefront presents one real Da Lat apartment to guests who need to understa
 
 - Vietnamese lives at `/`; English lives at `/en`. Site labels and the Sun Garden listing both need English copy. Keep prices and availability sourced from the API in either language.
 - Use real listing facts and verified guest reviews. The review panel stays in an honest empty state until actual review content is available.
-- Photo navigation uses buttons with accessible names, and the automatic slideshow pauses for reduced motion.
+- Photo navigation is manual, with accessible buttons on either side of the image. Reduced motion disables the slide transition.
 - New accommodation facts belong in the owner listing or its content migration; location lists should use a consistent journey-time order.

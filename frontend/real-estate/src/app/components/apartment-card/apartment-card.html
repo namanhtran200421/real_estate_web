@@ -28,24 +28,13 @@
       />
     }
     @if (featured() && apt.photos.length > 1) {
-      <div class="absolute inset-x-0 bottom-0 z-10 h-28 bg-gradient-to-t from-black/40 to-transparent pointer-events-none" aria-hidden="true"></div>
-      <div class="absolute bottom-5 left-1/2 z-20 flex -translate-x-1/2 items-center gap-1 rounded-full border border-white/25 bg-black/55 p-1 text-white shadow-lg backdrop-blur-md">
-        <button type="button" class="carousel-control" [attr.aria-label]="'apartment.previousPhoto' | transloco" (click)="previous()">
-          <svg viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 6-6 6 6 6" /></svg>
-        </button>
-        <span class="min-w-15 text-center font-mono text-xs tabular-nums" aria-live="polite">{{ photoIndex() + 1 }} / {{ apt.photos.length }}</span>
-        <button type="button" class="carousel-control" [attr.aria-label]="'apartment.nextPhoto' | transloco" (click)="next()">
-          <svg viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m10 6 6 6-6 6" /></svg>
-        </button>
-        <span class="mx-0.5 h-5 w-px bg-white/30" aria-hidden="true"></span>
-        <button type="button" class="carousel-control" [attr.aria-label]="(playing() ? 'apartment.pausePhotos' : 'apartment.playPhotos') | transloco" [attr.aria-pressed]="!playing()" (click)="togglePlaying()">
-          @if (playing()) {
-            <svg viewBox="0 0 24 24" class="size-4" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1" /><rect x="14" y="5" width="4" height="14" rx="1" /></svg>
-          } @else {
-            <svg viewBox="0 0 24 24" class="size-4" fill="currentColor" aria-hidden="true"><path d="M7 4.5a1 1 0 0 1 1.5-.86l11 7.5a1 1 0 0 1 0 1.72l-11 7.5A1 1 0 0 1 7 19.5v-15Z" /></svg>
-          }
-        </button>
-      </div>
+      <button type="button" class="carousel-control left-4 md:left-5" [attr.aria-label]="'apartment.previousPhoto' | transloco" (click)="previous()">
+        <svg viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 6-6 6 6 6" /></svg>
+      </button>
+      <button type="button" class="carousel-control right-4 md:right-5" [attr.aria-label]="'apartment.nextPhoto' | transloco" (click)="next()">
+        <svg viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m10 6 6 6-6 6" /></svg>
+      </button>
+      <span class="absolute bottom-4 right-4 z-20 rounded-full border border-white/25 bg-black/55 px-3 py-1.5 font-mono text-xs tabular-nums text-white shadow-sm backdrop-blur-md md:bottom-5 md:right-5" aria-live="polite">{{ photoIndex() + 1 }} / {{ apt.photos.length }}</span>
     }
   </div>
 

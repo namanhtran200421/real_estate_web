@@ -6,7 +6,6 @@ import { imageLoader } from '../../image-loader';
 import { Apartment } from '../../models/apartment';
 
 const SLIDE_MS = 850;
-const AUTO_MS = 6500;
 
 @Component({
   selector: 'app-apartment-card',
@@ -22,19 +21,16 @@ export class ApartmentCard {
   private readonly carousel = viewChild<ElementRef<HTMLDivElement>>('carousel');
   private readonly preloads = new Map<string, Promise<boolean>>();
   private observer?: IntersectionObserver;
-  private autoTimer?: ReturnType<typeof setInterval>;
   private slideTimer?: ReturnType<typeof setTimeout>;
   private inView = false;
   private reducedMotion = false;
   private loading = false;
-  private lastManualAction = 0;
 
   protected readonly photoIndex = signal(0);
   protected readonly incomingIndex = signal<number | null>(null);
   protected readonly incomingSrc = signal('');
   protected readonly direction = signal<1 | -1>(1);
   protected readonly moving = signal(false);
-  protected readonly playing = signal(true);
   protected readonly currentPhoto = computed(() => {
     const photos = this.apartment().photos;
     return photos[this.photoIndex() % photos.length];
@@ -44,7 +40,6 @@ export class ApartmentCard {
     afterNextRender(() => {
       if (!this.featured()) return;
       this.reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      if (this.reducedMotion) this.playing.set(false);
       const element = this.carousel()?.nativeElement;
       if (element) {
         this.observer = new IntersectionObserver(([entry]) => {
@@ -53,35 +48,20 @@ export class ApartmentCard {
         }, { rootMargin: '240px' });
         this.observer.observe(element);
       }
-      this.autoTimer = setInterval(() => {
-        if (
-          this.inView && this.playing() && !document.hidden &&
-          !element?.matches(':hover, :focus-within') &&
-          Date.now() - this.lastManualAction >= AUTO_MS
-        ) void this.changePhoto(1);
-      }, AUTO_MS);
     });
 
     this.destroyRef.onDestroy(() => {
       this.observer?.disconnect();
-      if (this.autoTimer) clearInterval(this.autoTimer);
       if (this.slideTimer) clearTimeout(this.slideTimer);
     });
   }
 
   protected previous(): void {
-    this.lastManualAction = Date.now();
     void this.changePhoto(-1);
   }
 
   protected next(): void {
-    this.lastManualAction = Date.now();
     void this.changePhoto(1);
-  }
-
-  protected togglePlaying(): void {
-    this.lastManualAction = Date.now();
-    this.playing.update((value) => !value);
   }
 
   protected completeSlide(event: TransitionEvent): void {
