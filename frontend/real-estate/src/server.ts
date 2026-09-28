@@ -16,8 +16,8 @@ const onVercel = !!process.env['VERCEL'];
 
 const app = express();
 // Trust only the protocol header (for https canonical URLs); the host still comes from Host,
-// which is validated against `allowedHosts`.
-const angularApp = new AngularNodeAppEngine({ trustProxyHeaders: ['x-forwarded-proto'] });
+// which is validated against `allowedHosts`. X-Forwarded-Prefix is always set below, never the client's.
+const angularApp = new AngularNodeAppEngine({ trustProxyHeaders: ['x-forwarded-proto', 'x-forwarded-prefix'] });
 
 app.disable('x-powered-by');
 // Honour X-Forwarded-Proto from Vercel, or from a reverse proxy on the same machine (e.g. nginx).
@@ -105,6 +105,9 @@ app.use((req, res, next) => {
   const { lang, path } = splitLangPrefix(req.originalUrl);
   // Angular reads originalUrl (falling back to url), so both must be the unprefixed path.
   req.url = req.originalUrl = path;
+  // Keeps Angular's own redirects (unknown page → home) inside /en.
+  delete req.headers['x-forwarded-prefix'];
+  if (lang === 'en') req.headers['x-forwarded-prefix'] = '/en';
   const context: RenderContext = { lang };
   angularApp
     .handle(req, context)
