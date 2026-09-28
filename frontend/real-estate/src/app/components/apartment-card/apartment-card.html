@@ -12,6 +12,7 @@
       [priority]="featured()"
       [sizes]="featured() ? '(min-width: 768px) 60vw, 100vw' : '(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw'"
       class="carousel-photo"
+      [class.carousel-photo--snap]="settling()"
       [class.carousel-photo--exit-left]="moving() && direction() === 1"
       [class.carousel-photo--exit-right]="moving() && direction() === -1"
     />

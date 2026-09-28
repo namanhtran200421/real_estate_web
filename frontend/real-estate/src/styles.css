@@ -509,6 +509,7 @@
   .carousel-photo--enter-right { transform: translate3d(100%, 0, 0); }
   .carousel-photo--enter-left { transform: translate3d(-100%, 0, 0); }
   .carousel-photo--arrive { transform: translate3d(0, 0, 0); }
+  .carousel-photo--snap { transition: none; }
 
   .carousel-control {
     display: grid;

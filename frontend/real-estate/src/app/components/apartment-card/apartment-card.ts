@@ -31,6 +31,7 @@ export class ApartmentCard {
   protected readonly incomingSrc = signal('');
   protected readonly direction = signal<1 | -1>(1);
   protected readonly moving = signal(false);
+  protected readonly settling = signal(false);
   protected readonly currentPhoto = computed(() => {
     const photos = this.apartment().photos;
     return photos[this.photoIndex() % photos.length];
@@ -70,7 +71,7 @@ export class ApartmentCard {
 
   private async changePhoto(step: 1 | -1): Promise<void> {
     const count = this.apartment().photos.length;
-    if (!this.featured() || count < 2 || this.loading || this.incomingIndex() !== null) return;
+    if (!this.featured() || count < 2 || this.loading || this.incomingIndex() !== null || this.settling()) return;
 
     this.loading = true;
     const nextIndex = (this.photoIndex() + step + count) % count;
@@ -99,10 +100,16 @@ export class ApartmentCard {
     const nextIndex = this.incomingIndex();
     if (nextIndex === null) return;
     if (this.slideTimer) clearTimeout(this.slideTimer);
+    // The incoming layer is already in place. Swap the main image without
+    // animating it back from its offscreen exit position.
+    this.settling.set(true);
     this.photoIndex.set(nextIndex);
     this.incomingIndex.set(null);
     this.moving.set(false);
     this.prefetchNeighbors();
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      if (!this.destroyRef.destroyed) this.settling.set(false);
+    }));
   }
 
   private photoUrl(index: number): string {
