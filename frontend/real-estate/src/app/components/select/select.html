@@ -15,7 +15,7 @@
     (keyup.space)="$event.preventDefault()"
   >
     <span class="truncate" [class.text-muted-foreground]="!selected()">
-      {{ selected()?.label ?? placeholder() }}
+      {{ selected()?.label ?? placeholder() ?? ('common.select' | transloco) }}
     </span>
     <svg
       viewBox="0 0 20 20"

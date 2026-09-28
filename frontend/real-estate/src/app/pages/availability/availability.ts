@@ -1,6 +1,7 @@
 import { Component, computed, effect, inject, input } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { ApartmentHeader } from '../../components/apartment-header/apartment-header';
 import { ApartmentNotFound } from '../../components/apartment-not-found/apartment-not-found';
 import { AvailabilityCalendar } from '../../components/availability-calendar/availability-calendar';
@@ -9,7 +10,7 @@ import { SeoService } from '../../services/seo.service';
 
 @Component({
   selector: 'app-availability',
-  imports: [DecimalPipe, RouterLink, ApartmentHeader, ApartmentNotFound, AvailabilityCalendar],
+  imports: [DecimalPipe, RouterLink, TranslocoPipe, ApartmentHeader, ApartmentNotFound, AvailabilityCalendar],
   templateUrl: './availability.html',
 })
 export class Availability {
@@ -24,7 +25,7 @@ export class Availability {
     const seo = inject(SeoService);
     effect(() => {
       const apt = this.apartment();
-      if (apt) seo.updateForApartment(apt, { label: 'Lịch trống', path: '/availability' });
+      if (apt) seo.updateForApartment(apt, { label: 'apartment.tabs.availability', path: '/availability' });
     });
   }
 }

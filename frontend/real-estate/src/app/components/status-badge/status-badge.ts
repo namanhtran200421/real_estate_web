@@ -1,10 +1,6 @@
-import { Component, computed, input } from '@angular/core';
-import {
-  BOOKING_STATUS_LABELS,
-  BookingStatus,
-  PAYMENT_STATUS_LABELS,
-  PaymentStatus,
-} from '../../models/booking';
+import { Component, input } from '@angular/core';
+import { TranslocoPipe } from '@jsverse/transloco';
+import { BookingStatus, PaymentStatus } from '../../models/booking';
 
 type Status = BookingStatus | PaymentStatus;
 
@@ -23,16 +19,11 @@ const TONES: Record<Status, string> = {
 
 @Component({
   selector: 'app-status-badge',
-  template: `<span class="small-caps inline-flex rounded-md border px-2.5 py-1 text-[0.625rem]" [class]="tone()">{{ label() }}</span>`,
+  imports: [TranslocoPipe],
+  template: `<span class="small-caps inline-flex rounded-md border px-2.5 py-1 text-[0.625rem]" [class]="tones[status()]">{{ 'status.' + status() | transloco }}</span>`,
 })
 export class StatusBadge {
   readonly status = input.required<Status>();
 
-  protected readonly label = computed(() => {
-    const s = this.status();
-    return s in BOOKING_STATUS_LABELS
-      ? BOOKING_STATUS_LABELS[s as BookingStatus]
-      : PAYMENT_STATUS_LABELS[s as PaymentStatus];
-  });
-  protected readonly tone = computed(() => TONES[this.status()]);
+  protected readonly tones = TONES;
 }

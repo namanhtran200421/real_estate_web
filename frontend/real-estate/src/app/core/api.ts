@@ -1,6 +1,8 @@
 import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
-import { InjectionToken, inject } from '@angular/core';
+import { Injectable, InjectionToken, inject } from '@angular/core';
+import { TranslocoService } from '@jsverse/transloco';
 import { environment } from '../../environments/environment';
+import { LANG } from '../i18n/i18n';
 import { shortDate } from '../shared/dates';
 
 /**
@@ -36,7 +38,7 @@ export interface Page<T> {
 /** Error body returned by the API: `{ error: { code, message, details? } }`. */
 export interface ApiError {
   code: string;
-  /** Written for end users, in Vietnamese; safe to show as-is. */
+  /** Written for end users, in Vietnamese; guest pages show it through ApiErrorMessages. */
   message: string;
   details?: { path: string; message: string }[];
 }
@@ -57,24 +59,53 @@ export function toApiError(error: unknown): ApiError {
   return UNKNOWN_ERROR;
 }
 
-/**
- * The most helpful sentence for the guest: the specific reason for a validation error (e.g.
- * "Mỗi lần đặt tối đa 90 đêm.") and the taken dates for a booking conflict.
- */
-export function userMessage(error: ApiError): string {
-  const detail = error.details?.[0]?.message;
-  if (!detail) return error.message;
-  if (error.code === 'VALIDATION_ERROR') return detail;
-  if (error.code === 'DATES_UNAVAILABLE') {
-    const dates = detail.split(', ').map(shortDate).join(', ');
-    return `${error.message} Ngày đã có người đặt: ${dates}.`;
-  }
-  return error.message;
-}
-
-/** Message for one form field from a validation error, if any. */
+/** Message for one form field from a validation error, if any (as the API wrote it). */
 export function fieldError(error: ApiError | undefined, path: string): string | undefined {
   return error?.details?.find((detail) => detail.path === path)?.message;
+}
+
+/**
+ * API errors as guest-facing text in the page's language. The API writes its messages in
+ * Vietnamese, so Vietnamese pages show them as they are; English pages show the translation
+ * for the error's code (src/i18n/en.json, "apiErrors").
+ */
+@Injectable({ providedIn: 'root' })
+export class ApiErrorMessages {
+  private readonly transloco = inject(TranslocoService);
+  private readonly lang = inject(LANG);
+
+  /** The error's own message. */
+  message(error: ApiError): string {
+    if (this.lang === 'vi') return error.message;
+    return this.translate(`apiErrors.${error.code}`, 'apiErrors.UNKNOWN');
+  }
+
+  /**
+   * The most helpful sentence for the guest: the specific reason for a validation error (e.g.
+   * "Mỗi lần đặt tối đa 90 đêm.") and the taken dates for a booking conflict.
+   */
+  userMessage(error: ApiError): string {
+    const detail = error.details?.[0];
+    if (!detail) return this.message(error);
+    if (error.code === 'VALIDATION_ERROR') return this.field(error, detail.path) ?? this.message(error);
+    if (error.code === 'DATES_UNAVAILABLE') {
+      const dates = detail.message.split(', ').map(shortDate).join(', ');
+      return `${this.message(error)} ${this.transloco.translate('apiErrors.bookedDates', { dates })}`;
+    }
+    return this.message(error);
+  }
+
+  /** Message for one form field from a validation error, if any. */
+  field(error: ApiError | undefined, path: string): string | undefined {
+    const message = fieldError(error, path);
+    if (!message || this.lang === 'vi') return message;
+    // "customer.email" → apiErrors.fields.email
+    return this.translate(`apiErrors.fields.${path.split('.').pop()}`, 'apiErrors.fields.other');
+  }
+
+  private translate(key: string, fallback: string): string {
+    return this.transloco.translate(key in this.transloco.getTranslation(this.lang) ? key : fallback);
+  }
 }
 
 /** Adds the renderer's key to API calls made during server-side rendering. */

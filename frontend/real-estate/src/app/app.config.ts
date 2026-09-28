@@ -1,6 +1,5 @@
 import {
   ApplicationConfig,
-  LOCALE_ID,
   inject,
   provideAppInitializer,
   provideBrowserGlobalErrorListeners,
@@ -25,11 +24,12 @@ import {
 import { routes } from './app.routes';
 import { adminAuthInterceptor } from './admin/admin-auth.service';
 import { apiInterceptor } from './core/api';
+import { provideI18n } from './i18n/i18n';
 import { imageLoader } from './image-loader';
 import imageWidths from './image-widths.json';
 import { SeoTitleStrategy } from './services/seo-title.strategy';
 
-// Vietnamese number/date formats (e.g. 1.700.000 ₫).
+// Vietnamese number/date formats (e.g. 1.700.000 ₫); English uses Angular's built-in data.
 registerLocaleData(localeVi);
 
 export const appConfig: ApplicationConfig = {
@@ -52,6 +52,7 @@ export const appConfig: ApplicationConfig = {
     { provide: IMAGE_CONFIG, useValue: { breakpoints: imageWidths } },
     // Keep #anchor targets clear of the sticky header.
     provideAppInitializer(() => inject(ViewportScroller).setOffset([0, 104])),
-    { provide: LOCALE_ID, useValue: 'vi' },
+    // Vietnamese at /, English at /en: translations, date/number locale and the base URL.
+    provideI18n(),
   ],
 };

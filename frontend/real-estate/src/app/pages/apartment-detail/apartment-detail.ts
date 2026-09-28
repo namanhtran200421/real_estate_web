@@ -1,5 +1,6 @@
 import { Component, computed, effect, inject, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { ApartmentGallery } from '../../components/apartment-gallery/apartment-gallery';
 import { ApartmentHeader } from '../../components/apartment-header/apartment-header';
 import { ApartmentNotFound } from '../../components/apartment-not-found/apartment-not-found';
@@ -10,7 +11,7 @@ import { SeoService } from '../../services/seo.service';
 
 @Component({
   selector: 'app-apartment-detail',
-  imports: [RouterLink, ApartmentGallery, ApartmentHeader, ApartmentNotFound, BookingCard, PriceList],
+  imports: [RouterLink, TranslocoPipe, ApartmentGallery, ApartmentHeader, ApartmentNotFound, BookingCard, PriceList],
   templateUrl: './apartment-detail.html',
 })
 export class ApartmentDetail {
@@ -25,13 +26,14 @@ export class ApartmentDetail {
     const seo = inject(SeoService);
     effect(() => {
       const apt = this.apartment();
-      if (apt) seo.updateForApartment(apt, { label: 'Tổng quan', path: '/apartment' });
+      if (apt) seo.updateForApartment(apt, { label: 'apartment.tabs.overview', path: '/apartment' });
     });
   }
 
+  /** `label` and `text` are translation keys. */
   protected readonly explore = [
-    { path: '/gallery', label: 'Hình ảnh', text: 'Xem toàn bộ ảnh căn hộ' },
-    { path: '/availability', label: 'Lịch trống', text: 'Kiểm tra ngày còn trống' },
-    { path: '/location', label: 'Vị trí', text: 'Bản đồ và địa điểm lân cận' },
+    { path: '/gallery', label: 'apartment.tabs.gallery', text: 'apartment.explore.gallery' },
+    { path: '/availability', label: 'apartment.tabs.availability', text: 'apartment.explore.availability' },
+    { path: '/location', label: 'apartment.tabs.location', text: 'apartment.explore.location' },
   ];
 }

@@ -1,4 +1,5 @@
-import { Injectable, computed, signal } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
+import { TranslocoService } from '@jsverse/transloco';
 import { MAX_NIGHTS, nightsBetween, todayIso } from '../shared/dates';
 import { readJson, removeItem, writeJson } from './browser-storage';
 
@@ -40,6 +41,7 @@ export type DraftErrors = Partial<Record<keyof BookingDraft, string>>;
  */
 @Injectable({ providedIn: 'root' })
 export class BookingDraftService {
+  private readonly transloco = inject(TranslocoService);
   private readonly state = signal<BookingDraft>({ ...EMPTY, ...readJson<BookingDraft>('session', STORAGE_KEY) });
 
   readonly draft = this.state.asReadonly();
@@ -48,17 +50,18 @@ export class BookingDraftService {
   readonly errors = computed<DraftErrors>(() => {
     const draft = this.state();
     const errors: DraftErrors = {};
-    if (!draft.checkIn) errors.checkIn = 'Chọn ngày nhận phòng trên lịch.';
-    else if (draft.checkIn < todayIso()) errors.checkIn = 'Ngày nhận phòng đã qua, vui lòng chọn lại.';
-    if (!draft.checkOut) errors.checkOut = 'Chọn ngày trả phòng trên lịch.';
+    const t = (key: string) => this.transloco.translate(`booking.errors.${key}`, { max: MAX_NIGHTS });
+    if (!draft.checkIn) errors.checkIn = t('checkInMissing');
+    else if (draft.checkIn < todayIso()) errors.checkIn = t('checkInPast');
+    if (!draft.checkOut) errors.checkOut = t('checkOutMissing');
     if (draft.checkIn && draft.checkOut) {
       const nights = nightsBetween(draft.checkIn, draft.checkOut);
-      if (nights < 1) errors.checkOut = 'Ngày trả phòng phải sau ngày nhận phòng.';
-      if (nights > MAX_NIGHTS) errors.checkOut = `Mỗi lần đặt tối đa ${MAX_NIGHTS} đêm.`;
+      if (nights < 1) errors.checkOut = t('checkOutBeforeCheckIn');
+      if (nights > MAX_NIGHTS) errors.checkOut = t('tooManyNights');
     }
-    if (!draft.name.trim()) errors.name = 'Nhập họ và tên.';
-    if (!PHONE.test(draft.phone.replace(/[\s.-]/g, ''))) errors.phone = 'Số điện thoại không hợp lệ.';
-    if (!EMAIL.test(draft.email.trim())) errors.email = 'Email không hợp lệ.';
+    if (!draft.name.trim()) errors.name = t('nameMissing');
+    if (!PHONE.test(draft.phone.replace(/[\s.-]/g, ''))) errors.phone = t('phoneInvalid');
+    if (!EMAIL.test(draft.email.trim())) errors.email = t('emailInvalid');
     return errors;
   });
 

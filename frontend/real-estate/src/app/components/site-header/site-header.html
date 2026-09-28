@@ -1,6 +1,6 @@
 <header class="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur-md">
   <div class="container-editorial flex h-[4.5rem] max-w-6xl items-center gap-4">
-    <a routerLink="/" class="shrink-0" [attr.aria-label]="site.name + ' · Trang chủ'" (click)="menuOpen.set(false)">
+    <a routerLink="/" class="shrink-0" [attr.aria-label]="'nav.homeLabel' | transloco: { site: site.name }" (click)="menuOpen.set(false)">
       <img
         src="brand/logo-horizontal.webp"
         [alt]="site.name"
@@ -11,7 +11,7 @@
       />
     </a>
 
-    <nav aria-label="Điều hướng chính" class="ml-10 hidden items-center gap-8 lg:flex">
+    <nav [attr.aria-label]="'nav.main' | transloco" class="ml-10 hidden items-center gap-8 lg:flex">
       @for (link of links; track link.path) {
         <a
           [routerLink]="link.path"
@@ -20,7 +20,7 @@
           ariaCurrentWhenActive="page"
           class="nav-link whitespace-nowrap py-1 text-sm font-medium tracking-[0.03em]"
         >
-          {{ link.label }}
+          {{ link.label | transloco }}
         </a>
       }
     </nav>
@@ -31,16 +31,8 @@
 
       <span class="hidden h-5 w-px bg-border lg:block" aria-hidden="true"></span>
 
-      <div class="small-caps hidden items-center sm:flex" role="group" aria-label="Ngôn ngữ">
-        <button type="button" aria-pressed="true" class="min-h-11 px-1.5 text-foreground">VI</button>
-        <span class="text-border" aria-hidden="true">/</span>
-        <button
-          type="button"
-          aria-pressed="false"
-          class="link-subtle min-h-11 px-1.5"
-        >
-          EN
-        </button>
+      <div class="small-caps hidden items-center sm:flex" role="group" [attr.aria-label]="'nav.language' | transloco">
+        <ng-container *ngTemplateOutlet="languageSwitch" />
       </div>
       <a
         routerLink="/book"
@@ -48,14 +40,14 @@
         class="btn btn-primary px-5 lg:h-10 lg:min-h-10 lg:text-sm"
         (click)="menuOpen.set(false)"
       >
-        Đặt lịch
+        {{ 'nav.book' | transloco }}
       </a>
       <button
         type="button"
         class="icon-btn lg:hidden"
         [attr.aria-expanded]="menuOpen()"
         aria-controls="mobile-menu"
-        [attr.aria-label]="menuOpen() ? 'Đóng menu' : 'Mở menu'"
+        [attr.aria-label]="(menuOpen() ? 'nav.closeMenu' : 'nav.openMenu') | transloco"
         (click)="menuOpen.set(!menuOpen())"
       >
         <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
@@ -70,7 +62,7 @@
   </div>
 
   @if (menuOpen()) {
-    <nav id="mobile-menu" aria-label="Menu" class="border-t border-border bg-background lg:hidden">
+    <nav id="mobile-menu" [attr.aria-label]="'nav.menu' | transloco" class="border-t border-border bg-background lg:hidden">
       <div class="container-editorial max-w-6xl py-4">
         <ng-container *ngTemplateOutlet="search; context: { id: 'site-search-mobile', mobile: true }" />
         <ul class="mt-2 divide-y divide-border">
@@ -84,21 +76,19 @@
                 class="flex min-h-12 items-center font-serif text-lg transition-colors hover:text-accent-deep"
                 (click)="menuOpen.set(false)"
               >
-                {{ link.label }}
+                {{ link.label | transloco }}
               </a>
             </li>
           }
           <li>
             <a routerLink="/booking/manage" class="flex min-h-12 items-center font-serif text-lg transition-colors hover:text-accent-deep" (click)="menuOpen.set(false)">
-              Tra cứu đặt phòng
+              {{ 'nav.lookup' | transloco }}
             </a>
           </li>
           <li class="flex min-h-12 items-center gap-4 sm:hidden">
-            <span class="small-caps text-muted-foreground">Ngôn ngữ</span>
-            <span class="small-caps flex items-center" role="group" aria-label="Ngôn ngữ">
-              <button type="button" aria-pressed="true" class="min-h-11 px-1.5 text-foreground">VI</button>
-              <span class="text-border" aria-hidden="true">/</span>
-              <button type="button" aria-pressed="false" class="link-subtle min-h-11 px-1.5">EN</button>
+            <span class="small-caps text-muted-foreground">{{ 'nav.language' | transloco }}</span>
+            <span class="small-caps flex items-center" role="group" [attr.aria-label]="'nav.language' | transloco">
+              <ng-container *ngTemplateOutlet="languageSwitch" />
             </span>
           </li>
         </ul>
@@ -114,7 +104,7 @@
     [class]="mobile ? 'block w-full' : 'hidden w-56 lg:block xl:w-72'"
     (submit)="$event.preventDefault()"
   >
-    <label [for]="id" class="sr-only">Tìm căn hộ</label>
+    <label [for]="id" class="sr-only">{{ 'nav.search' | transloco }}</label>
     <svg
       viewBox="0 0 24 24"
       class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
@@ -131,9 +121,30 @@
       type="search"
       enterkeyhint="search"
       autocomplete="off"
-      placeholder="Tìm căn hộ, khu vực…"
+      [placeholder]="'nav.searchPlaceholder' | transloco"
       class="input pl-9 text-sm"
       [class]="mobile ? 'h-11 bg-card' : 'h-10 border-transparent bg-muted hover:border-border focus-visible:bg-card'"
     />
   </form>
+</ng-template>
+
+<!-- VI / EN: the current language, and a plain link (full page load) to this page in the other one. -->
+<ng-template #languageSwitch>
+  @for (option of languages(); track option.lang; let last = $last) {
+    @if (option.lang === lang) {
+      <span class="inline-flex min-h-11 items-center px-1.5 text-foreground" aria-current="true">{{ option.lang.toUpperCase() }}</span>
+    } @else {
+      <a
+        [href]="option.href"
+        [attr.hreflang]="option.lang"
+        [attr.lang]="option.lang"
+        class="link-subtle inline-flex min-h-11 items-center px-1.5"
+      >
+        {{ option.lang.toUpperCase() }}
+      </a>
+    }
+    @if (!last) {
+      <span class="text-border" aria-hidden="true">/</span>
+    }
+  }
 </ng-template>

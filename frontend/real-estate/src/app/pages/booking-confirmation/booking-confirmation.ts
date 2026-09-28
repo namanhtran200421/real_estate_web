@@ -1,10 +1,10 @@
 import { Component, DestroyRef, computed, effect, inject, input, resource, signal } from '@angular/core';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { BookingSteps } from '../../components/booking-steps/booking-steps';
 import { StatusBadge } from '../../components/status-badge/status-badge';
-import { toApiError } from '../../core/api';
-import { PAYMENT_PROVIDER_LABELS } from '../../models/booking';
+import { ApiErrorMessages, toApiError } from '../../core/api';
 import { ApartmentService } from '../../services/apartment.service';
 import { BookingDraftService } from '../../services/booking-draft.service';
 import { BookingService } from '../../services/booking.service';
@@ -18,18 +18,17 @@ const REFRESH_WHILE_CHECKING_MS = 30_000;
  */
 @Component({
   selector: 'app-booking-confirmation',
-  imports: [DatePipe, DecimalPipe, RouterLink, BookingSteps, StatusBadge],
+  imports: [DatePipe, DecimalPipe, RouterLink, TranslocoPipe, BookingSteps, StatusBadge],
   templateUrl: './booking-confirmation.html',
 })
 export class BookingConfirmation {
   private readonly bookings = inject(BookingService);
   private readonly apartments = inject(ApartmentService);
   private readonly drafts = inject(BookingDraftService);
+  private readonly errorMessages = inject(ApiErrorMessages);
 
   /** Bound from the `:reference` route param. */
   readonly reference = input.required<string>();
-
-  protected readonly providerLabels = PAYMENT_PROVIDER_LABELS;
 
   protected readonly booking = resource({
     params: () => this.reference(),
@@ -47,7 +46,7 @@ export class BookingConfirmation {
   );
   protected readonly loadError = computed(() => {
     if (this.booking.status() !== 'error' || this.needsLookup()) return undefined;
-    return toApiError(this.booking.error()).message;
+    return this.errorMessages.message(toApiError(this.booking.error()));
   });
 
   protected readonly apartment = computed(() => {
@@ -84,7 +83,7 @@ export class BookingConfirmation {
       await this.bookings.lookup(this.reference(), this.lookupContact());
       this.booking.reload();
     } catch (error) {
-      this.lookupError.set(toApiError(error).message);
+      this.lookupError.set(this.errorMessages.message(toApiError(error)));
     } finally {
       this.lookingUp.set(false);
     }

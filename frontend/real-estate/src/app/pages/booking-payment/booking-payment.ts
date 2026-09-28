@@ -1,9 +1,10 @@
 import { Component, DestroyRef, computed, effect, inject, input, resource, signal } from '@angular/core';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { BookingSteps } from '../../components/booking-steps/booking-steps';
 import { BookingSummary } from '../../components/booking-summary/booking-summary';
-import { toApiError, userMessage } from '../../core/api';
+import { ApiErrorMessages, toApiError } from '../../core/api';
 import { PaymentOption, Stay } from '../../models/booking';
 import { ApartmentService } from '../../services/apartment.service';
 import { BookingService } from '../../services/booking.service';
@@ -14,13 +15,14 @@ import { BookingService } from '../../services/booking.service';
  */
 @Component({
   selector: 'app-booking-payment',
-  imports: [DatePipe, DecimalPipe, RouterLink, BookingSteps, BookingSummary],
+  imports: [DatePipe, DecimalPipe, RouterLink, TranslocoPipe, BookingSteps, BookingSummary],
   templateUrl: './booking-payment.html',
 })
 export class BookingPayment {
   private readonly bookings = inject(BookingService);
   private readonly apartments = inject(ApartmentService);
   private readonly router = inject(Router);
+  protected readonly errorMessages = inject(ApiErrorMessages);
 
   /** Bound from the `?ref=` query param. */
   readonly ref = input<string>();
@@ -120,7 +122,7 @@ export class BookingPayment {
       await this.bookings.reportTransfer(booking.reference, option);
       void this.router.navigate(['/booking', booking.reference, 'confirmation']);
     } catch (error) {
-      this.reportError.set(userMessage(toApiError(error)));
+      this.reportError.set(this.errorMessages.userMessage(toApiError(error)));
       this.reporting.set(false);
       this.booking.reload();
     }

@@ -1,10 +1,10 @@
 <section class="pb-20 pt-16 md:pb-28 md:pt-20">
   <div class="container-editorial max-w-6xl">
     <div class="text-center">
-      <p class="section-label mx-auto max-w-sm">Liên hệ</p>
-      <h1 class="text-4xl md:text-5xl">Chúng tôi luôn sẵn sàng hỗ trợ</h1>
+      <p class="section-label mx-auto max-w-sm">{{ 'nav.contact' | transloco }}</p>
+      <h1 class="text-4xl md:text-5xl">{{ 'contact.title' | transloco }}</h1>
       <p class="mx-auto mt-4 max-w-lg text-muted-foreground">
-        Gửi tin nhắn cho chúng tôi, hoặc gọi điện, nhắn Zalo. Chúng tôi sẽ phản hồi sớm nhất có thể.
+        {{ 'contact.intro' | transloco }}
       </p>
     </div>
 
@@ -12,24 +12,24 @@
       <!-- Form -->
       @if (sent()) {
         <div class="card card-accent-top text-center" role="status">
-          <h2 class="text-2xl md:text-3xl">Đã gửi tin nhắn</h2>
-          <p class="mt-4 text-muted-foreground">Cảm ơn bạn. Chúng tôi sẽ phản hồi sớm nhất có thể.</p>
-          <a routerLink="/" class="btn btn-outline mt-8">Về trang chủ</a>
+          <h2 class="text-2xl md:text-3xl">{{ 'contact.sentTitle' | transloco }}</h2>
+          <p class="mt-4 text-muted-foreground">{{ 'contact.sentText' | transloco }}</p>
+          <a routerLink="/" class="btn btn-outline mt-8">{{ 'common.backHome' | transloco }}</a>
         </div>
       } @else {
       <form class="card card-accent-top" novalidate (submit)="$event.preventDefault(); submit()">
-        <h2 class="text-2xl md:text-3xl">Gửi tin nhắn</h2>
-        <p class="mt-2 text-sm text-muted-foreground">Các mục có dấu * là bắt buộc.</p>
+        <h2 class="text-2xl md:text-3xl">{{ 'contact.formTitle' | transloco }}</h2>
+        <p class="mt-2 text-sm text-muted-foreground">{{ 'contact.required' | transloco }}</p>
 
         <div class="mt-8 space-y-6">
           <div>
-            <label class="label" for="contact-name">Họ và tên *</label>
+            <label class="label" for="contact-name">{{ 'common.fullName' | transloco }} *</label>
             <input
               id="contact-name"
               class="input"
               type="text"
               autocomplete="name"
-              placeholder="Nguyễn Văn A"
+              [placeholder]="'common.namePlaceholder' | transloco"
               maxlength="120"
               required
               [value]="form().name"
@@ -42,14 +42,14 @@
 
           <div class="grid gap-6 sm:grid-cols-2">
             <div>
-              <label class="label" for="contact-phone">Số điện thoại *</label>
+              <label class="label" for="contact-phone">{{ 'common.phone' | transloco }} *</label>
               <input
                 id="contact-phone"
                 class="input"
                 type="tel"
                 inputmode="tel"
                 autocomplete="tel"
-                placeholder="09xx xxx xxx"
+                [placeholder]="'common.phonePlaceholder' | transloco"
                 maxlength="20"
                 required
                 [value]="form().phone"
@@ -60,14 +60,14 @@
               }
             </div>
             <div>
-              <label class="label" for="contact-email">Email</label>
+              <label class="label" for="contact-email">{{ 'common.email' | transloco }}</label>
               <input
                 id="contact-email"
                 class="input"
                 type="email"
                 inputmode="email"
                 autocomplete="email"
-                placeholder="ban@email.com"
+                [placeholder]="'common.emailPlaceholder' | transloco"
                 maxlength="254"
                 [value]="form().email"
                 (input)="set('email', fromInput($event))"
@@ -80,7 +80,7 @@
 
           <div class="grid gap-6 sm:grid-cols-2">
             <div>
-              <label class="label" for="contact-topic">Chủ đề</label>
+              <label class="label" for="contact-topic">{{ 'contact.topic' | transloco }}</label>
               <app-select
                 inputId="contact-topic"
                 name="topic"
@@ -91,13 +91,14 @@
             </div>
             <div>
               <label class="label" for="contact-apartment">
-                Căn hộ quan tâm <span class="font-normal text-muted-foreground">(không bắt buộc)</span>
+                {{ 'contact.apartment' | transloco }}
+                <span class="font-normal text-muted-foreground">{{ 'common.optional' | transloco }}</span>
               </label>
               <app-select
                 inputId="contact-apartment"
                 name="apartment"
                 [options]="apartmentOptions()"
-                placeholder="Chưa chọn"
+                [placeholder]="'contact.noApartment' | transloco"
                 [value]="form().apartmentSlug"
                 (valueChange)="set('apartmentSlug', $event)"
               />
@@ -105,11 +106,11 @@
           </div>
 
           <div>
-            <label class="label" for="contact-message">Lời nhắn *</label>
+            <label class="label" for="contact-message">{{ 'common.message' | transloco }} *</label>
             <textarea
               id="contact-message"
               class="input min-h-40"
-              placeholder="Bạn cần chúng tôi hỗ trợ điều gì?"
+              [placeholder]="'contact.messagePlaceholder' | transloco"
               maxlength="3000"
               required
               [value]="form().message"
@@ -136,17 +137,17 @@
 
         @if (error(); as err) {
           <p class="mt-6 rounded-md border border-accent bg-accent-muted p-3 text-sm text-accent-deep" role="alert">
-            {{ err.message }}
+            {{ errorMessages.message(err) }}
           </p>
         }
 
         <div class="mt-8 flex flex-col gap-4 border-t border-border pt-6 sm:flex-row sm:items-center sm:justify-between">
-          <p class="text-sm text-muted-foreground">Thông tin của bạn chỉ dùng để phản hồi yêu cầu này.</p>
+          <p class="text-sm text-muted-foreground">{{ 'contact.privacy' | transloco }}</p>
           <button type="submit" class="btn btn-primary shrink-0" [disabled]="sending()">
             @if (sending()) {
-              Đang gửi…
+              {{ 'common.sending' | transloco }}
             } @else {
-              Gửi tin nhắn
+              {{ 'contact.submit' | transloco }}
             }
           </button>
         </div>
@@ -156,7 +157,7 @@
       <!-- Direct contact -->
       <aside class="space-y-6">
         <div class="card">
-          <p class="small-caps text-accent-deep">Liên hệ trực tiếp</p>
+          <p class="small-caps text-accent-deep">{{ 'contact.direct' | transloco }}</p>
           <ul class="mt-5 divide-y divide-border border-y border-border">
             @for (c of contact; track c.label) {
               <li>
@@ -164,7 +165,7 @@
                   [href]="c.href"
                   class="flex min-h-12 flex-col justify-center py-3 transition-colors hover:text-accent-deep"
                 >
-                  <span class="text-sm text-muted-foreground">{{ c.label }}</span>
+                  <span class="text-sm text-muted-foreground">{{ c.label | transloco }}</span>
                   <span class="font-serif text-lg break-words">{{ c.value }}</span>
                 </a>
               </li>
@@ -173,10 +174,10 @@
         </div>
 
         <div class="card">
-          <p class="small-caps text-accent-deep">Đã đặt phòng?</p>
-          <p class="mt-3 font-serif text-xl">Xem trạng thái đặt phòng</p>
-          <p class="mt-2 text-sm text-muted-foreground">Tra cứu bằng mã đặt phòng và email hoặc số điện thoại.</p>
-          <a routerLink="/booking/manage" class="btn btn-outline mt-5 w-full">Tra cứu đặt phòng</a>
+          <p class="small-caps text-accent-deep">{{ 'contact.booked' | transloco }}</p>
+          <p class="mt-3 font-serif text-xl">{{ 'contact.checkStatus' | transloco }}</p>
+          <p class="mt-2 text-sm text-muted-foreground">{{ 'contact.lookupHint' | transloco }}</p>
+          <a routerLink="/booking/manage" class="btn btn-outline mt-5 w-full">{{ 'nav.lookup' | transloco }}</a>
         </div>
       </aside>
     </div>

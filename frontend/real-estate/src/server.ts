@@ -6,6 +6,7 @@ import {
 } from '@angular/ssr/node';
 import express, { Request } from 'express';
 import { join } from 'node:path';
+import { LANGS, Lang, RenderContext, splitLangPrefix, withLangPrefix } from './app/i18n/lang';
 import { environment } from './environments/environment';
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
@@ -50,7 +51,7 @@ app.get('/robots.txt', (req, res) => {
     .type('text/plain')
     .set('Cache-Control', 'public, max-age=3600')
     .send(
-      `User-agent: *\nAllow: /\nDisallow: /book\nDisallow: /admin\n\nSitemap: ${origin(req)}/sitemap.xml\n`,
+      `User-agent: *\nAllow: /\nDisallow: /book\nDisallow: /en/book\nDisallow: /admin\n\nSitemap: ${origin(req)}/sitemap.xml\n`,
     );
 });
 
@@ -65,13 +66,23 @@ app.get('/sitemap.xml', async (req, res) => {
       ['/apartment', '/gallery', '/availability', '/location'].map((p) => `${p}?apt=${slug}`),
     ),
   ];
+  const xmlUrl = (lang: Lang, p: string) => (base + withLangPrefix(lang, p)).replace(/&/g, '&amp;');
+  // Every page in each language, each listing its translations (hreflang) for search engines.
   const urls = paths
-    .map((p) => `  <url><loc>${(base + p).replace(/&/g, '&amp;')}</loc></url>`)
+    .flatMap((p) => {
+      const alternates = LANGS.map(
+        (lang) => `<xhtml:link rel="alternate" hreflang="${lang}" href="${xmlUrl(lang, p)}"/>`,
+      ).join('');
+      return LANGS.map((lang) => `  <url><loc>${xmlUrl(lang, p)}</loc>${alternates}</url>`);
+    })
     .join('\n');
   res
     .type('application/xml')
     .set('Cache-Control', 'public, max-age=3600')
-    .send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`);
+    .send(
+      `<?xml version="1.0" encoding="UTF-8"?>\n` +
+        `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n${urls}\n</urlset>\n`,
+    );
 });
 
 /**
@@ -87,10 +98,16 @@ app.use(
 
 /**
  * Handle all other requests by rendering the Angular application.
+ * English pages live under /en: the prefix is removed so the route (and its render mode and
+ * headers) matches as usual, and the app gets the language, and its /en/ base URL, from the context.
  */
 app.use((req, res, next) => {
+  const { lang, path } = splitLangPrefix(req.originalUrl);
+  // Angular reads originalUrl (falling back to url), so both must be the unprefixed path.
+  req.url = req.originalUrl = path;
+  const context: RenderContext = { lang };
   angularApp
-    .handle(req)
+    .handle(req, context)
     .then((response) => (response ? writeResponseToNodeResponse(response, res) : next()))
     .catch(next);
 });

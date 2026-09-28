@@ -6,7 +6,7 @@
       type="button"
       class="icon-btn"
       [disabled]="offset() === 0"
-      aria-label="Tháng trước"
+      [attr.aria-label]="'calendar.previousMonth' | transloco"
       (click)="previous()"
     >
       <svg viewBox="0 0 20 20" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
@@ -20,7 +20,7 @@
       type="button"
       class="icon-btn"
       [disabled]="offset() === monthsAhead()"
-      aria-label="Tháng sau"
+      [attr.aria-label]="'calendar.nextMonth' | transloco"
       (click)="next()"
     >
       <svg viewBox="0 0 20 20" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
@@ -31,7 +31,7 @@
 
   <div class="mt-8 grid grid-cols-7 gap-1 text-center sm:gap-2">
     @for (day of weekdays; track day) {
-      <span class="small-caps pb-2 text-muted-foreground">{{ day }}</span>
+      <span class="small-caps pb-2 text-muted-foreground">{{ day | transloco }}</span>
     }
     @for (blank of m.blanks; track blank) {
       <span></span>
@@ -54,13 +54,13 @@
 
   <div class="mt-8 flex flex-wrap justify-center gap-x-8 gap-y-2 border-t border-border pt-6 text-sm text-muted-foreground">
     <span class="flex items-center gap-2">
-      <span class="h-3.5 w-3.5 rounded-sm border border-border bg-card"></span> Còn trống
+      <span class="h-3.5 w-3.5 rounded-sm border border-border bg-card"></span> {{ 'calendar.available' | transloco }}
     </span>
     <span class="flex items-center gap-2">
-      <span class="h-3.5 w-3.5 rounded-sm bg-muted"></span> Đã đặt
+      <span class="h-3.5 w-3.5 rounded-sm bg-muted"></span> {{ 'calendar.booked' | transloco }}
     </span>
     <span class="flex items-center gap-2">
-      <span class="h-3.5 w-3.5 rounded-sm text-center text-[0.625rem] leading-[0.875rem] text-muted-foreground/40">1</span> Đã qua
+      <span class="h-3.5 w-3.5 rounded-sm text-center text-[0.625rem] leading-[0.875rem] text-muted-foreground/40">1</span> {{ 'calendar.past' | transloco }}
     </span>
   </div>
 </div>

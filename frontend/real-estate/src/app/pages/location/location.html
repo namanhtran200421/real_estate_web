@@ -7,7 +7,7 @@
         <!-- Google Maps is heavy: only load it once the map area is on screen. -->
         @defer (on viewport) {
           <iframe
-            [title]="'Bản đồ vị trí ' + apt.name"
+            [title]="'location.mapTitle' | transloco: { name: apt.name }"
             [src]="mapUrl()"
             loading="lazy"
             referrerpolicy="no-referrer-when-downgrade"
@@ -15,13 +15,13 @@
           ></iframe>
         } @placeholder {
           <div class="grid h-80 w-full place-items-center md:h-full md:min-h-[28rem]">
-            <span class="small-caps text-muted-foreground">Đang tải bản đồ…</span>
+            <span class="small-caps text-muted-foreground">{{ 'location.loadingMap' | transloco }}</span>
           </div>
         }
       </div>
       <div>
-        <p class="small-caps text-accent-deep">Địa chỉ</p>
-        <h2 class="mt-2 text-3xl md:text-4xl">Xung quanh</h2>
+        <p class="small-caps text-accent-deep">{{ 'location.address' | transloco }}</p>
+        <h2 class="mt-2 text-3xl md:text-4xl">{{ 'location.nearby' | transloco }}</h2>
         <p class="mt-4 text-muted-foreground">{{ apt.address }}</p>
         <ul class="mt-8 divide-y divide-border border-y border-border">
           @for (spot of apt.nearby; track spot.place) {
@@ -32,7 +32,7 @@
           }
         </ul>
         <p class="mt-6 text-sm text-muted-foreground">
-          Địa chỉ chính xác và hướng dẫn nhận phòng được gửi kèm email xác nhận.
+          {{ 'location.note' | transloco }}
         </p>
       </div>
     </div>
@@ -40,8 +40,8 @@
 
   <section class="border-t border-border bg-muted py-20 md:py-24">
     <div class="container-editorial max-w-6xl">
-      <p class="section-label">Liên hệ</p>
-      <h2 class="text-center text-3xl md:text-4xl">Cần chỉ đường? Gọi cho chúng tôi</h2>
+      <p class="section-label">{{ 'nav.contact' | transloco }}</p>
+      <h2 class="text-center text-3xl md:text-4xl">{{ 'location.callUs' | transloco }}</h2>
       <app-contact-cards class="mt-12 block" />
     </div>
   </section>

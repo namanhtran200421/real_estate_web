@@ -5,33 +5,43 @@
     <div class="container-editorial max-w-6xl">
       <app-booking-steps [current]="2" />
 
-      <h1 class="mt-12 text-4xl md:text-5xl">Xem lại đặt phòng</h1>
-      <p class="mt-3 text-muted-foreground">Kiểm tra thông tin và tổng tiền trước khi thanh toán.</p>
+      <h1 class="mt-12 text-4xl md:text-5xl">{{ 'review.title' | transloco }}</h1>
+      <p class="mt-3 text-muted-foreground">{{ 'review.intro' | transloco }}</p>
 
       <div class="mt-10 grid gap-10 lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-14">
         <div class="min-w-0 space-y-8">
           <!-- Stay -->
           <div class="card">
             <div class="flex items-baseline justify-between gap-4">
-              <h2 class="text-2xl">Chi tiết lưu trú</h2>
-              <a routerLink="/book" [queryParams]="{ apt: apt.slug }" class="link text-sm">Sửa</a>
+              <h2 class="text-2xl">{{ 'review.stay' | transloco }}</h2>
+              <a routerLink="/book" [queryParams]="{ apt: apt.slug }" class="link text-sm">{{ 'review.edit' | transloco }}</a>
             </div>
             <dl class="mt-6 grid gap-x-8 gap-y-5 sm:grid-cols-2">
               <div>
-                <dt class="small-caps text-muted-foreground">Nhận phòng</dt>
-                <dd class="mt-1">{{ d.checkIn | date: 'EEEE, dd/MM/yyyy' }} · từ {{ apt.checkIn }}</dd>
+                <dt class="small-caps text-muted-foreground">{{ 'common.checkIn' | transloco }}</dt>
+                <dd class="mt-1">
+                  {{ 'review.checkInAt' | transloco: { date: (d.checkIn | date: 'EEEE, dd/MM/yyyy'), time: apt.checkIn } }}
+                </dd>
               </div>
               <div>
-                <dt class="small-caps text-muted-foreground">Trả phòng</dt>
-                <dd class="mt-1">{{ d.checkOut | date: 'EEEE, dd/MM/yyyy' }} · trước {{ apt.checkOut }}</dd>
+                <dt class="small-caps text-muted-foreground">{{ 'common.checkOut' | transloco }}</dt>
+                <dd class="mt-1">
+                  {{ 'review.checkOutAt' | transloco: { date: (d.checkOut | date: 'EEEE, dd/MM/yyyy'), time: apt.checkOut } }}
+                </dd>
               </div>
               <div>
-                <dt class="small-caps text-muted-foreground">Số đêm</dt>
-                <dd class="mt-1">{{ q()?.nights ?? '…' }} đêm</dd>
+                <dt class="small-caps text-muted-foreground">{{ 'common.nightCount' | transloco }}</dt>
+                <dd class="mt-1">
+                  @if (q(); as quote) {
+                    {{ 'common.nights' | transloco: { count: quote.nights } }}
+                  } @else {
+                    …
+                  }
+                </dd>
               </div>
               <div>
-                <dt class="small-caps text-muted-foreground">Số khách</dt>
-                <dd class="mt-1">{{ d.guests }} khách</dd>
+                <dt class="small-caps text-muted-foreground">{{ 'common.guestCount' | transloco }}</dt>
+                <dd class="mt-1">{{ 'common.guests' | transloco: { count: d.guests } }}</dd>
               </div>
             </dl>
           </div>
@@ -39,25 +49,25 @@
           <!-- Contact -->
           <div class="card">
             <div class="flex items-baseline justify-between gap-4">
-              <h2 class="text-2xl">Thông tin liên hệ</h2>
-              <a routerLink="/book" [queryParams]="{ apt: apt.slug }" class="link text-sm">Sửa</a>
+              <h2 class="text-2xl">{{ 'booking.contact' | transloco }}</h2>
+              <a routerLink="/book" [queryParams]="{ apt: apt.slug }" class="link text-sm">{{ 'review.edit' | transloco }}</a>
             </div>
             <dl class="mt-6 grid gap-x-8 gap-y-5 sm:grid-cols-2">
               <div>
-                <dt class="small-caps text-muted-foreground">Họ và tên</dt>
+                <dt class="small-caps text-muted-foreground">{{ 'common.fullName' | transloco }}</dt>
                 <dd class="mt-1">{{ d.name }}</dd>
               </div>
               <div>
-                <dt class="small-caps text-muted-foreground">Số điện thoại</dt>
+                <dt class="small-caps text-muted-foreground">{{ 'common.phone' | transloco }}</dt>
                 <dd class="mt-1">{{ d.phone }}</dd>
               </div>
               <div class="sm:col-span-2">
-                <dt class="small-caps text-muted-foreground">Email</dt>
+                <dt class="small-caps text-muted-foreground">{{ 'common.email' | transloco }}</dt>
                 <dd class="mt-1 break-words">{{ d.email }}</dd>
               </div>
               @if (d.message) {
                 <div class="sm:col-span-2">
-                  <dt class="small-caps text-muted-foreground">Lời nhắn</dt>
+                  <dt class="small-caps text-muted-foreground">{{ 'common.message' | transloco }}</dt>
                   <dd class="mt-1 text-muted-foreground">{{ d.message }}</dd>
                 </div>
               }
@@ -66,15 +76,17 @@
 
           <!-- Price breakdown -->
           <div class="card card-accent-top">
-            <h2 class="text-2xl">Chi tiết giá</h2>
+            <h2 class="text-2xl">{{ 'review.priceDetails' | transloco }}</h2>
 
             @if (quoteError(); as error) {
               <div class="mt-6 rounded-md border border-accent bg-accent-muted p-4 text-sm text-accent-deep" role="alert">
-                <p>{{ userMessage(error) }}</p>
+                <p>{{ errorMessages.userMessage(error) }}</p>
                 @if (error.code === 'PROMO_CODE_INVALID') {
-                  <button type="button" class="link mt-2" (click)="removePromo()">Bỏ mã khuyến mãi</button>
+                  <button type="button" class="link mt-2" (click)="removePromo()">{{ 'review.removePromo' | transloco }}</button>
                 } @else {
-                  <a routerLink="/book" [queryParams]="{ apt: apt.slug }" class="link mt-2 inline-block">Chọn lại ngày</a>
+                  <a routerLink="/book" [queryParams]="{ apt: apt.slug }" class="link mt-2 inline-block">
+                    {{ 'review.chooseDates' | transloco }}
+                  </a>
                 }
               </div>
             } @else if (q(); as q) {
@@ -83,7 +95,7 @@
                   <li class="flex items-baseline justify-between gap-4 py-3">
                     <span>
                       {{ line.date | date: 'EEEE, dd/MM' }}
-                      <span class="block text-sm text-muted-foreground sm:inline">· {{ rateLabels[line.rate] }}</span>
+                      <span class="block text-sm text-muted-foreground sm:inline">· {{ 'rates.' + line.rate | transloco }}</span>
                     </span>
                     <span class="shrink-0">{{ line.amount | number }} ₫</span>
                   </li>
@@ -92,15 +104,17 @@
 
               <dl class="mt-4 space-y-3">
                 <div class="flex justify-between gap-4">
-                  <dt class="text-muted-foreground">Tạm tính</dt>
+                  <dt class="text-muted-foreground">{{ 'review.subtotal' | transloco }}</dt>
                   <dd>{{ q.subtotal | number }} ₫</dd>
                 </div>
                 @if (q.stayDiscount; as discount) {
                   <div class="flex justify-between gap-4">
                     @if (discount.kind === 'long_stay') {
-                      <dt class="text-muted-foreground">Giảm giá ở {{ q.nights }} đêm (−{{ discount.percent }}%)</dt>
+                      <dt class="text-muted-foreground">
+                        {{ 'review.longStayDiscount' | transloco: { nights: q.nights, percent: discount.percent } }}
+                      </dt>
                     } @else {
-                      <dt class="text-muted-foreground">Giá theo tuần / tháng</dt>
+                      <dt class="text-muted-foreground">{{ 'review.weeklyMonthly' | transloco }}</dt>
                     }
                     <dd class="text-accent-deep">−{{ discount.amount | number }} ₫</dd>
                   </div>
@@ -108,8 +122,8 @@
                 @if (q.promo; as promo) {
                   <div class="flex justify-between gap-4">
                     <dt class="text-muted-foreground">
-                      Mã <span class="font-mono">{{ promo.code }}</span>
-                      <button type="button" class="link ml-2 text-sm" (click)="removePromo()">Bỏ</button>
+                      {{ 'review.code' | transloco }} <span class="font-mono">{{ promo.code }}</span>
+                      <button type="button" class="link ml-2 text-sm" (click)="removePromo()">{{ 'review.remove' | transloco }}</button>
                     </dt>
                     <dd class="text-accent-deep">−{{ promo.amount | number }} ₫</dd>
                   </div>
@@ -119,37 +133,37 @@
               <!-- Promo code -->
               @if (!q.promo) {
                 <form class="mt-6 rounded-md bg-muted p-4" (submit)="$event.preventDefault(); applyPromo()">
-                  <label class="label" for="promo-code">Mã khuyến mãi</label>
+                  <label class="label" for="promo-code">{{ 'review.promoCode' | transloco }}</label>
                   <div class="flex gap-2">
                     <input
                       id="promo-code"
                       class="input bg-card uppercase"
                       type="text"
-                      placeholder="Nhập mã"
+                      [placeholder]="'review.enterCode' | transloco"
                       autocomplete="off"
                       maxlength="32"
                       [value]="promoInput()"
                       (input)="setPromoInput($event)"
                     />
                     <button type="submit" class="btn btn-outline shrink-0" [disabled]="applyingPromo() || !promoInput()">
-                      Áp dụng
+                      {{ 'review.apply' | transloco }}
                     </button>
                   </div>
                   @if (promoError(); as error) {
                     <p class="mt-2 text-sm text-accent-deep" role="alert">{{ error }}</p>
                   } @else {
-                    <p class="mt-2 text-sm text-muted-foreground">Mỗi mã chỉ sử dụng được một lần.</p>
+                    <p class="mt-2 text-sm text-muted-foreground">{{ 'review.promoNote' | transloco }}</p>
                   }
                 </form>
               }
 
               <hr class="my-6" />
               <div class="flex items-baseline justify-between gap-4">
-                <span class="small-caps text-muted-foreground">Tổng cộng</span>
+                <span class="small-caps text-muted-foreground">{{ 'common.total' | transloco }}</span>
                 <span class="display-number">{{ q.total | number }} ₫</span>
               </div>
             } @else {
-              <p class="mt-6 text-muted-foreground" role="status">Đang tính giá…</p>
+              <p class="mt-6 text-muted-foreground" role="status">{{ 'review.calculating' | transloco }}</p>
             }
           </div>
 
@@ -158,12 +172,12 @@
           }
 
           <div class="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:items-center sm:justify-between">
-            <a routerLink="/book" [queryParams]="{ apt: apt.slug }" class="btn btn-ghost">← Quay lại</a>
+            <a routerLink="/book" [queryParams]="{ apt: apt.slug }" class="btn btn-ghost">{{ 'common.back' | transloco }}</a>
             <button type="button" class="btn btn-primary" [disabled]="!q() || submitting()" (click)="continue()">
               @if (submitting()) {
-                Đang giữ chỗ…
+                {{ 'review.holding' | transloco }}
               } @else {
-                Tiếp tục thanh toán
+                {{ 'review.continueToPayment' | transloco }}
               }
             </button>
           </div>

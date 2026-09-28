@@ -14,14 +14,14 @@
         <!-- Summary -->
         <div class="grid grid-cols-4 border-y border-border py-8">
           @for (stat of [
-            { value: apt.guests, label: 'Khách' },
-            { value: apt.bedrooms, label: 'Phòng ngủ' },
-            { value: apt.beds, label: 'Giường' },
-            { value: apt.bathrooms, label: 'Phòng tắm' },
+            { value: apt.guests, label: 'apartment.stats.guests' },
+            { value: apt.bedrooms, label: 'apartment.stats.bedrooms' },
+            { value: apt.beds, label: 'apartment.stats.beds' },
+            { value: apt.bathrooms, label: 'apartment.stats.bathrooms' },
           ]; track stat.label) {
             <div class="text-center [&:not(:first-child)]:border-l [&:not(:first-child)]:border-border">
               <p class="display-number">{{ stat.value }}</p>
-              <p class="small-caps mt-2 text-[0.625rem] text-muted-foreground sm:text-xs">{{ stat.label }}</p>
+              <p class="small-caps mt-2 text-[0.625rem] text-muted-foreground sm:text-xs">{{ stat.label | transloco }}</p>
             </div>
           }
         </div>
@@ -33,8 +33,8 @@
 
         <!-- Description -->
         <div id="thong-tin" class="mt-16">
-          <p class="small-caps text-accent-deep">Thông tin căn hộ</p>
-          <h2 class="mt-2 text-3xl md:text-4xl">Giới thiệu</h2>
+          <p class="small-caps text-accent-deep">{{ 'apartment.infoEyebrow' | transloco }}</p>
+          <h2 class="mt-2 text-3xl md:text-4xl">{{ 'apartment.infoTitle' | transloco }}</h2>
           <span class="rule-accent mt-6"></span>
           @for (paragraph of apt.description; track $index) {
             <p class="mt-5 max-w-2xl text-lg text-muted-foreground">{{ paragraph }}</p>
@@ -43,8 +43,8 @@
 
         <!-- Facilities -->
         <div id="tien-nghi" class="mt-16 border-t border-border pt-16">
-          <p class="small-caps text-accent-deep">Tiện nghi</p>
-          <h2 class="mt-2 text-3xl md:text-4xl">Mọi thứ bạn cần</h2>
+          <p class="small-caps text-accent-deep">{{ 'apartment.facilitiesEyebrow' | transloco }}</p>
+          <h2 class="mt-2 text-3xl md:text-4xl">{{ 'apartment.facilitiesTitle' | transloco }}</h2>
           <ul class="mt-8 grid gap-x-10 gap-y-4 sm:grid-cols-2">
             @for (item of apt.facilities; track item) {
               <li class="flex items-center gap-3">
@@ -59,15 +59,15 @@
 
         <!-- Check-in + rules -->
         <div id="noi-quy" class="mt-16 border-t border-border pt-16">
-          <p class="small-caps text-accent-deep">Nội quy</p>
-          <h2 class="mt-2 text-3xl md:text-4xl">Nhận phòng &amp; nội quy</h2>
+          <p class="small-caps text-accent-deep">{{ 'apartment.rulesEyebrow' | transloco }}</p>
+          <h2 class="mt-2 text-3xl md:text-4xl">{{ 'apartment.rulesTitle' | transloco }}</h2>
           <div class="mt-8 grid grid-cols-2 gap-4">
             <div class="card p-6 md:p-6">
-              <p class="small-caps text-muted-foreground">Nhận phòng</p>
+              <p class="small-caps text-muted-foreground">{{ 'common.checkIn' | transloco }}</p>
               <p class="display-number mt-3">{{ apt.checkIn }}</p>
             </div>
             <div class="card p-6 md:p-6">
-              <p class="small-caps text-muted-foreground">Trả phòng</p>
+              <p class="small-caps text-muted-foreground">{{ 'common.checkOut' | transloco }}</p>
               <p class="display-number mt-3">{{ apt.checkOut }}</p>
             </div>
           </div>
@@ -80,8 +80,8 @@
 
         <!-- Prices -->
         <div id="bang-gia" class="mt-16 border-t border-border pt-16">
-          <p class="small-caps text-accent-deep">Bảng giá</p>
-          <h2 class="mt-2 text-3xl md:text-4xl">Giá thuê</h2>
+          <p class="small-caps text-accent-deep">{{ 'apartment.pricesEyebrow' | transloco }}</p>
+          <h2 class="mt-2 text-3xl md:text-4xl">{{ 'apartment.pricesTitle' | transloco }}</h2>
           <app-price-list class="mt-8 block" [pricing]="apt.pricing" />
         </div>
       </div>
@@ -95,13 +95,13 @@
   <!-- Explore -->
   <section class="border-t border-border bg-muted py-20 md:py-24">
     <div class="container-editorial max-w-6xl">
-      <p class="section-label">Khám phá thêm</p>
+      <p class="section-label">{{ 'apartment.exploreMore' | transloco }}</p>
       <div class="mt-10 grid gap-6 md:grid-cols-3">
         @for (item of explore; track item.path) {
           <a [routerLink]="item.path" [queryParams]="{ apt: apt.slug }" class="card card-hover group block">
-            <p class="small-caps text-accent-deep">{{ item.label }}</p>
+            <p class="small-caps text-accent-deep">{{ item.label | transloco }}</p>
             <p class="mt-3 flex items-center justify-between gap-4 font-serif text-xl">
-              {{ item.text }}
+              {{ item.text | transloco }}
               <span class="text-accent-deep transition-transform group-hover:translate-x-1" aria-hidden="true">→</span>
             </p>
           </a>

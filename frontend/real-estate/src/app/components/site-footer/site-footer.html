@@ -2,14 +2,14 @@
   <div class="container-editorial max-w-6xl py-16 md:py-20">
     <div class="grid gap-12 md:grid-cols-[1fr_auto_minmax(0,20rem)] md:gap-16">
       <div>
-        <a routerLink="/" class="inline-block" [attr.aria-label]="site.name + ' · Trang chủ'">
+        <a routerLink="/" class="inline-block" [attr.aria-label]="'nav.homeLabel' | transloco: { site: site.name }">
           <img src="brand/logo-stacked.webp" [alt]="site.name" width="500" height="337" loading="lazy" class="h-20 w-auto" />
         </a>
-        <p class="mt-4 max-w-sm text-muted-foreground">{{ site.tagline }}</p>
+        <p class="mt-4 max-w-sm text-muted-foreground">{{ 'site.tagline' | transloco }}</p>
       </div>
 
-      <nav aria-label="Liên kết chân trang">
-        <p class="small-caps text-accent-deep">Khám phá</p>
+      <nav [attr.aria-label]="'footer.links' | transloco">
+        <p class="small-caps text-accent-deep">{{ 'footer.explore' | transloco }}</p>
         <ul class="mt-5 space-y-1">
           @for (link of links; track link.path) {
             <li>
@@ -17,7 +17,7 @@
                 [routerLink]="link.path"
                 class="link-subtle inline-flex min-h-11 items-center"
               >
-                {{ link.label }}
+                {{ link.label | transloco }}
               </a>
             </li>
           }
@@ -25,7 +25,7 @@
       </nav>
 
       <div>
-        <p class="small-caps text-accent-deep">Liên hệ</p>
+        <p class="small-caps text-accent-deep">{{ 'nav.contact' | transloco }}</p>
         <ul class="mt-5 divide-y divide-border border-y border-border">
           @for (c of site.contact; track c.label) {
             <li>
@@ -33,7 +33,7 @@
                 [href]="c.href"
                 class="flex min-h-11 items-baseline justify-between gap-4 py-3 transition-colors hover:text-accent-deep"
               >
-                <span class="text-sm text-muted-foreground">{{ c.label }}</span>
+                <span class="text-sm text-muted-foreground">{{ c.label | transloco }}</span>
                 <span class="font-serif text-lg">{{ c.value }}</span>
               </a>
             </li>
@@ -43,9 +43,9 @@
     </div>
 
     <div class="mt-16 flex flex-wrap items-center justify-between gap-4 text-sm text-muted-foreground">
-      <p>&copy; {{ year }} {{ site.name }}. Bảo lưu mọi quyền.</p>
+      <p>&copy; {{ year }} {{ site.name }}. {{ 'footer.rights' | transloco }}</p>
       <!-- Owner sign-in; opens the dashboard directly when already signed in. -->
-      <a routerLink="/admin" class="link-subtle inline-flex min-h-11 items-center" rel="nofollow">Quản lý</a>
+      <a routerLink="/admin" class="link-subtle inline-flex min-h-11 items-center" rel="nofollow">{{ 'footer.admin' | transloco }}</a>
     </div>
   </div>
 </footer>

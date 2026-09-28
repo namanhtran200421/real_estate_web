@@ -1,10 +1,11 @@
 import { Component, input } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { TranslocoPipe } from '@jsverse/transloco';
 
 @Component({
   selector: 'app-booking-card',
-  imports: [DecimalPipe, RouterLink],
+  imports: [DecimalPipe, RouterLink, TranslocoPipe],
   templateUrl: './booking-card.html',
 })
 export class BookingCard {

@@ -1,8 +1,9 @@
 import { Component, computed, effect, inject, input, signal } from '@angular/core';
 import { DatePipe, DecimalPipe, NgOptimizedImage } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { StatusBadge } from '../../components/status-badge/status-badge';
-import { toApiError } from '../../core/api';
+import { ApiErrorMessages, toApiError } from '../../core/api';
 import { Booking } from '../../models/booking';
 import { ApartmentService } from '../../services/apartment.service';
 import { BookingService } from '../../services/booking.service';
@@ -10,12 +11,13 @@ import { BookingService } from '../../services/booking.service';
 /** Find a booking by reference + email or phone (also the landing page of email links). */
 @Component({
   selector: 'app-booking-lookup',
-  imports: [DatePipe, DecimalPipe, NgOptimizedImage, RouterLink, StatusBadge],
+  imports: [DatePipe, DecimalPipe, NgOptimizedImage, RouterLink, TranslocoPipe, StatusBadge],
   templateUrl: './booking-lookup.html',
 })
 export class BookingLookup {
   private readonly bookings = inject(BookingService);
   private readonly apartments = inject(ApartmentService);
+  private readonly errorMessages = inject(ApiErrorMessages);
 
   /** Bound from `?ref=`: prefilled from email links and the confirmation page. */
   readonly ref = input<string>();
@@ -53,7 +55,7 @@ export class BookingLookup {
     try {
       this.booking.set(await this.bookings.lookup(this.reference().trim(), this.contact().trim()));
     } catch (error) {
-      this.error.set(toApiError(error).message);
+      this.error.set(this.errorMessages.message(toApiError(error)));
     } finally {
       this.searching.set(false);
     }

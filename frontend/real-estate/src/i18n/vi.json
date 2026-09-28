@@ -1,0 +1,463 @@
+{
+  "site": {
+    "tagline": "Căn hộ Sun Garden A04-12, Nam Hồ, Đà Lạt.",
+    "description": "Khám phá căn hộ Sun Garden A04-12 tại Đà Lạt: 78 m², 2 phòng ngủ, 2 phòng tắm và ban công thoáng.",
+    "contact": {
+      "phone": "Điện thoại",
+      "zalo": "Zalo",
+      "email": "Email"
+    }
+  },
+  "titles": {
+    "home": "{{ site }} · Căn hộ Sun Garden Đà Lạt",
+    "apartment": "Thông tin căn hộ · {{ site }}",
+    "gallery": "Hình ảnh · {{ site }}",
+    "availability": "Lịch trống · {{ site }}",
+    "location": "Vị trí · {{ site }}",
+    "about": "Về chúng tôi · {{ site }}",
+    "contact": "Liên hệ · {{ site }}",
+    "book": "Đặt lịch · {{ site }}",
+    "review": "Xem lại đặt phòng · {{ site }}",
+    "payment": "Thanh toán · {{ site }}",
+    "lookup": "Tra cứu đặt phòng · {{ site }}",
+    "confirmation": "Xác nhận đặt phòng · {{ site }}"
+  },
+  "meta": {
+    "about": "{{ site }}: căn hộ Sun Garden A04-12 tại Đà Lạt, 78 m², 2 phòng ngủ và 2 phòng tắm.",
+    "contact": "Liên hệ {{ site }} qua điện thoại, Zalo hoặc email để được hỗ trợ đặt căn hộ.",
+    "apartment": "{{ tagline }} {{ bedrooms }} phòng ngủ, tối đa {{ guests }} khách, từ {{ price }} ₫/đêm. {{ area }}."
+  },
+  "nav": {
+    "home": "Trang chủ",
+    "homeLabel": "{{ site }} · Trang chủ",
+    "about": "Về chúng tôi",
+    "contact": "Liên hệ",
+    "apartment": "Căn hộ",
+    "availability": "Lịch trống",
+    "book": "Đặt lịch",
+    "lookup": "Tra cứu đặt phòng",
+    "main": "Điều hướng chính",
+    "menu": "Menu",
+    "openMenu": "Mở menu",
+    "closeMenu": "Đóng menu",
+    "language": "Ngôn ngữ",
+    "search": "Tìm căn hộ",
+    "searchPlaceholder": "Tìm căn hộ, khu vực…"
+  },
+  "footer": {
+    "links": "Liên kết chân trang",
+    "explore": "Khám phá",
+    "rights": "Bảo lưu mọi quyền.",
+    "admin": "Quản lý"
+  },
+  "common": {
+    "from": "Từ",
+    "priceFrom": "Giá từ",
+    "perNight": "/ đêm",
+    "nights": "{{ count }} đêm",
+    "guests": "{{ count }} khách",
+    "nightCount": "Số đêm",
+    "guestCount": "Số khách",
+    "checkIn": "Nhận phòng",
+    "checkOut": "Trả phòng",
+    "total": "Tổng cộng",
+    "totalPrice": "Tổng tiền",
+    "loading": "Đang tải…",
+    "loadingBooking": "Đang tải đặt phòng…",
+    "retry": "Thử lại",
+    "continue": "Tiếp tục",
+    "back": "← Quay lại",
+    "backHome": "Về trang chủ",
+    "sending": "Đang gửi…",
+    "optional": "(không bắt buộc)",
+    "fullName": "Họ và tên",
+    "namePlaceholder": "Nguyễn Văn A",
+    "phone": "Số điện thoại",
+    "phonePlaceholder": "09xx xxx xxx",
+    "email": "Email",
+    "emailPlaceholder": "ban@email.com",
+    "emailOrPhone": "Email hoặc số điện thoại",
+    "message": "Lời nhắn",
+    "reference": "Mã đặt phòng",
+    "yourBooking": "Đặt phòng của bạn",
+    "viewApartment": "Xem căn hộ",
+    "select": "Chọn…"
+  },
+  "calendar": {
+    "previousMonth": "Tháng trước",
+    "nextMonth": "Tháng sau",
+    "monthYear": "{{ month }}, {{ year }}",
+    "months": {
+      "1": "Tháng 1",
+      "2": "Tháng 2",
+      "3": "Tháng 3",
+      "4": "Tháng 4",
+      "5": "Tháng 5",
+      "6": "Tháng 6",
+      "7": "Tháng 7",
+      "8": "Tháng 8",
+      "9": "Tháng 9",
+      "10": "Tháng 10",
+      "11": "Tháng 11",
+      "12": "Tháng 12"
+    },
+    "weekdays": {
+      "mon": "T2",
+      "tue": "T3",
+      "wed": "T4",
+      "thu": "T5",
+      "fri": "T6",
+      "sat": "T7",
+      "sun": "CN"
+    },
+    "available": "Còn trống",
+    "booked": "Đã đặt",
+    "past": "Đã qua"
+  },
+  "picker": {
+    "clear": "Chọn lại",
+    "chooseCheckIn": "Chọn ngày nhận phòng",
+    "chooseCheckOut": "Chọn ngày trả phòng",
+    "checkInOn": "Nhận phòng {{ date }}",
+    "latestCheckOut": "· trả phòng muộn nhất {{ date }}",
+    "booked": "Đã có người đặt",
+    "selected": "Ngày bạn chọn",
+    "day": {
+      "available": "còn trống",
+      "booked": "đã có người đặt",
+      "checkOutAllowed": "có thể chọn làm ngày trả phòng",
+      "unavailable": "không đặt được",
+      "checkIn": "ngày nhận phòng",
+      "checkOut": "ngày trả phòng"
+    }
+  },
+  "apartment": {
+    "capacity": "{{ guests }} khách · {{ bedrooms }} phòng ngủ · {{ beds }} giường · {{ bathrooms }} phòng tắm",
+    "viewDetails": "Xem chi tiết",
+    "sections": "Mục căn hộ",
+    "tabs": {
+      "overview": "Tổng quan",
+      "gallery": "Hình ảnh",
+      "availability": "Lịch trống",
+      "location": "Vị trí"
+    },
+    "stats": {
+      "guests": "Khách",
+      "bedrooms": "Phòng ngủ",
+      "beds": "Giường",
+      "bathrooms": "Phòng tắm"
+    },
+    "infoEyebrow": "Thông tin căn hộ",
+    "infoTitle": "Giới thiệu",
+    "facilitiesEyebrow": "Tiện nghi",
+    "facilitiesTitle": "Mọi thứ bạn cần",
+    "rulesEyebrow": "Nội quy",
+    "rulesTitle": "Nhận phòng & nội quy",
+    "pricesEyebrow": "Bảng giá",
+    "pricesTitle": "Giá thuê",
+    "exploreMore": "Khám phá thêm",
+    "explore": {
+      "gallery": "Xem toàn bộ ảnh căn hộ",
+      "availability": "Kiểm tra ngày còn trống",
+      "location": "Bản đồ và địa điểm lân cận"
+    }
+  },
+  "notFound": {
+    "connectionError": "Lỗi kết nối",
+    "loadFailed": "Chưa tải được dữ liệu",
+    "checkConnection": "Vui lòng kiểm tra kết nối mạng và thử lại.",
+    "title": "Không tìm thấy căn hộ",
+    "text": "Căn hộ này không tồn tại hoặc đã bị gỡ.",
+    "browse": "Xem các căn hộ"
+  },
+  "bookingCard": {
+    "priceFrom": "Giá từ · Thứ Hai – Thứ Năm",
+    "chooseDate": "Chọn ngày",
+    "viewAvailability": "Xem lịch trống",
+    "priceNote": "Giá được tính tự động và hiển thị trước khi thanh toán.",
+    "depositOrFull": "Đặt cọc hoặc thanh toán toàn bộ",
+    "emailConfirmation": "Xác nhận đặt phòng qua email"
+  },
+  "steps": {
+    "label": "Các bước đặt phòng",
+    "progress": "Bước {{ current }}/{{ total }}",
+    "details": "Thông tin đặt phòng",
+    "review": "Xem lại",
+    "payment": "Thanh toán",
+    "status": "Trạng thái"
+  },
+  "summary": {
+    "rooms": "{{ bedrooms }} phòng ngủ · tối đa {{ guests }} khách",
+    "totalNote": "Tổng tiền được tính tự động sau khi bạn chọn ngày."
+  },
+  "prices": {
+    "weekday": "Thứ Hai – Thứ Năm",
+    "weekend": "Thứ Sáu – Chủ Nhật",
+    "holiday": "Ngày lễ",
+    "weekly": "Theo tuần",
+    "monthly": "Theo tháng",
+    "perWeek": "/ tuần",
+    "perMonth": "/ tháng",
+    "longStay": "Giảm giá khi ở dài ngày",
+    "noHolidayDiscount": "Không áp dụng giảm giá cho ngày lễ."
+  },
+  "rates": {
+    "weekday": "Giá ngày thường",
+    "weekend": "Giá cuối tuần",
+    "holiday": "Giá ngày lễ"
+  },
+  "status": {
+    "pending": "Chờ xác nhận",
+    "confirmed": "Đã xác nhận",
+    "cancelled": "Đã huỷ",
+    "completed": "Đã hoàn thành",
+    "expired": "Hết hạn giữ chỗ",
+    "unpaid": "Chưa thanh toán",
+    "deposit_paid": "Đã đặt cọc",
+    "fully_paid": "Đã thanh toán đủ",
+    "refunded": "Đã hoàn tiền"
+  },
+  "providers": {
+    "bank_transfer": "Chuyển khoản",
+    "cash": "Tiền mặt"
+  },
+  "home": {
+    "eyebrow": "Sun Garden · Đà Lạt",
+    "titleStart": "Một góc Đà Lạt",
+    "titleEm": "của riêng bạn",
+    "intro": "Xem lịch trống, biết giá ngay và đặt phòng trực tuyến, tất cả trên điện thoại của bạn.",
+    "otherApartments": "Căn hộ khác",
+    "bookDirect": "Đặt trực tiếp",
+    "promises": {
+      "availability": {
+        "title": "Lịch trống cập nhật liên tục",
+        "text": "Xem ngày còn trống và đặt ngay, không cần nhắn tin hỏi trước."
+      },
+      "prices": {
+        "title": "Giá rõ ràng",
+        "text": "Giá được tính tự động theo ngày và hiển thị đầy đủ trước khi thanh toán."
+      },
+      "vietqr": {
+        "title": "Chuyển khoản qua VietQR",
+        "text": "Quét mã để chuyển khoản đặt cọc hoặc thanh toán toàn bộ. Chủ căn hộ xác nhận khi nhận được tiền."
+      }
+    }
+  },
+  "about": {
+    "titleStart": "Một căn hộ",
+    "titleEm": "ấm cúng",
+    "titleEnd": "ở Đà Lạt",
+    "intro": "{{ site }} là căn hộ A04-12 tại Sun Garden, đường Nam Hồ, Đà Lạt.",
+    "photoAlt": "Phòng khách và ban công của căn hộ Sun Garden A04-12",
+    "apartment": "Căn hộ",
+    "story1": "Căn góc tầng 4 có ban công phòng khách nhìn về phía Xóm Lèo và ban công phòng ngủ hướng ra đường Nam Hồ.",
+    "story2": "Căn hộ rộng 78 m², có hai phòng ngủ, hai phòng tắm, Wi-Fi và bếp. Căn hộ không có điều hòa; khu đỗ xe có thu phí.",
+    "promises": "Điều chúng tôi cam kết",
+    "values": {
+      "privacy": {
+        "title": "Không gian riêng tư",
+        "text": "Căn góc tầng 4 rộng 78 m² với hai phòng ngủ, hai phòng tắm và ban công thoáng."
+      },
+      "prices": {
+        "title": "Giá minh bạch",
+        "text": "Giá theo ngày trong tuần, cuối tuần và ngày lễ được hiển thị trước khi đặt phòng."
+      },
+      "support": {
+        "title": "Hỗ trợ tận tâm",
+        "text": "Chúng tôi luôn sẵn sàng qua điện thoại, Zalo và email, từ lúc đặt phòng đến khi bạn trả phòng."
+      }
+    },
+    "ctaTitle": "Sẵn sàng cho kỳ nghỉ tiếp theo?",
+    "ctaText": "Xem căn hộ hoặc liên hệ để được tư vấn.",
+    "contactUs": "Liên hệ với chúng tôi"
+  },
+  "gallery": {
+    "count": "{{ count }} ảnh",
+    "viewAll": "Xem tất cả {{ count }} ảnh",
+    "like": "Thích căn hộ này?"
+  },
+  "availability": {
+    "note": "Lịch được cập nhật liên tục theo các đặt phòng đã xác nhận.",
+    "ready": "Đã chọn được ngày?",
+    "priceFrom": "Giá từ · mỗi đêm",
+    "priceNote": "Giá cuối tuần, ngày lễ và giảm giá dài ngày được tính tự động khi đặt.",
+    "viewPrices": "Xem bảng giá"
+  },
+  "location": {
+    "mapTitle": "Bản đồ vị trí {{ name }}",
+    "loadingMap": "Đang tải bản đồ…",
+    "address": "Địa chỉ",
+    "nearby": "Xung quanh",
+    "note": "Địa chỉ chính xác và hướng dẫn nhận phòng được gửi kèm email xác nhận.",
+    "callUs": "Cần chỉ đường? Gọi cho chúng tôi"
+  },
+  "booking": {
+    "title": "Đặt lịch",
+    "intro": "Chọn ngày, số khách và để lại thông tin liên hệ của bạn.",
+    "stay": "Ngày lưu trú",
+    "apartment": "Căn hộ",
+    "dates": "Ngày nhận phòng – ngày trả phòng",
+    "maxGuests": "Tối đa {{ count }} khách.",
+    "contact": "Thông tin liên hệ",
+    "emailNote": "Xác nhận đặt phòng được gửi tới email này.",
+    "messagePlaceholder": "Giờ đến dự kiến, yêu cầu đặc biệt…",
+    "backToApartment": "← Quay lại căn hộ",
+    "discountApplied": "Đã giảm {{ amount }} ₫ cho kỳ nghỉ {{ nights }} đêm",
+    "errors": {
+      "checkInMissing": "Chọn ngày nhận phòng trên lịch.",
+      "checkInPast": "Ngày nhận phòng đã qua, vui lòng chọn lại.",
+      "checkOutMissing": "Chọn ngày trả phòng trên lịch.",
+      "checkOutBeforeCheckIn": "Ngày trả phòng phải sau ngày nhận phòng.",
+      "tooManyNights": "Mỗi lần đặt tối đa {{ max }} đêm.",
+      "nameMissing": "Nhập họ và tên.",
+      "phoneInvalid": "Số điện thoại không hợp lệ.",
+      "emailInvalid": "Email không hợp lệ."
+    }
+  },
+  "review": {
+    "title": "Xem lại đặt phòng",
+    "intro": "Kiểm tra thông tin và tổng tiền trước khi thanh toán.",
+    "stay": "Chi tiết lưu trú",
+    "edit": "Sửa",
+    "checkInAt": "{{ date }} · từ {{ time }}",
+    "checkOutAt": "{{ date }} · trước {{ time }}",
+    "priceDetails": "Chi tiết giá",
+    "removePromo": "Bỏ mã khuyến mãi",
+    "chooseDates": "Chọn lại ngày",
+    "subtotal": "Tạm tính",
+    "longStayDiscount": "Giảm giá ở {{ nights }} đêm (−{{ percent }}%)",
+    "weeklyMonthly": "Giá theo tuần / tháng",
+    "code": "Mã",
+    "remove": "Bỏ",
+    "promoCode": "Mã khuyến mãi",
+    "enterCode": "Nhập mã",
+    "apply": "Áp dụng",
+    "promoNote": "Mỗi mã chỉ sử dụng được một lần.",
+    "calculating": "Đang tính giá…",
+    "holding": "Đang giữ chỗ…",
+    "continueToPayment": "Tiếp tục thanh toán"
+  },
+  "payment": {
+    "title": "Thanh toán",
+    "checkingTitle": "Chủ nhà đang kiểm tra chuyển khoản",
+    "checkingText": "Bạn đã báo chuyển {{ amount }} ₫ lúc {{ time }}. Ngày của bạn được giữ trong khi chủ nhà kiểm tra, bạn sẽ nhận email khi đặt phòng được xác nhận.",
+    "viewBooking": "Xem đặt phòng",
+    "expiredTitle": "Đã hết thời gian giữ chỗ",
+    "expiredText": "Đặt phòng {{ reference }} chưa được thanh toán kịp nên ngày đã được mở lại cho khách khác. Bạn có thể đặt lại nếu ngày vẫn còn trống.",
+    "bookAgain": "Đặt lại",
+    "paidTitle": "Đặt phòng đã được thanh toán đủ",
+    "unavailableTitle": "Không thể thanh toán lúc này",
+    "contactOwner": "Vui lòng liên hệ chủ nhà để được hỗ trợ.",
+    "intro": "Chuyển khoản ngân hàng bằng mã VietQR, sau đó bấm \"Tôi đã chuyển khoản\".",
+    "holdNotice": "Chúng tôi giữ ngày cho bạn đến {{ time }} (còn {{ minutes }} phút). Hãy chuyển khoản và bấm \"Tôi đã chuyển khoản\" trước thời gian này.",
+    "amountLegend": "Số tiền thanh toán",
+    "deposit": "Đặt cọc {{ percent }}%",
+    "remainder": "Còn lại {{ amount }} ₫ thanh toán khi nhận phòng",
+    "payRemaining": "Thanh toán phần còn lại",
+    "payFull": "Thanh toán toàn bộ",
+    "nothingAtCheckIn": "Không cần thanh toán thêm khi nhận phòng",
+    "transfer": "Chuyển khoản",
+    "qrAlt": "Mã VietQR chuyển {{ amount }} đồng tới {{ name }}",
+    "saveQr": "Lưu mã QR",
+    "bank": "Ngân hàng",
+    "accountName": "Chủ tài khoản",
+    "accountNumber": "Số tài khoản",
+    "amount": "Số tiền",
+    "note": "Nội dung",
+    "copy": "Sao chép",
+    "copied": "Đã chép",
+    "steps": {
+      "scan": "Mở ứng dụng ngân hàng, chọn quét mã QR. Số tiền và nội dung đã được điền sẵn.",
+      "phone": "Đang dùng điện thoại? Bấm \"Lưu mã QR\" (hoặc chụp màn hình), rồi chọn ảnh trong mục quét mã của ứng dụng ngân hàng. Hoặc chuyển khoản thủ công với thông tin ở trên.",
+      "keepNoteBefore": "Giữ đúng nội dung",
+      "keepNoteAfter": "để chủ nhà xác nhận nhanh.",
+      "report": "Sau khi chuyển, bấm nút bên dưới."
+    },
+    "transferLoadFailed": "Chưa tải được thông tin chuyển khoản.",
+    "creatingQr": "Đang tạo mã QR…",
+    "reportButton": "Tôi đã chuyển khoản {{ amount }} ₫",
+    "disclaimer": "Nút này chỉ báo cho chủ nhà kiểm tra. Khoản tiền và đặt phòng chưa được xác nhận cho đến khi chủ nhà thấy tiền trong tài khoản. Bằng việc thanh toán, bạn đồng ý với nội quy của căn hộ.",
+    "reference": "Mã đặt phòng:",
+    "cannotOpen": "Không mở được đặt phòng",
+    "noAccess": "Trình duyệt này chưa có quyền xem đặt phòng. Tra cứu bằng mã đặt phòng và email hoặc số điện thoại.",
+    "noBooking": "Chưa có đặt phòng để thanh toán."
+  },
+  "confirmation": {
+    "enterContact": "Nhập email hoặc số điện thoại đã dùng khi đặt phòng",
+    "notConfirmed": "Chưa xác nhận thanh toán",
+    "reportedTitle": "Đã nhận báo chuyển khoản",
+    "reportedText": "{{ name }}, chúng tôi đã ghi nhận thông báo chuyển {{ amount }} ₫, chưa xác nhận tiền đã đến. Chủ nhà sẽ kiểm tra tài khoản. Sau khi nhận được tiền, bạn sẽ nhận email xác nhận tại",
+    "reportedTextEnd": ". Ngày của bạn được giữ trong thời gian này.",
+    "confirmed": "Đặt phòng đã được xác nhận",
+    "seeYou": "Hẹn gặp bạn, {{ name }}",
+    "paidText": "Chủ nhà đã nhận thanh toán của bạn. Thông tin đặt phòng đã được gửi tới",
+    "inactive": "Đặt phòng không còn hiệu lực",
+    "bookingRef": "Đặt phòng {{ reference }}",
+    "unpaid": "Chưa thanh toán",
+    "unpaidText": "Đặt phòng được xác nhận sau khi chủ nhà nhận được thanh toán.",
+    "pay": "Thanh toán",
+    "bookedOn": "Ngày đặt",
+    "paidVia": "Đã thanh toán qua {{ provider }} · {{ date }}",
+    "dueAtCheckIn": "Còn lại khi nhận phòng"
+  },
+  "lookup": {
+    "intro": "Nhập mã đặt phòng và email hoặc số điện thoại đã dùng khi đặt để xem trạng thái.",
+    "search": "Tra cứu",
+    "searching": "Đang tìm…",
+    "result": "Kết quả",
+    "bookedOn": "Đặt ngày {{ date }}",
+    "paid": "Đã trả",
+    "remaining": "Còn lại",
+    "checking": "Chủ nhà đang kiểm tra khoản chuyển {{ amount }} ₫ bạn báo lúc {{ time }}. Bạn sẽ nhận email khi đặt phòng được xác nhận.",
+    "contactOwner": "Liên hệ chủ nhà"
+  },
+  "contact": {
+    "title": "Chúng tôi luôn sẵn sàng hỗ trợ",
+    "intro": "Gửi tin nhắn cho chúng tôi, hoặc gọi điện, nhắn Zalo. Chúng tôi sẽ phản hồi sớm nhất có thể.",
+    "sentTitle": "Đã gửi tin nhắn",
+    "sentText": "Cảm ơn bạn. Chúng tôi sẽ phản hồi sớm nhất có thể.",
+    "formTitle": "Gửi tin nhắn",
+    "required": "Các mục có dấu * là bắt buộc.",
+    "topic": "Chủ đề",
+    "topics": {
+      "booking": "Đặt phòng",
+      "apartment": "Thông tin căn hộ",
+      "payment": "Thanh toán",
+      "partnership": "Hợp tác cho thuê",
+      "other": "Khác"
+    },
+    "apartment": "Căn hộ quan tâm",
+    "noApartment": "Chưa chọn",
+    "messagePlaceholder": "Bạn cần chúng tôi hỗ trợ điều gì?",
+    "privacy": "Thông tin của bạn chỉ dùng để phản hồi yêu cầu này.",
+    "submit": "Gửi tin nhắn",
+    "direct": "Liên hệ trực tiếp",
+    "booked": "Đã đặt phòng?",
+    "checkStatus": "Xem trạng thái đặt phòng",
+    "lookupHint": "Tra cứu bằng mã đặt phòng và email hoặc số điện thoại."
+  },
+  "apiErrors": {
+    "NETWORK": "Không kết nối được máy chủ. Vui lòng kiểm tra mạng và thử lại.",
+    "UNKNOWN": "Đã có lỗi xảy ra. Vui lòng thử lại.",
+    "VALIDATION_ERROR": "Thông tin chưa hợp lệ, vui lòng kiểm tra lại.",
+    "NOT_FOUND": "Không tìm thấy đặt phòng.",
+    "DATES_UNAVAILABLE": "Một số ngày bạn chọn đã có người đặt. Vui lòng chọn ngày khác.",
+    "DUPLICATE_BOOKING": "Email hoặc số điện thoại này đã có đặt phòng trùng ngày. Vui lòng kiểm tra đặt phòng hiện có trước khi đặt lại.",
+    "TOO_MANY_GUESTS": "Số khách vượt quá sức chứa của căn hộ.",
+    "PROMO_CODE_INVALID": "Mã khuyến mãi không áp dụng được cho đặt phòng này.",
+    "TRANSFER_BEING_CHECKED": "Chủ nhà đang kiểm tra khoản chuyển bạn đã báo. Vui lòng chờ xác nhận.",
+    "BOOKING_NOT_PAYABLE": "Đặt phòng này đã hết thời gian giữ chỗ hoặc không thể thanh toán. Vui lòng đặt lại.",
+    "PAYMENT_OPTION_UNAVAILABLE": "Lựa chọn thanh toán này không còn áp dụng cho đặt phòng.",
+    "INVALID_STATUS": "Không thể thực hiện với trạng thái hiện tại của đặt phòng.",
+    "TOO_MANY_REQUESTS": "Bạn thao tác quá nhanh. Vui lòng chờ một lát rồi thử lại.",
+    "UPSTREAM_ERROR": "Dịch vụ liên kết chưa phản hồi. Vui lòng thử lại sau.",
+    "bookedDates": "Ngày đã có người đặt: {{ dates }}.",
+    "fields": {
+      "name": "Nhập họ và tên.",
+      "phone": "Số điện thoại không hợp lệ.",
+      "email": "Email không hợp lệ.",
+      "message": "Nhập lời nhắn.",
+      "other": "Vui lòng kiểm tra lại mục này."
+    }
+  }
+}

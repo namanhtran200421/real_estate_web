@@ -5,13 +5,14 @@
     @if (needsLookup()) {
       <!-- Returned on another browser/app: prove it is their booking -->
       <div class="mt-14 text-center">
-        <h1 class="text-4xl md:text-5xl">Xem đặt phòng</h1>
+        <h1 class="text-4xl md:text-5xl">{{ 'payment.viewBooking' | transloco }}</h1>
         <p class="mx-auto mt-4 max-w-lg text-muted-foreground">
-          Nhập email hoặc số điện thoại đã dùng khi đặt phòng <span class="font-mono text-foreground">{{ reference() }}</span>.
+          {{ 'confirmation.enterContact' | transloco }}
+          <span class="font-mono text-foreground">{{ reference() }}</span>.
         </p>
       </div>
       <form class="card mx-auto mt-10 max-w-lg" (submit)="$event.preventDefault(); lookup()">
-        <label class="label" for="confirm-contact">Email hoặc số điện thoại</label>
+        <label class="label" for="confirm-contact">{{ 'common.emailOrPhone' | transloco }}</label>
         <input
           id="confirm-contact"
           class="input"
@@ -24,12 +25,14 @@
         @if (lookupError(); as error) {
           <p class="mt-2 text-sm text-accent-deep" role="alert">{{ error }}</p>
         }
-        <button type="submit" class="btn btn-primary mt-6 w-full" [disabled]="lookingUp() || !lookupContact()">Xem đặt phòng</button>
+        <button type="submit" class="btn btn-primary mt-6 w-full" [disabled]="lookingUp() || !lookupContact()">
+          {{ 'payment.viewBooking' | transloco }}
+        </button>
       </form>
     } @else if (loadError(); as error) {
       <div class="card mt-14 text-center">
         <p class="text-muted-foreground" role="alert">{{ error }}</p>
-        <button type="button" class="btn btn-outline mt-6" (click)="booking.reload()">Thử lại</button>
+        <button type="button" class="btn btn-outline mt-6" (click)="booking.reload()">{{ 'common.retry' | transloco }}</button>
       </div>
     } @else if (b(); as b) {
       <div class="mt-14 text-center">
@@ -40,12 +43,11 @@
               <path d="M10 6v4l2.5 2" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
           </span>
-          <p class="small-caps mt-6 text-accent-deep" role="status">Chưa xác nhận thanh toán</p>
-          <h1 class="mt-3 text-4xl md:text-5xl">Đã nhận báo chuyển khoản</h1>
+          <p class="small-caps mt-6 text-accent-deep" role="status">{{ 'confirmation.notConfirmed' | transloco }}</p>
+          <h1 class="mt-3 text-4xl md:text-5xl">{{ 'confirmation.reportedTitle' | transloco }}</h1>
           <p class="mx-auto mt-4 max-w-lg text-muted-foreground">
-            {{ b.customer.name }}, chúng tôi đã ghi nhận thông báo chuyển {{ pending.amount | number }} ₫, chưa xác nhận tiền đã đến.
-            Chủ nhà sẽ kiểm tra tài khoản. Sau khi nhận được tiền, bạn sẽ nhận email xác nhận tại
-            <span class="text-foreground">{{ b.customer.email }}</span>. Ngày của bạn được giữ trong thời gian này.
+            {{ 'confirmation.reportedText' | transloco: { name: b.customer.name, amount: (pending.amount | number) } }}
+            <span class="text-foreground">{{ b.customer.email }}</span>{{ 'confirmation.reportedTextEnd' | transloco }}
           </p>
         } @else if (b.amountPaid > 0 && b.status === 'confirmed') {
           <span class="mx-auto grid h-16 w-16 place-items-center rounded-full border border-accent bg-accent-muted text-accent-deep">
@@ -53,31 +55,35 @@
               <path d="m4 10.5 4 4 8-9" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
           </span>
-          <p class="small-caps mt-6 text-accent-deep">Đặt phòng đã được xác nhận</p>
-          <h1 class="mt-3 text-4xl md:text-5xl">Hẹn gặp bạn, {{ b.customer.name }}</h1>
+          <p class="small-caps mt-6 text-accent-deep">{{ 'confirmation.confirmed' | transloco }}</p>
+          <h1 class="mt-3 text-4xl md:text-5xl">{{ 'confirmation.seeYou' | transloco: { name: b.customer.name } }}</h1>
           <p class="mx-auto mt-4 max-w-lg text-muted-foreground">
-            Chủ nhà đã nhận thanh toán của bạn. Thông tin đặt phòng đã được gửi tới
+            {{ 'confirmation.paidText' | transloco }}
             <span class="text-foreground">{{ b.customer.email }}</span>.
           </p>
         } @else if (b.status === 'cancelled' || b.status === 'expired') {
-          <p class="small-caps text-muted-foreground">Đặt phòng không còn hiệu lực</p>
-          <h1 class="mt-3 text-4xl md:text-5xl">Đặt phòng {{ b.reference }}</h1>
-          <a routerLink="/book" [queryParams]="{ apt: b.apartmentSlug }" class="btn btn-primary mt-8">Đặt lại</a>
+          <p class="small-caps text-muted-foreground">{{ 'confirmation.inactive' | transloco }}</p>
+          <h1 class="mt-3 text-4xl md:text-5xl">{{ 'confirmation.bookingRef' | transloco: { reference: b.reference } }}</h1>
+          <a routerLink="/book" [queryParams]="{ apt: b.apartmentSlug }" class="btn btn-primary mt-8">
+            {{ 'payment.bookAgain' | transloco }}
+          </a>
         } @else if (b.paymentOptions.full !== null) {
-          <p class="small-caps text-accent-deep">Chưa thanh toán</p>
-          <h1 class="mt-3 text-4xl md:text-5xl">Đặt phòng {{ b.reference }}</h1>
-          <p class="mx-auto mt-4 max-w-lg text-muted-foreground">Đặt phòng được xác nhận sau khi chủ nhà nhận được thanh toán.</p>
-          <a routerLink="/book/payment" [queryParams]="{ ref: b.reference }" class="btn btn-primary mt-8">Thanh toán</a>
+          <p class="small-caps text-accent-deep">{{ 'confirmation.unpaid' | transloco }}</p>
+          <h1 class="mt-3 text-4xl md:text-5xl">{{ 'confirmation.bookingRef' | transloco: { reference: b.reference } }}</h1>
+          <p class="mx-auto mt-4 max-w-lg text-muted-foreground">{{ 'confirmation.unpaidText' | transloco }}</p>
+          <a routerLink="/book/payment" [queryParams]="{ ref: b.reference }" class="btn btn-primary mt-8">
+            {{ 'confirmation.pay' | transloco }}
+          </a>
         } @else {
-          <p class="small-caps text-accent-deep">Đặt phòng của bạn</p>
-          <h1 class="mt-3 text-4xl md:text-5xl">Đặt phòng {{ b.reference }}</h1>
+          <p class="small-caps text-accent-deep">{{ 'common.yourBooking' | transloco }}</p>
+          <h1 class="mt-3 text-4xl md:text-5xl">{{ 'confirmation.bookingRef' | transloco: { reference: b.reference } }}</h1>
         }
       </div>
 
       <div class="card card-accent-top card-elevated mt-12">
         <div class="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <p class="small-caps text-muted-foreground">Mã đặt phòng</p>
+            <p class="small-caps text-muted-foreground">{{ 'common.reference' | transloco }}</p>
             <p class="mt-1 font-mono text-2xl tracking-[0.1em]">{{ b.reference }}</p>
           </div>
           <div class="flex flex-wrap gap-2">
@@ -91,46 +97,59 @@
         <dl class="grid gap-x-8 gap-y-5 sm:grid-cols-2">
           @if (apartment(); as apt) {
             <div class="sm:col-span-2">
-              <dt class="small-caps text-muted-foreground">Căn hộ</dt>
+              <dt class="small-caps text-muted-foreground">{{ 'booking.apartment' | transloco }}</dt>
               <dd class="mt-1 font-serif text-xl">{{ apt.name }} <span class="font-sans text-base text-muted-foreground">· {{ apt.area }}</span></dd>
             </div>
           }
           <div>
-            <dt class="small-caps text-muted-foreground">Nhận phòng</dt>
-            <dd class="mt-1">{{ b.checkIn | date: 'EEEE, dd/MM/yyyy' }} · từ {{ apartment()?.checkIn }}</dd>
+            <dt class="small-caps text-muted-foreground">{{ 'common.checkIn' | transloco }}</dt>
+            <dd class="mt-1">
+              {{ 'review.checkInAt' | transloco: { date: (b.checkIn | date: 'EEEE, dd/MM/yyyy'), time: apartment()?.checkIn } }}
+            </dd>
           </div>
           <div>
-            <dt class="small-caps text-muted-foreground">Trả phòng</dt>
-            <dd class="mt-1">{{ b.checkOut | date: 'EEEE, dd/MM/yyyy' }} · trước {{ apartment()?.checkOut }}</dd>
+            <dt class="small-caps text-muted-foreground">{{ 'common.checkOut' | transloco }}</dt>
+            <dd class="mt-1">
+              {{ 'review.checkOutAt' | transloco: { date: (b.checkOut | date: 'EEEE, dd/MM/yyyy'), time: apartment()?.checkOut } }}
+            </dd>
           </div>
           <div>
-            <dt class="small-caps text-muted-foreground">Số khách</dt>
-            <dd class="mt-1">{{ b.guests }} khách</dd>
+            <dt class="small-caps text-muted-foreground">{{ 'common.guestCount' | transloco }}</dt>
+            <dd class="mt-1">{{ 'common.guests' | transloco: { count: b.guests } }}</dd>
           </div>
           <div>
-            <dt class="small-caps text-muted-foreground">Ngày đặt</dt>
+            <dt class="small-caps text-muted-foreground">{{ 'confirmation.bookedOn' | transloco }}</dt>
             <dd class="mt-1">{{ b.createdAt | date: 'dd/MM/yyyy' }}</dd>
           </div>
         </dl>
 
         <div class="mt-8 space-y-3 rounded-md bg-muted p-5">
           <div class="flex justify-between gap-4">
-            <span class="text-muted-foreground">Tổng tiền</span>
+            <span class="text-muted-foreground">{{ 'common.totalPrice' | transloco }}</span>
             <span>{{ b.quote.total | number }} ₫</span>
           </div>
           @for (p of b.payments; track p.id) {
             @if (p.state === 'succeeded') {
               <div class="flex justify-between gap-4 text-sm">
-                <span class="text-muted-foreground">Đã thanh toán qua {{ providerLabels[p.provider] }} · {{ p.paidAt | date: 'dd/MM HH:mm' }}</span>
+                <span class="text-muted-foreground">
+                  {{
+                    'confirmation.paidVia'
+                      | transloco: { provider: ('providers.' + p.provider | transloco), date: (p.paidAt | date: 'dd/MM HH:mm') }
+                  }}
+                </span>
                 <span class="text-accent-deep">{{ p.amount | number }} ₫</span>
               </div>
             }
           }
           <div class="flex items-baseline justify-between gap-4 border-t border-border pt-3">
             <span class="font-medium">
-              @if (b.pendingTransfer) { Chưa xác nhận thanh toán }
-              @else if (b.status === 'confirmed') { Còn lại khi nhận phòng }
-              @else { Chưa thanh toán }
+              @if (b.pendingTransfer) {
+                {{ 'confirmation.notConfirmed' | transloco }}
+              } @else if (b.status === 'confirmed') {
+                {{ 'confirmation.dueAtCheckIn' | transloco }}
+              } @else {
+                {{ 'confirmation.unpaid' | transloco }}
+              }
             </span>
             <span class="font-serif text-2xl">{{ b.amountDue | number }} ₫</span>
           </div>
@@ -138,11 +157,13 @@
       </div>
 
       <div class="mt-10 flex flex-col justify-center gap-3 sm:flex-row">
-        <a routerLink="/booking/manage" [queryParams]="{ ref: b.reference }" class="btn btn-outline">Tra cứu đặt phòng</a>
-        <a routerLink="/" class="btn btn-primary">Về trang chủ</a>
+        <a routerLink="/booking/manage" [queryParams]="{ ref: b.reference }" class="btn btn-outline">
+          {{ 'nav.lookup' | transloco }}
+        </a>
+        <a routerLink="/" class="btn btn-primary">{{ 'common.backHome' | transloco }}</a>
       </div>
     } @else {
-      <p class="mt-14 text-center text-muted-foreground" role="status">Đang tải đặt phòng…</p>
+      <p class="mt-14 text-center text-muted-foreground" role="status">{{ 'common.loadingBooking' | transloco }}</p>
     }
   </div>
 </section>

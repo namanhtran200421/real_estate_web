@@ -1,12 +1,13 @@
 <!-- Intro -->
 <section class="pb-16 pt-16 md:pb-20 md:pt-20">
   <div class="container-editorial text-center">
-    <p class="section-label mx-auto max-w-sm">Về chúng tôi</p>
+    <p class="section-label mx-auto max-w-sm">{{ 'nav.about' | transloco }}</p>
     <h1 class="mx-auto max-w-3xl">
-      Một căn hộ <em class="text-accent-deep">ấm cúng</em> ở Đà Lạt
+      {{ 'about.titleStart' | transloco }} <em class="text-accent-deep">{{ 'about.titleEm' | transloco }}</em>
+      {{ 'about.titleEnd' | transloco }}
     </h1>
     <p class="mx-auto mt-6 max-w-xl text-lg text-muted-foreground">
-      {{ site.name }} là căn hộ A04-12 tại Sun Garden, đường Nam Hồ, Đà Lạt.
+      {{ 'about.intro' | transloco: { site: site.name } }}
     </p>
   </div>
 </section>
@@ -17,7 +18,7 @@
     <div class="relative aspect-[4/3] overflow-hidden rounded-lg bg-muted shadow-md">
       <img
         ngSrc="/apartments/sun-garden-a04-12/04.jpg"
-        alt="Phòng khách và ban công của căn hộ Sun Garden A04-12"
+        [alt]="'about.photoAlt' | transloco"
         fill
         priority
         sizes="(min-width: 768px) 60vw, 100vw"
@@ -25,15 +26,11 @@
       />
     </div>
     <div>
-      <p class="small-caps text-accent-deep">Căn hộ</p>
+      <p class="small-caps text-accent-deep">{{ 'about.apartment' | transloco }}</p>
       <h2 class="mt-3 text-3xl md:text-4xl">Sun Garden A04-12</h2>
       <span class="rule-accent mt-6"></span>
-      <p class="mt-6 text-muted-foreground">
-        Căn góc tầng 4 có ban công phòng khách nhìn về phía Xóm Lèo và ban công phòng ngủ hướng ra đường Nam Hồ.
-      </p>
-      <p class="mt-4 text-muted-foreground">
-        Căn hộ rộng 78 m², có hai phòng ngủ, hai phòng tắm, Wi-Fi và bếp. Căn hộ không có điều hòa; khu đỗ xe có thu phí.
-      </p>
+      <p class="mt-6 text-muted-foreground">{{ 'about.story1' | transloco }}</p>
+      <p class="mt-4 text-muted-foreground">{{ 'about.story2' | transloco }}</p>
     </div>
   </div>
 </section>
@@ -41,13 +38,13 @@
 <!-- Values -->
 <section class="border-t border-border bg-muted py-20 md:py-28">
   <div class="container-editorial max-w-6xl">
-    <p class="section-label">Điều chúng tôi cam kết</p>
+    <p class="section-label">{{ 'about.promises' | transloco }}</p>
     <div class="mt-10 grid gap-10 md:grid-cols-3 md:gap-12">
-      @for (value of values; track value.title; let i = $index) {
+      @for (value of values; track value; let i = $index) {
         <div>
           <p class="font-serif text-4xl text-accent-deep">0{{ i + 1 }}</p>
-          <h3 class="mt-4">{{ value.title }}</h3>
-          <p class="mt-3 text-muted-foreground">{{ value.text }}</p>
+          <h3 class="mt-4">{{ value + '.title' | transloco }}</h3>
+          <p class="mt-3 text-muted-foreground">{{ value + '.text' | transloco }}</p>
         </div>
       }
     </div>
@@ -58,11 +55,11 @@
 <section class="py-20 md:py-28">
   <div class="container-editorial max-w-3xl text-center">
     <span class="rule-accent mx-auto"></span>
-    <h2 class="mt-8 text-3xl md:text-4xl">Sẵn sàng cho kỳ nghỉ tiếp theo?</h2>
-    <p class="mt-4 text-muted-foreground">Xem căn hộ hoặc liên hệ để được tư vấn.</p>
+    <h2 class="mt-8 text-3xl md:text-4xl">{{ 'about.ctaTitle' | transloco }}</h2>
+    <p class="mt-4 text-muted-foreground">{{ 'about.ctaText' | transloco }}</p>
     <div class="mt-10 flex flex-col justify-center gap-3 sm:flex-row">
-      <a routerLink="/" fragment="can-ho" class="btn btn-primary">Xem căn hộ</a>
-      <a routerLink="/contact" class="btn btn-outline">Liên hệ với chúng tôi</a>
+      <a routerLink="/" fragment="can-ho" class="btn btn-primary">{{ 'common.viewApartment' | transloco }}</a>
+      <a routerLink="/contact" class="btn btn-outline">{{ 'about.contactUs' | transloco }}</a>
     </div>
   </div>
 </section>

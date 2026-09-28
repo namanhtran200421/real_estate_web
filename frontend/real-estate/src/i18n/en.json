@@ -1,0 +1,463 @@
+{
+  "site": {
+    "tagline": "Sun Garden apartment A04-12, Nam Ho, Da Lat.",
+    "description": "Discover Sun Garden apartment A04-12 in Da Lat: 78 m², 2 bedrooms, 2 bathrooms and an airy balcony.",
+    "contact": {
+      "phone": "Phone",
+      "zalo": "Zalo",
+      "email": "Email"
+    }
+  },
+  "titles": {
+    "home": "{{ site }} · Sun Garden apartment in Da Lat",
+    "apartment": "Apartment details · {{ site }}",
+    "gallery": "Photos · {{ site }}",
+    "availability": "Availability · {{ site }}",
+    "location": "Location · {{ site }}",
+    "about": "About us · {{ site }}",
+    "contact": "Contact · {{ site }}",
+    "book": "Book · {{ site }}",
+    "review": "Review booking · {{ site }}",
+    "payment": "Payment · {{ site }}",
+    "lookup": "Find my booking · {{ site }}",
+    "confirmation": "Booking confirmation · {{ site }}"
+  },
+  "meta": {
+    "about": "{{ site }}: Sun Garden apartment A04-12 in Da Lat, 78 m², 2 bedrooms and 2 bathrooms.",
+    "contact": "Contact {{ site }} by phone, Zalo or email for help with your booking.",
+    "apartment": "{{ tagline }} {{ bedrooms }} [[ plural({{ bedrooms }}, bedroom, bedrooms) ]], up to {{ guests }} [[ plural({{ guests }}, guest, guests) ]], from {{ price }} ₫/night. {{ area }}."
+  },
+  "nav": {
+    "home": "Home",
+    "homeLabel": "{{ site }} · Home",
+    "about": "About us",
+    "contact": "Contact",
+    "apartment": "Apartment",
+    "availability": "Availability",
+    "book": "Book now",
+    "lookup": "Find my booking",
+    "main": "Main navigation",
+    "menu": "Menu",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "language": "Language",
+    "search": "Search apartments",
+    "searchPlaceholder": "Search apartments, areas…"
+  },
+  "footer": {
+    "links": "Footer links",
+    "explore": "Explore",
+    "rights": "All rights reserved.",
+    "admin": "Owner login"
+  },
+  "common": {
+    "from": "From",
+    "priceFrom": "From",
+    "perNight": "/ night",
+    "nights": "{{ count }} [[ plural({{ count }}, night, nights) ]]",
+    "guests": "{{ count }} [[ plural({{ count }}, guest, guests) ]]",
+    "nightCount": "Nights",
+    "guestCount": "Guests",
+    "checkIn": "Check-in",
+    "checkOut": "Check-out",
+    "total": "Total",
+    "totalPrice": "Total",
+    "loading": "Loading…",
+    "loadingBooking": "Loading your booking…",
+    "retry": "Try again",
+    "continue": "Continue",
+    "back": "← Back",
+    "backHome": "Back to home",
+    "sending": "Sending…",
+    "optional": "(optional)",
+    "fullName": "Full name",
+    "namePlaceholder": "Alex Smith",
+    "phone": "Phone number",
+    "phonePlaceholder": "09xx xxx xxx",
+    "email": "Email",
+    "emailPlaceholder": "you@email.com",
+    "emailOrPhone": "Email or phone number",
+    "message": "Message",
+    "reference": "Booking reference",
+    "yourBooking": "Your booking",
+    "viewApartment": "View the apartment",
+    "select": "Select…"
+  },
+  "calendar": {
+    "previousMonth": "Previous month",
+    "nextMonth": "Next month",
+    "monthYear": "{{ month }} {{ year }}",
+    "months": {
+      "1": "January",
+      "2": "February",
+      "3": "March",
+      "4": "April",
+      "5": "May",
+      "6": "June",
+      "7": "July",
+      "8": "August",
+      "9": "September",
+      "10": "October",
+      "11": "November",
+      "12": "December"
+    },
+    "weekdays": {
+      "mon": "Mo",
+      "tue": "Tu",
+      "wed": "We",
+      "thu": "Th",
+      "fri": "Fr",
+      "sat": "Sa",
+      "sun": "Su"
+    },
+    "available": "Available",
+    "booked": "Booked",
+    "past": "Past"
+  },
+  "picker": {
+    "clear": "Clear dates",
+    "chooseCheckIn": "Choose your check-in date",
+    "chooseCheckOut": "Choose your check-out date",
+    "checkInOn": "Check-in {{ date }}",
+    "latestCheckOut": "· latest check-out {{ date }}",
+    "booked": "Booked",
+    "selected": "Your dates",
+    "day": {
+      "available": "available",
+      "booked": "booked",
+      "checkOutAllowed": "available as check-out date",
+      "unavailable": "unavailable",
+      "checkIn": "check-in date",
+      "checkOut": "check-out date"
+    }
+  },
+  "apartment": {
+    "capacity": "{{ guests }} [[ plural({{ guests }}, guest, guests) ]] · {{ bedrooms }} [[ plural({{ bedrooms }}, bedroom, bedrooms) ]] · {{ beds }} [[ plural({{ beds }}, bed, beds) ]] · {{ bathrooms }} [[ plural({{ bathrooms }}, bathroom, bathrooms) ]]",
+    "viewDetails": "View details",
+    "sections": "Apartment sections",
+    "tabs": {
+      "overview": "Overview",
+      "gallery": "Photos",
+      "availability": "Availability",
+      "location": "Location"
+    },
+    "stats": {
+      "guests": "Guests",
+      "bedrooms": "Bedrooms",
+      "beds": "Beds",
+      "bathrooms": "Bathrooms"
+    },
+    "infoEyebrow": "Apartment details",
+    "infoTitle": "Introduction",
+    "facilitiesEyebrow": "Amenities",
+    "facilitiesTitle": "Everything you need",
+    "rulesEyebrow": "House rules",
+    "rulesTitle": "Check-in & house rules",
+    "pricesEyebrow": "Prices",
+    "pricesTitle": "Rates",
+    "exploreMore": "Explore more",
+    "explore": {
+      "gallery": "See every photo of the apartment",
+      "availability": "Check which dates are free",
+      "location": "Map and places nearby"
+    }
+  },
+  "notFound": {
+    "connectionError": "Connection error",
+    "loadFailed": "Couldn’t load the data",
+    "checkConnection": "Please check your internet connection and try again.",
+    "title": "Apartment not found",
+    "text": "This apartment doesn’t exist or has been removed.",
+    "browse": "See our apartments"
+  },
+  "bookingCard": {
+    "priceFrom": "From · Monday – Thursday",
+    "chooseDate": "Choose date",
+    "viewAvailability": "Check availability",
+    "priceNote": "Prices are calculated automatically and shown before you pay.",
+    "depositOrFull": "Pay a deposit or in full",
+    "emailConfirmation": "Booking confirmation by email"
+  },
+  "steps": {
+    "label": "Booking steps",
+    "progress": "Step {{ current }}/{{ total }}",
+    "details": "Booking details",
+    "review": "Review",
+    "payment": "Payment",
+    "status": "Status"
+  },
+  "summary": {
+    "rooms": "{{ bedrooms }} [[ plural({{ bedrooms }}, bedroom, bedrooms) ]] · up to {{ guests }} [[ plural({{ guests }}, guest, guests) ]]",
+    "totalNote": "The total is calculated automatically once you choose your dates."
+  },
+  "prices": {
+    "weekday": "Monday – Thursday",
+    "weekend": "Friday – Sunday",
+    "holiday": "Public holidays",
+    "weekly": "Weekly",
+    "monthly": "Monthly",
+    "perWeek": "/ week",
+    "perMonth": "/ month",
+    "longStay": "Long-stay discounts",
+    "noHolidayDiscount": "Discounts don’t apply to public holidays."
+  },
+  "rates": {
+    "weekday": "Weekday rate",
+    "weekend": "Weekend rate",
+    "holiday": "Holiday rate"
+  },
+  "status": {
+    "pending": "Pending",
+    "confirmed": "Confirmed",
+    "cancelled": "Cancelled",
+    "completed": "Completed",
+    "expired": "Hold expired",
+    "unpaid": "Unpaid",
+    "deposit_paid": "Deposit paid",
+    "fully_paid": "Paid in full",
+    "refunded": "Refunded"
+  },
+  "providers": {
+    "bank_transfer": "bank transfer",
+    "cash": "cash"
+  },
+  "home": {
+    "eyebrow": "Sun Garden · Da Lat",
+    "titleStart": "A corner of Da Lat",
+    "titleEm": "all your own",
+    "intro": "See availability, get the price instantly and book online, all from your phone.",
+    "otherApartments": "Other apartments",
+    "bookDirect": "Book direct",
+    "promises": {
+      "availability": {
+        "title": "Always up-to-date availability",
+        "text": "See which dates are free and book right away, no need to message first."
+      },
+      "prices": {
+        "title": "Clear prices",
+        "text": "Prices are calculated automatically for each night and shown in full before you pay."
+      },
+      "vietqr": {
+        "title": "Pay by VietQR transfer",
+        "text": "Scan the code to transfer a deposit or the full amount. The owner confirms once the money arrives."
+      }
+    }
+  },
+  "about": {
+    "titleStart": "A",
+    "titleEm": "cosy",
+    "titleEnd": "apartment in Da Lat",
+    "intro": "{{ site }} is apartment A04-12 at Sun Garden, Nam Ho Street, Da Lat.",
+    "photoAlt": "Living room and balcony of Sun Garden apartment A04-12",
+    "apartment": "The apartment",
+    "story1": "A fourth-floor corner apartment, with a living-room balcony looking towards Xom Leo and a bedroom balcony facing Nam Ho Street.",
+    "story2": "The apartment is 78 m², with two bedrooms, two bathrooms, Wi-Fi and a kitchen. There is no air conditioning, and parking is paid.",
+    "promises": "Our promise",
+    "values": {
+      "privacy": {
+        "title": "Your own private space",
+        "text": "A 78 m² fourth-floor corner apartment with two bedrooms, two bathrooms and an airy balcony."
+      },
+      "prices": {
+        "title": "Transparent prices",
+        "text": "Weekday, weekend and holiday prices are shown before you book."
+      },
+      "support": {
+        "title": "Attentive support",
+        "text": "We’re here for you by phone, Zalo and email, from the moment you book until you check out."
+      }
+    },
+    "ctaTitle": "Ready for your next getaway?",
+    "ctaText": "Take a look at the apartment or get in touch for advice.",
+    "contactUs": "Contact us"
+  },
+  "gallery": {
+    "count": "{{ count }} [[ plural({{ count }}, photo, photos) ]]",
+    "viewAll": "View all {{ count }} [[ plural({{ count }}, photo, photos) ]]",
+    "like": "Like this apartment?"
+  },
+  "availability": {
+    "note": "The calendar is kept up to date with confirmed bookings.",
+    "ready": "Found your dates?",
+    "priceFrom": "From · per night",
+    "priceNote": "Weekend and holiday rates and long-stay discounts are applied automatically when you book.",
+    "viewPrices": "See prices"
+  },
+  "location": {
+    "mapTitle": "Map of {{ name }}",
+    "loadingMap": "Loading map…",
+    "address": "Address",
+    "nearby": "Nearby",
+    "note": "The exact address and check-in instructions come with your confirmation email.",
+    "callUs": "Need directions? Give us a call"
+  },
+  "booking": {
+    "title": "Book your stay",
+    "intro": "Choose your dates and number of guests, and leave your contact details.",
+    "stay": "Your stay",
+    "apartment": "Apartment",
+    "dates": "Check-in – check-out",
+    "maxGuests": "Up to {{ count }} [[ plural({{ count }}, guest, guests) ]].",
+    "contact": "Contact details",
+    "emailNote": "We’ll send your booking confirmation to this email.",
+    "messagePlaceholder": "Expected arrival time, special requests…",
+    "backToApartment": "← Back to the apartment",
+    "discountApplied": "{{ amount }} ₫ off for your {{ nights }}-night stay",
+    "errors": {
+      "checkInMissing": "Choose a check-in date on the calendar.",
+      "checkInPast": "That check-in date has passed. Please choose another.",
+      "checkOutMissing": "Choose a check-out date on the calendar.",
+      "checkOutBeforeCheckIn": "Check-out must be after check-in.",
+      "tooManyNights": "You can book up to {{ max }} nights at a time.",
+      "nameMissing": "Enter your full name.",
+      "phoneInvalid": "Enter a valid Vietnamese phone number, e.g. 09xx xxx xxx.",
+      "emailInvalid": "Enter a valid email address."
+    }
+  },
+  "review": {
+    "title": "Review your booking",
+    "intro": "Check your details and the total before you pay.",
+    "stay": "Stay details",
+    "edit": "Edit",
+    "checkInAt": "{{ date }} · from {{ time }}",
+    "checkOutAt": "{{ date }} · by {{ time }}",
+    "priceDetails": "Price details",
+    "removePromo": "Remove promo code",
+    "chooseDates": "Choose other dates",
+    "subtotal": "Subtotal",
+    "longStayDiscount": "{{ nights }}-night stay discount (−{{ percent }}%)",
+    "weeklyMonthly": "Weekly / monthly rate",
+    "code": "Code",
+    "remove": "Remove",
+    "promoCode": "Promo code",
+    "enterCode": "Enter code",
+    "apply": "Apply",
+    "promoNote": "Each code can only be used once.",
+    "calculating": "Calculating price…",
+    "holding": "Holding your dates…",
+    "continueToPayment": "Continue to payment"
+  },
+  "payment": {
+    "title": "Payment",
+    "checkingTitle": "The owner is checking your transfer",
+    "checkingText": "You reported a transfer of {{ amount }} ₫ at {{ time }}. Your dates are held while the owner checks, and you’ll get an email once the booking is confirmed.",
+    "viewBooking": "View booking",
+    "expiredTitle": "Your hold has expired",
+    "expiredText": "Booking {{ reference }} wasn’t paid in time, so its dates were released to other guests. You can book again if the dates are still free.",
+    "bookAgain": "Book again",
+    "paidTitle": "This booking is paid in full",
+    "unavailableTitle": "Payment isn’t available right now",
+    "contactOwner": "Please contact the owner for help.",
+    "intro": "Make a bank transfer with the VietQR code, then press “I’ve transferred”.",
+    "holdNotice": "We’re holding your dates until {{ time }} ({{ minutes }} [[ plural({{ minutes }}, minute, minutes) ]] left). Please transfer and press “I’ve transferred” before then.",
+    "amountLegend": "Amount to pay",
+    "deposit": "{{ percent }}% deposit",
+    "remainder": "The remaining {{ amount }} ₫ is paid at check-in",
+    "payRemaining": "Pay the remaining balance",
+    "payFull": "Pay in full",
+    "nothingAtCheckIn": "Nothing more to pay at check-in",
+    "transfer": "Bank transfer",
+    "qrAlt": "VietQR code to transfer {{ amount }} ₫ to {{ name }}",
+    "saveQr": "Save QR code",
+    "bank": "Bank",
+    "accountName": "Account holder",
+    "accountNumber": "Account number",
+    "amount": "Amount",
+    "note": "Transfer note",
+    "copy": "Copy",
+    "copied": "Copied",
+    "steps": {
+      "scan": "Open your banking app and choose Scan QR. The amount and transfer note are filled in for you.",
+      "phone": "On your phone? Press “Save QR code” (or take a screenshot), then pick the image in your banking app’s QR scanner. Or transfer manually with the details above.",
+      "keepNoteBefore": "Keep the transfer note",
+      "keepNoteAfter": "exactly as it is, so the owner can confirm quickly.",
+      "report": "Once you’ve transferred, press the button below."
+    },
+    "transferLoadFailed": "Couldn’t load the transfer details.",
+    "creatingQr": "Creating QR code…",
+    "reportButton": "I’ve transferred {{ amount }} ₫",
+    "disclaimer": "This button only asks the owner to check. Your payment and booking aren’t confirmed until the owner sees the money in their account. By paying, you agree to the apartment’s house rules.",
+    "reference": "Booking reference:",
+    "cannotOpen": "Can’t open this booking",
+    "noAccess": "This browser doesn’t have access to the booking yet. Look it up with your booking reference and email or phone number.",
+    "noBooking": "There’s no booking to pay for yet."
+  },
+  "confirmation": {
+    "enterContact": "Enter the email or phone number you used for booking",
+    "notConfirmed": "Payment not confirmed yet",
+    "reportedTitle": "We’ve received your transfer notice",
+    "reportedText": "{{ name }}, we’ve recorded your notice of a {{ amount }} ₫ transfer, but the money hasn’t been confirmed yet. The owner will check their account. Once the money arrives, you’ll get a confirmation email at",
+    "reportedTextEnd": ". Your dates are held in the meantime.",
+    "confirmed": "Booking confirmed",
+    "seeYou": "See you soon, {{ name }}",
+    "paidText": "The owner has received your payment. Your booking details have been sent to",
+    "inactive": "This booking is no longer active",
+    "bookingRef": "Booking {{ reference }}",
+    "unpaid": "Not paid yet",
+    "unpaidText": "Your booking is confirmed once the owner receives your payment.",
+    "pay": "Pay now",
+    "bookedOn": "Booked on",
+    "paidVia": "Paid by {{ provider }} · {{ date }}",
+    "dueAtCheckIn": "Due at check-in"
+  },
+  "lookup": {
+    "intro": "Enter your booking reference and the email or phone number you booked with to see its status.",
+    "search": "Look up",
+    "searching": "Searching…",
+    "result": "Result",
+    "bookedOn": "Booked on {{ date }}",
+    "paid": "Paid",
+    "remaining": "Remaining",
+    "checking": "The owner is checking the {{ amount }} ₫ transfer you reported at {{ time }}. You’ll get an email once the booking is confirmed.",
+    "contactOwner": "Contact the owner"
+  },
+  "contact": {
+    "title": "We’re always happy to help",
+    "intro": "Send us a message, call us or message us on Zalo. We’ll get back to you as soon as we can.",
+    "sentTitle": "Message sent",
+    "sentText": "Thank you. We’ll get back to you as soon as we can.",
+    "formTitle": "Send us a message",
+    "required": "Fields marked * are required.",
+    "topic": "Topic",
+    "topics": {
+      "booking": "Booking",
+      "apartment": "Apartment information",
+      "payment": "Payment",
+      "partnership": "Rental partnership",
+      "other": "Other"
+    },
+    "apartment": "Apartment you’re interested in",
+    "noApartment": "Not selected",
+    "messagePlaceholder": "How can we help?",
+    "privacy": "Your details are only used to reply to this request.",
+    "submit": "Send message",
+    "direct": "Contact us directly",
+    "booked": "Already booked?",
+    "checkStatus": "Check your booking status",
+    "lookupHint": "Look it up with your booking reference and email or phone number."
+  },
+  "apiErrors": {
+    "NETWORK": "Couldn’t reach the server. Please check your connection and try again.",
+    "UNKNOWN": "Something went wrong. Please try again.",
+    "VALIDATION_ERROR": "Some details aren’t valid. Please check them and try again.",
+    "NOT_FOUND": "We couldn’t find a booking with these details.",
+    "DATES_UNAVAILABLE": "Some of the dates you chose are already booked. Please choose other dates.",
+    "DUPLICATE_BOOKING": "This email or phone number already has a booking on overlapping dates. Please check your existing booking before booking again.",
+    "TOO_MANY_GUESTS": "That’s more guests than this apartment can host.",
+    "PROMO_CODE_INVALID": "This promo code can’t be used for this booking.",
+    "TRANSFER_BEING_CHECKED": "The owner is already checking the transfer you reported. Please wait for confirmation.",
+    "BOOKING_NOT_PAYABLE": "This booking’s hold has expired or it can’t be paid. Please book again.",
+    "PAYMENT_OPTION_UNAVAILABLE": "This payment option no longer applies to the booking.",
+    "INVALID_STATUS": "This can’t be done in the booking’s current state.",
+    "TOO_MANY_REQUESTS": "Too many requests. Please wait a moment and try again.",
+    "UPSTREAM_ERROR": "A connected service isn’t responding. Please try again later.",
+    "bookedDates": "Booked dates: {{ dates }}.",
+    "fields": {
+      "name": "Enter your full name.",
+      "phone": "Enter a valid Vietnamese phone number, e.g. 09xx xxx xxx.",
+      "email": "Enter a valid email address.",
+      "message": "Enter a message.",
+      "other": "Please check this field."
+    }
+  }
+}

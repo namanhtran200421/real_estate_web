@@ -1,6 +1,7 @@
 import { Component, computed, effect, inject, input } from '@angular/core';
 import { NgOptimizedImage } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { ApartmentHeader } from '../../components/apartment-header/apartment-header';
 import { ApartmentNotFound } from '../../components/apartment-not-found/apartment-not-found';
 import { ApartmentService } from '../../services/apartment.service';
@@ -8,7 +9,7 @@ import { SeoService } from '../../services/seo.service';
 
 @Component({
   selector: 'app-gallery',
-  imports: [NgOptimizedImage, RouterLink, ApartmentHeader, ApartmentNotFound],
+  imports: [NgOptimizedImage, RouterLink, TranslocoPipe, ApartmentHeader, ApartmentNotFound],
   templateUrl: './gallery.html',
 })
 export class Gallery {
@@ -23,7 +24,7 @@ export class Gallery {
     const seo = inject(SeoService);
     effect(() => {
       const apt = this.apartment();
-      if (apt) seo.updateForApartment(apt, { label: 'Hình ảnh', path: '/gallery' });
+      if (apt) seo.updateForApartment(apt, { label: 'apartment.tabs.gallery', path: '/gallery' });
     });
   }
 }

@@ -3,25 +3,25 @@
   <div class="flex min-h-12 flex-wrap items-center justify-between gap-3 border-b border-border pb-4" aria-live="polite">
     @if (nights()) {
       <p>
-        <span class="font-serif text-xl">{{ nights() }} đêm</span>
+        <span class="font-serif text-xl">{{ 'common.nights' | transloco: { count: nights() } }}</span>
         <span class="ml-2 text-muted-foreground">
           {{ checkIn() | date: 'EEE dd/MM' }} → {{ checkOut() | date: 'EEE dd/MM/yyyy' }}
         </span>
       </p>
-      <button type="button" class="link text-sm" (click)="clear()">Chọn lại</button>
+      <button type="button" class="link text-sm" (click)="clear()">{{ 'picker.clear' | transloco }}</button>
     } @else if (choosingCheckOut()) {
       <p>
-        <span class="font-medium">Chọn ngày trả phòng</span>
+        <span class="font-medium">{{ 'picker.chooseCheckOut' | transloco }}</span>
         <span class="block text-sm text-muted-foreground">
-          Nhận phòng {{ checkIn() | date: 'EEEE, dd/MM' }}
+          {{ 'picker.checkInOn' | transloco: { date: (checkIn() | date: 'EEEE, dd/MM') } }}
           @if (lastCheckOut(); as last) {
-            · trả phòng muộn nhất {{ last | date: 'dd/MM' }}
+            {{ 'picker.latestCheckOut' | transloco: { date: (last | date: 'dd/MM') } }}
           }
         </span>
       </p>
-      <button type="button" class="link text-sm" (click)="clear()">Chọn lại</button>
+      <button type="button" class="link text-sm" (click)="clear()">{{ 'picker.clear' | transloco }}</button>
     } @else {
-      <p class="font-medium">Chọn ngày nhận phòng</p>
+      <p class="font-medium">{{ 'picker.chooseCheckIn' | transloco }}</p>
     }
   </div>
 
@@ -30,7 +30,7 @@
       type="button"
       class="icon-btn absolute left-0 top-0"
       [disabled]="!canGoBack()"
-      aria-label="Tháng trước"
+      [attr.aria-label]="'calendar.previousMonth' | transloco"
       (click)="previous()"
     >
       <svg viewBox="0 0 20 20" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
@@ -41,7 +41,7 @@
       type="button"
       class="icon-btn absolute right-0 top-0"
       [disabled]="!canGoForward()"
-      aria-label="Tháng sau"
+      [attr.aria-label]="'calendar.nextMonth' | transloco"
       (click)="next()"
     >
       <svg viewBox="0 0 20 20" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
@@ -55,7 +55,7 @@
           <p class="flex h-11 items-center justify-center font-serif text-xl">{{ month.label }}</p>
           <div class="mt-3 grid grid-cols-7 gap-1 text-center" role="group" [attr.aria-label]="month.label">
             @for (day of weekdays; track day) {
-              <span class="small-caps pb-1 text-[0.625rem] text-muted-foreground" aria-hidden="true">{{ day }}</span>
+              <span class="small-caps pb-1 text-[0.625rem] text-muted-foreground" aria-hidden="true">{{ day | transloco }}</span>
             }
             @for (blank of month.blanks; track blank) {
               <span></span>
@@ -85,13 +85,13 @@
 
   <div class="mt-6 flex flex-wrap justify-center gap-x-6 gap-y-2 border-t border-border pt-4 text-sm text-muted-foreground">
     <span class="flex items-center gap-2">
-      <span class="h-3.5 w-3.5 rounded-sm border border-border bg-card"></span> Còn trống
+      <span class="h-3.5 w-3.5 rounded-sm border border-border bg-card"></span> {{ 'calendar.available' | transloco }}
     </span>
     <span class="flex items-center gap-2">
-      <span class="h-3.5 w-3.5 rounded-sm bg-muted"></span> Đã có người đặt
+      <span class="h-3.5 w-3.5 rounded-sm bg-muted"></span> {{ 'picker.booked' | transloco }}
     </span>
     <span class="flex items-center gap-2">
-      <span class="h-3.5 w-3.5 rounded-sm bg-foreground"></span> Ngày bạn chọn
+      <span class="h-3.5 w-3.5 rounded-sm bg-foreground"></span> {{ 'picker.selected' | transloco }}
     </span>
   </div>
 </div>

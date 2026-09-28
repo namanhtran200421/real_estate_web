@@ -2,7 +2,7 @@
   <div class="container-editorial max-w-6xl">
     <app-booking-steps [current]="3" />
 
-    <h1 class="mt-12 text-4xl md:text-5xl">Thanh toán</h1>
+    <h1 class="mt-12 text-4xl md:text-5xl">{{ 'payment.title' | transloco }}</h1>
 
     @if (b(); as b) {
       @let options = b.paymentOptions;
@@ -10,47 +10,53 @@
       @if (b.pendingTransfer; as pending) {
         <!-- Already reported: waiting for the owner -->
         <div class="card mt-10 max-w-2xl">
-          <h2 class="text-2xl">Chủ nhà đang kiểm tra chuyển khoản</h2>
+          <h2 class="text-2xl">{{ 'payment.checkingTitle' | transloco }}</h2>
           <p class="mt-3 text-muted-foreground">
-            Bạn đã báo chuyển {{ pending.amount | number }} ₫ lúc {{ pending.reportedAt | date: 'HH:mm dd/MM' }}.
-            Ngày của bạn được giữ trong khi chủ nhà kiểm tra, bạn sẽ nhận email khi đặt phòng được xác nhận.
+            {{
+              'payment.checkingText'
+                | transloco: { amount: (pending.amount | number), time: (pending.reportedAt | date: 'HH:mm dd/MM') }
+            }}
           </p>
-          <a [routerLink]="['/booking', b.reference, 'confirmation']" class="btn btn-primary mt-6">Xem đặt phòng</a>
+          <a [routerLink]="['/booking', b.reference, 'confirmation']" class="btn btn-primary mt-6">
+            {{ 'payment.viewBooking' | transloco }}
+          </a>
         </div>
       } @else if (options.full === null) {
         <!-- Nothing to pay: expired hold, cancelled, or already paid -->
         <div class="card mt-10 max-w-2xl">
           @if (b.status === 'expired') {
-            <h2 class="text-2xl">Đã hết thời gian giữ chỗ</h2>
+            <h2 class="text-2xl">{{ 'payment.expiredTitle' | transloco }}</h2>
             <p class="mt-3 text-muted-foreground">
-              Đặt phòng {{ b.reference }} chưa được thanh toán kịp nên ngày đã được mở lại cho khách khác.
-              Bạn có thể đặt lại nếu ngày vẫn còn trống.
+              {{ 'payment.expiredText' | transloco: { reference: b.reference } }}
             </p>
-            <a routerLink="/book" [queryParams]="{ apt: b.apartmentSlug }" class="btn btn-primary mt-6">Đặt lại</a>
+            <a routerLink="/book" [queryParams]="{ apt: b.apartmentSlug }" class="btn btn-primary mt-6">
+              {{ 'payment.bookAgain' | transloco }}
+            </a>
           } @else if (b.amountDue === 0) {
-            <h2 class="text-2xl">Đặt phòng đã được thanh toán đủ</h2>
-            <a [routerLink]="['/booking', b.reference, 'confirmation']" class="btn btn-primary mt-6">Xem đặt phòng</a>
+            <h2 class="text-2xl">{{ 'payment.paidTitle' | transloco }}</h2>
+            <a [routerLink]="['/booking', b.reference, 'confirmation']" class="btn btn-primary mt-6">
+              {{ 'payment.viewBooking' | transloco }}
+            </a>
           } @else {
-            <h2 class="text-2xl">Không thể thanh toán lúc này</h2>
-            <p class="mt-3 text-muted-foreground">Vui lòng liên hệ chủ nhà để được hỗ trợ.</p>
-            <a routerLink="/contact" class="btn btn-outline mt-6">Liên hệ</a>
+            <h2 class="text-2xl">{{ 'payment.unavailableTitle' | transloco }}</h2>
+            <p class="mt-3 text-muted-foreground">{{ 'payment.contactOwner' | transloco }}</p>
+            <a routerLink="/contact" class="btn btn-outline mt-6">{{ 'nav.contact' | transloco }}</a>
           }
         </div>
       } @else {
-        <p class="mt-3 text-muted-foreground">Chuyển khoản ngân hàng bằng mã VietQR, sau đó bấm "Tôi đã chuyển khoản".</p>
+        <p class="mt-3 text-muted-foreground">{{ 'payment.intro' | transloco }}</p>
 
         <div class="mt-10 grid gap-10 lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-14">
           <div class="min-w-0 space-y-12">
             @if (minutesLeft() !== undefined) {
               <p class="rounded-md border border-accent bg-accent-muted p-4 text-sm text-accent-deep" role="status">
-                Chúng tôi giữ ngày cho bạn đến {{ b.holdExpiresAt | date: 'HH:mm' }} (còn {{ minutesLeft() }} phút).
-                Hãy chuyển khoản và bấm "Tôi đã chuyển khoản" trước thời gian này.
+                {{ 'payment.holdNotice' | transloco: { time: (b.holdExpiresAt | date: 'HH:mm'), minutes: minutesLeft() } }}
               </p>
             }
 
             <!-- Amount -->
             <fieldset>
-              <legend class="font-serif text-2xl">Số tiền thanh toán</legend>
+              <legend class="font-serif text-2xl">{{ 'payment.amountLegend' | transloco }}</legend>
               <div class="mt-6 grid gap-4 sm:grid-cols-2">
                 @if (options.deposit !== null) {
                   <label
@@ -65,10 +71,10 @@
                       class="mt-1.5 h-4 w-4 shrink-0 accent-accent-deep"
                     />
                     <span>
-                      <span class="block font-medium">Đặt cọc {{ b.quote.depositPercent }}%</span>
+                      <span class="block font-medium">{{ 'payment.deposit' | transloco: { percent: b.quote.depositPercent } }}</span>
                       <span class="mt-2 block font-serif text-2xl">{{ options.deposit | number }} ₫</span>
                       <span class="mt-1 block text-sm text-muted-foreground">
-                        Còn lại {{ options.full - options.deposit | number }} ₫ thanh toán khi nhận phòng
+                        {{ 'payment.remainder' | transloco: { amount: (options.full - options.deposit | number) } }}
                       </span>
                     </span>
                   </label>
@@ -86,12 +92,12 @@
                   />
                   <span>
                     @if (b.amountPaid > 0) {
-                      <span class="block font-medium">Thanh toán phần còn lại</span>
+                      <span class="block font-medium">{{ 'payment.payRemaining' | transloco }}</span>
                     } @else {
-                      <span class="block font-medium">Thanh toán toàn bộ</span>
+                      <span class="block font-medium">{{ 'payment.payFull' | transloco }}</span>
                     }
                     <span class="mt-2 block font-serif text-2xl">{{ options.full | number }} ₫</span>
-                    <span class="mt-1 block text-sm text-muted-foreground">Không cần thanh toán thêm khi nhận phòng</span>
+                    <span class="mt-1 block text-sm text-muted-foreground">{{ 'payment.nothingAtCheckIn' | transloco }}</span>
                   </span>
                 </label>
               </div>
@@ -99,7 +105,7 @@
 
             <!-- Transfer -->
             <section aria-labelledby="transfer-heading">
-              <h2 id="transfer-heading" class="font-serif text-2xl">Chuyển khoản</h2>
+              <h2 id="transfer-heading" class="font-serif text-2xl">{{ 'payment.transfer' | transloco }}</h2>
 
               <div class="card card-accent-top card-elevated mt-6">
                 @if (t(); as t) {
@@ -110,50 +116,50 @@
                         width="208"
                         height="208"
                         class="mx-auto h-52 w-52 rounded-md border border-border bg-white"
-                        [alt]="'Mã VietQR chuyển ' + (t.amount | number) + ' đồng tới ' + t.accountName"
+                        [alt]="'payment.qrAlt' | transloco: { amount: (t.amount | number), name: t.accountName }"
                       />
                       <a
                         [href]="t.qrImage"
                         [download]="'vietqr-' + t.note + '.png'"
                         class="link mt-3 inline-block text-sm"
                       >
-                        Lưu mã QR
+                        {{ 'payment.saveQr' | transloco }}
                       </a>
                     </div>
 
                     <dl class="divide-y divide-border border-y border-border text-sm">
                       <div class="flex items-center justify-between gap-4 py-3">
-                        <dt class="text-muted-foreground">Ngân hàng</dt>
+                        <dt class="text-muted-foreground">{{ 'payment.bank' | transloco }}</dt>
                         <dd class="font-medium">{{ t.bankName }}</dd>
                       </div>
                       <div class="flex items-center justify-between gap-4 py-3">
-                        <dt class="text-muted-foreground">Chủ tài khoản</dt>
+                        <dt class="text-muted-foreground">{{ 'payment.accountName' | transloco }}</dt>
                         <dd class="font-medium">{{ t.accountName }}</dd>
                       </div>
                       <div class="flex items-center justify-between gap-4 py-3">
-                        <dt class="text-muted-foreground">Số tài khoản</dt>
+                        <dt class="text-muted-foreground">{{ 'payment.accountNumber' | transloco }}</dt>
                         <dd class="flex items-center gap-3">
                           <span class="font-mono text-base">{{ t.accountNumber }}</span>
                           <button type="button" class="link text-xs" (click)="copy('account', t.accountNumber)">
-                            @if (copied() === 'account') { Đã chép } @else { Sao chép }
+                            {{ (copied() === 'account' ? 'payment.copied' : 'payment.copy') | transloco }}
                           </button>
                         </dd>
                       </div>
                       <div class="flex items-center justify-between gap-4 py-3">
-                        <dt class="text-muted-foreground">Số tiền</dt>
+                        <dt class="text-muted-foreground">{{ 'payment.amount' | transloco }}</dt>
                         <dd class="flex items-center gap-3">
                           <span class="font-serif text-xl">{{ t.amount | number }} ₫</span>
                           <button type="button" class="link text-xs" (click)="copy('amount', '' + t.amount)">
-                            @if (copied() === 'amount') { Đã chép } @else { Sao chép }
+                            {{ (copied() === 'amount' ? 'payment.copied' : 'payment.copy') | transloco }}
                           </button>
                         </dd>
                       </div>
                       <div class="flex items-center justify-between gap-4 py-3">
-                        <dt class="text-muted-foreground">Nội dung</dt>
+                        <dt class="text-muted-foreground">{{ 'payment.note' | transloco }}</dt>
                         <dd class="flex items-center gap-3">
                           <span class="font-mono text-base font-medium text-accent-deep">{{ t.note }}</span>
                           <button type="button" class="link text-xs" (click)="copy('note', t.note)">
-                            @if (copied() === 'note') { Đã chép } @else { Sao chép }
+                            {{ (copied() === 'note' ? 'payment.copied' : 'payment.copy') | transloco }}
                           </button>
                         </dd>
                       </div>
@@ -161,19 +167,22 @@
                   </div>
 
                   <ol class="mt-8 list-decimal space-y-2 pl-5 text-sm text-muted-foreground">
-                    <li>Mở ứng dụng ngân hàng, chọn quét mã QR. Số tiền và nội dung đã được điền sẵn.</li>
+                    <li>{{ 'payment.steps.scan' | transloco }}</li>
+                    <li>{{ 'payment.steps.phone' | transloco }}</li>
                     <li>
-                      Đang dùng điện thoại? Bấm "Lưu mã QR" (hoặc chụp màn hình), rồi chọn ảnh trong mục quét mã của
-                      ứng dụng ngân hàng. Hoặc chuyển khoản thủ công với thông tin ở trên.
+                      {{ 'payment.steps.keepNoteBefore' | transloco }}
+                      <span class="font-mono text-foreground">{{ t.note }}</span>
+                      {{ 'payment.steps.keepNoteAfter' | transloco }}
                     </li>
-                    <li>Giữ đúng nội dung <span class="font-mono text-foreground">{{ t.note }}</span> để chủ nhà xác nhận nhanh.</li>
-                    <li>Sau khi chuyển, bấm nút bên dưới.</li>
+                    <li>{{ 'payment.steps.report' | transloco }}</li>
                   </ol>
                 } @else if (transfer.error()) {
-                  <p class="text-sm text-accent-deep" role="alert">Chưa tải được thông tin chuyển khoản.</p>
-                  <button type="button" class="btn btn-outline mt-4" (click)="transfer.reload()">Thử lại</button>
+                  <p class="text-sm text-accent-deep" role="alert">{{ 'payment.transferLoadFailed' | transloco }}</p>
+                  <button type="button" class="btn btn-outline mt-4" (click)="transfer.reload()">
+                    {{ 'common.retry' | transloco }}
+                  </button>
                 } @else {
-                  <p class="text-muted-foreground" role="status">Đang tạo mã QR…</p>
+                  <p class="text-muted-foreground" role="status">{{ 'payment.creatingQr' | transloco }}</p>
                 }
 
                 @if (reportError(); as error) {
@@ -184,19 +193,19 @@
 
                 <button type="button" class="btn btn-primary mt-8 w-full" [disabled]="!t() || reporting()" (click)="report()">
                   @if (reporting()) {
-                    Đang gửi…
+                    {{ 'common.sending' | transloco }}
                   } @else {
-                    Tôi đã chuyển khoản {{ t()?.amount | number }} ₫
+                    {{ 'payment.reportButton' | transloco: { amount: (t()?.amount | number) } }}
                   }
                 </button>
                 <p class="mt-4 text-center text-xs text-muted-foreground">
-                  Nút này chỉ báo cho chủ nhà kiểm tra. Khoản tiền và đặt phòng chưa được xác nhận cho đến khi chủ nhà thấy tiền trong tài khoản. Bằng việc thanh toán, bạn đồng ý với nội quy của căn hộ.
+                  {{ 'payment.disclaimer' | transloco }}
                 </p>
               </div>
             </section>
 
             <p class="text-sm text-muted-foreground">
-              Mã đặt phòng: <span class="font-mono">{{ b.reference }}</span>
+              {{ 'payment.reference' | transloco }} <span class="font-mono">{{ b.reference }}</span>
             </p>
           </div>
 
@@ -210,23 +219,23 @@
     } @else if (loadError(); as error) {
       <div class="card mt-10 max-w-2xl">
         @if (error.code === 'NOT_FOUND') {
-          <h2 class="text-2xl">Không mở được đặt phòng</h2>
-          <p class="mt-3 text-muted-foreground">
-            Trình duyệt này chưa có quyền xem đặt phòng. Tra cứu bằng mã đặt phòng và email hoặc số điện thoại.
-          </p>
-          <a routerLink="/booking/manage" [queryParams]="{ ref: ref() }" class="btn btn-primary mt-6">Tra cứu đặt phòng</a>
+          <h2 class="text-2xl">{{ 'payment.cannotOpen' | transloco }}</h2>
+          <p class="mt-3 text-muted-foreground">{{ 'payment.noAccess' | transloco }}</p>
+          <a routerLink="/booking/manage" [queryParams]="{ ref: ref() }" class="btn btn-primary mt-6">
+            {{ 'nav.lookup' | transloco }}
+          </a>
         } @else {
-          <p class="text-muted-foreground" role="alert">{{ error.message }}</p>
-          <button type="button" class="btn btn-outline mt-6" (click)="booking.reload()">Thử lại</button>
+          <p class="text-muted-foreground" role="alert">{{ errorMessages.message(error) }}</p>
+          <button type="button" class="btn btn-outline mt-6" (click)="booking.reload()">{{ 'common.retry' | transloco }}</button>
         }
       </div>
     } @else if (!ref()) {
       <div class="card mt-10 max-w-2xl">
-        <p class="text-muted-foreground">Chưa có đặt phòng để thanh toán.</p>
-        <a routerLink="/book" class="btn btn-primary mt-6">Đặt lịch</a>
+        <p class="text-muted-foreground">{{ 'payment.noBooking' | transloco }}</p>
+        <a routerLink="/book" class="btn btn-primary mt-6">{{ 'nav.book' | transloco }}</a>
       </div>
     } @else {
-      <p class="mt-10 text-muted-foreground" role="status">Đang tải đặt phòng…</p>
+      <p class="mt-10 text-muted-foreground" role="status">{{ 'common.loadingBooking' | transloco }}</p>
     }
   </div>
 </section>

@@ -32,8 +32,7 @@
     <p class="mt-3 text-muted-foreground">{{ apt.tagline }}</p>
 
     <p class="mt-5 text-sm text-muted-foreground">
-      {{ apt.guests }} khách · {{ apt.bedrooms }} phòng ngủ · {{ apt.beds }} giường ·
-      {{ apt.bathrooms }} phòng tắm
+      {{ 'apartment.capacity' | transloco: { guests: apt.guests, bedrooms: apt.bedrooms, beds: apt.beds, bathrooms: apt.bathrooms } }}
     </p>
 
     @if (featured()) {
@@ -48,13 +47,14 @@
       <hr />
       <div class="mt-6 flex flex-wrap items-center justify-between gap-4">
         <p class="text-muted-foreground">
-          Từ <span class="font-serif text-2xl text-foreground">{{ apt.pricing.weekday | number }} ₫</span>
-          / đêm
+          {{ 'common.from' | transloco }}
+          <span class="font-serif text-2xl text-foreground">{{ apt.pricing.weekday | number }} ₫</span>
+          {{ 'common.perNight' | transloco }}
         </p>
         @if (featured()) {
           <div class="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
-            <a routerLink="/apartment" [queryParams]="{ apt: apt.slug }" class="btn btn-outline">Xem chi tiết</a>
-            <a routerLink="/book" [queryParams]="{ apt: apt.slug }" class="btn btn-primary">Đặt lịch</a>
+            <a routerLink="/apartment" [queryParams]="{ apt: apt.slug }" class="btn btn-outline">{{ 'apartment.viewDetails' | transloco }}</a>
+            <a routerLink="/book" [queryParams]="{ apt: apt.slug }" class="btn btn-primary">{{ 'nav.book' | transloco }}</a>
           </div>
         }
       </div>

@@ -1,10 +1,11 @@
 import { Component, computed, inject } from '@angular/core';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { ApartmentCard } from '../../components/apartment-card/apartment-card';
 import { ApartmentService } from '../../services/apartment.service';
 
 @Component({
   selector: 'app-home',
-  imports: [ApartmentCard],
+  imports: [ApartmentCard, TranslocoPipe],
   templateUrl: './home.html',
 })
 export class Home {
@@ -14,18 +15,6 @@ export class Home {
   protected readonly featured = computed(() => this.apartments()[0]);
   protected readonly others = computed(() => this.apartments().slice(1));
 
-  protected readonly promises = [
-    {
-      title: 'Lịch trống cập nhật liên tục',
-      text: 'Xem ngày còn trống và đặt ngay, không cần nhắn tin hỏi trước.',
-    },
-    {
-      title: 'Giá rõ ràng',
-      text: 'Giá được tính tự động theo ngày và hiển thị đầy đủ trước khi thanh toán.',
-    },
-    {
-      title: 'Chuyển khoản qua VietQR',
-      text: 'Quét mã để chuyển khoản đặt cọc hoặc thanh toán toàn bộ. Chủ căn hộ xác nhận khi nhận được tiền.',
-    },
-  ];
+  /** Translation keys under home.promises (each has a title and a text). */
+  protected readonly promises = ['availability', 'prices', 'vietqr'].map((key) => `home.promises.${key}`);
 }

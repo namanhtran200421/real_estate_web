@@ -2,6 +2,7 @@ import {
   Component,
   ElementRef,
   Injector,
+  LOCALE_ID,
   afterNextRender,
   computed,
   inject,
@@ -12,7 +13,8 @@ import {
   untracked,
 } from '@angular/core';
 import { DatePipe } from '@angular/common';
-import { addDaysIso, nightsBetween } from '../../shared/dates';
+import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { WEEKDAYS, addDaysIso, nightsBetween } from '../../shared/dates';
 
 export interface DateRange {
   checkIn: string;
@@ -39,14 +41,6 @@ interface MonthView {
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
-const ARIA_DATE = new Intl.DateTimeFormat('vi-VN', {
-  weekday: 'long',
-  day: 'numeric',
-  month: 'long',
-  year: 'numeric',
-  timeZone: 'UTC',
-});
-
 /** Arrow keys move one day or one week, like every calendar widget. */
 const KEY_STEPS: Record<string, number> = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 };
 
@@ -61,12 +55,20 @@ const MONTHS_SHOWN = 2;
  */
 @Component({
   selector: 'app-date-range-picker',
-  imports: [DatePipe],
+  imports: [DatePipe, TranslocoPipe],
   templateUrl: './date-range-picker.html',
 })
 export class DateRangePicker {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly injector = inject(Injector);
+  private readonly transloco = inject(TranslocoService);
+  private readonly ariaDate = new Intl.DateTimeFormat(inject(LOCALE_ID), {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
 
   /** ISO dates whose night cannot be booked. */
   readonly unavailableDates = input<string[]>([]);
@@ -122,7 +124,7 @@ export class DateRangePicker {
     return views;
   });
 
-  protected readonly weekdays = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+  protected readonly weekdays = WEEKDAYS;
   protected readonly canGoBack = computed(() => this.offset() > 0);
   protected readonly canGoForward = computed(() => this.offset() < this.lastOffset());
 
@@ -185,7 +187,10 @@ export class DateRangePicker {
 
     return {
       key: `${year}-${pad(month + 1)}`,
-      label: `Tháng ${month + 1}, ${year}`,
+      label: this.transloco.translate('calendar.monthYear', {
+        month: this.transloco.translate(`calendar.months.${month + 1}`),
+        year,
+      }),
       blanks: Array.from({ length: (first.getUTCDay() + 6) % 7 }, (_, i) => i),
       days: Array.from({ length: count }, (_, i) => this.dayCell(`${year}-${pad(month + 1)}-${pad(i + 1)}`)),
     };
@@ -212,12 +217,12 @@ export class DateRangePicker {
     if (validCheckOut) disabled = false;
     if (this.choosingCheckOut() && lastCheckOut && date > lastCheckOut) disabled = true;
 
-    let status = 'còn trống';
-    if (booked) status = 'đã có người đặt';
-    if (booked && validCheckOut) status = 'có thể chọn làm ngày trả phòng';
-    if (outOfRange) status = 'không đặt được';
-    if (isStart) status = 'ngày nhận phòng';
-    if (isEnd) status = 'ngày trả phòng';
+    let status = 'available';
+    if (booked) status = 'booked';
+    if (booked && validCheckOut) status = 'checkOutAllowed';
+    if (outOfRange) status = 'unavailable';
+    if (isStart) status = 'checkIn';
+    if (isEnd) status = 'checkOut';
 
     let classes = 'border border-border bg-card text-foreground hover:border-accent-deep';
     if (disabled) classes = 'cursor-default text-muted-foreground/40';
@@ -229,7 +234,7 @@ export class DateRangePicker {
     return {
       date,
       day: Number(date.slice(8, 10)),
-      label: `${ARIA_DATE.format(new Date(`${date}T00:00:00Z`))}, ${status}`,
+      label: `${this.ariaDate.format(new Date(`${date}T00:00:00Z`))}, ${this.transloco.translate(`picker.day.${status}`)}`,
       disabled,
       selected: isStart || isEnd,
       classes,

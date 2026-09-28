@@ -1,6 +1,9 @@
 /** The business operates in Vietnam; "today" is Vietnam's calendar day wherever the guest is. */
 const TIME_ZONE = 'Asia/Ho_Chi_Minh';
 
+/** Calendar column headings, Monday first (Vietnamese convention): translation keys. */
+export const WEEKDAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'].map((day) => `calendar.weekdays.${day}`);
+
 /** Booking limits, the same as the API's (backend: booking.rules.ts). */
 export const MAX_NIGHTS = 90;
 export const MAX_DAYS_AHEAD = 365;

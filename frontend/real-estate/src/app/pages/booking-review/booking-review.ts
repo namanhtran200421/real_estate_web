@@ -2,11 +2,12 @@ import { Component, computed, effect, inject, input, signal } from '@angular/cor
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { httpResource } from '@angular/common/http';
 import { Router, RouterLink } from '@angular/router';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { ApartmentNotFound } from '../../components/apartment-not-found/apartment-not-found';
 import { BookingSteps } from '../../components/booking-steps/booking-steps';
 import { BookingSummary } from '../../components/booking-summary/booking-summary';
-import { ApiResponse, toApiError, userMessage } from '../../core/api';
-import { NIGHT_RATE_LABELS, Quote, Stay } from '../../models/booking';
+import { ApiErrorMessages, ApiResponse, toApiError } from '../../core/api';
+import { Quote, Stay } from '../../models/booking';
 import { ApartmentService } from '../../services/apartment.service';
 import { BookingDraftService } from '../../services/booking-draft.service';
 import { BookingService } from '../../services/booking.service';
@@ -14,7 +15,7 @@ import { BookingService } from '../../services/booking.service';
 /** Step 2: check details and the price breakdown, apply a promo code, create the booking. */
 @Component({
   selector: 'app-booking-review',
-  imports: [DatePipe, DecimalPipe, RouterLink, ApartmentNotFound, BookingSteps, BookingSummary],
+  imports: [DatePipe, DecimalPipe, RouterLink, TranslocoPipe, ApartmentNotFound, BookingSteps, BookingSummary],
   templateUrl: './booking-review.html',
 })
 export class BookingReview {
@@ -22,14 +23,13 @@ export class BookingReview {
   private readonly bookings = inject(BookingService);
   private readonly drafts = inject(BookingDraftService);
   private readonly router = inject(Router);
+  protected readonly errorMessages = inject(ApiErrorMessages);
 
   /** Bound from the `?apt=` query param. */
   readonly slug = input<string>(undefined, { alias: 'apt' });
 
   protected readonly draft = this.drafts.draft;
   protected readonly apartment = computed(() => this.apartments.resolve(this.slug() || this.draft().apartmentSlug));
-  protected readonly rateLabels = NIGHT_RATE_LABELS;
-  protected readonly userMessage = userMessage;
 
   protected readonly quote = httpResource<ApiResponse<Quote>>(() => {
     const draft = this.draft();
@@ -98,7 +98,7 @@ export class BookingReview {
       this.drafts.update({ promoCode: code });
       this.promoInput.set('');
     } catch (error) {
-      this.promoError.set(toApiError(error).message);
+      this.promoError.set(this.errorMessages.message(toApiError(error)));
     } finally {
       this.applyingPromo.set(false);
     }
@@ -132,7 +132,7 @@ export class BookingReview {
       this.drafts.rememberBooking(booking.reference);
       void this.router.navigate(['/book/payment'], { queryParams: { ref: booking.reference } });
     } catch (error) {
-      this.submitError.set(toApiError(error).message);
+      this.submitError.set(this.errorMessages.message(toApiError(error)));
       this.quote.reload();
     } finally {
       this.submitting.set(false);

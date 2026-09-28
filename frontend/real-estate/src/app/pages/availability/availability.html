@@ -3,28 +3,30 @@
 
   <section class="pb-20 pt-10 md:pb-28">
     <div class="container-editorial max-w-6xl">
-      <h2 class="text-3xl md:text-4xl">Lịch trống</h2>
-      <p class="mt-2 text-muted-foreground">Lịch được cập nhật liên tục theo các đặt phòng đã xác nhận.</p>
+      <h2 class="text-3xl md:text-4xl">{{ 'apartment.tabs.availability' | transloco }}</h2>
+      <p class="mt-2 text-muted-foreground">{{ 'availability.note' | transloco }}</p>
 
       <div class="mt-10 grid gap-8 lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-12">
         <app-availability-calendar class="block" [unavailableDates]="apt.unavailableDates" />
 
         <aside class="lg:sticky lg:top-28 lg:self-start">
           <div class="card card-accent-top card-elevated p-6 md:p-8">
-            <p class="small-caps text-accent-deep">Đã chọn được ngày?</p>
+            <p class="small-caps text-accent-deep">{{ 'availability.ready' | transloco }}</p>
             <p class="mt-3 font-serif text-3xl">{{ apt.pricing.weekday | number }} ₫</p>
-            <p class="small-caps mt-1 text-muted-foreground">Giá từ · mỗi đêm</p>
+            <p class="small-caps mt-1 text-muted-foreground">{{ 'availability.priceFrom' | transloco }}</p>
             <p class="mt-4 text-sm text-muted-foreground">
-              Giá cuối tuần, ngày lễ và giảm giá dài ngày được tính tự động khi đặt.
+              {{ 'availability.priceNote' | transloco }}
             </p>
-            <a routerLink="/book" [queryParams]="{ apt: apt.slug }" class="btn btn-primary mt-6 w-full">Đặt lịch</a>
+            <a routerLink="/book" [queryParams]="{ apt: apt.slug }" class="btn btn-primary mt-6 w-full">
+              {{ 'nav.book' | transloco }}
+            </a>
             <a
               routerLink="/apartment"
               fragment="bang-gia"
               [queryParams]="{ apt: apt.slug }"
               class="btn btn-ghost mt-2 w-full"
             >
-              Xem bảng giá
+              {{ 'availability.viewPrices' | transloco }}
             </a>
           </div>
         </aside>

@@ -14,7 +14,7 @@
       <p class="small-caps truncate text-[0.625rem] text-accent-deep">{{ apt.area }}</p>
       <p class="mt-1 font-serif text-xl leading-tight">{{ apt.name }}</p>
       <p class="mt-1 text-sm text-muted-foreground">
-        {{ apt.bedrooms }} phòng ngủ · tối đa {{ apt.guests }} khách
+        {{ 'summary.rooms' | transloco: { bedrooms: apt.bedrooms, guests: apt.guests } }}
       </p>
     </div>
   </div>
@@ -24,33 +24,34 @@
   @if (stay(); as b) {
     <dl class="space-y-3 text-sm">
       <div class="flex justify-between gap-4">
-        <dt class="text-muted-foreground">Nhận phòng</dt>
+        <dt class="text-muted-foreground">{{ 'common.checkIn' | transloco }}</dt>
         <dd>{{ b.checkIn | date: 'dd/MM/yyyy' }} · {{ apt.checkIn }}</dd>
       </div>
       <div class="flex justify-between gap-4">
-        <dt class="text-muted-foreground">Trả phòng</dt>
+        <dt class="text-muted-foreground">{{ 'common.checkOut' | transloco }}</dt>
         <dd>{{ b.checkOut | date: 'dd/MM/yyyy' }} · {{ apt.checkOut }}</dd>
       </div>
       <div class="flex justify-between gap-4">
-        <dt class="text-muted-foreground">Số đêm</dt>
-        <dd>{{ b.nights }} đêm</dd>
+        <dt class="text-muted-foreground">{{ 'common.nightCount' | transloco }}</dt>
+        <dd>{{ 'common.nights' | transloco: { count: b.nights } }}</dd>
       </div>
       <div class="flex justify-between gap-4">
-        <dt class="text-muted-foreground">Số khách</dt>
-        <dd>{{ b.guests }} khách</dd>
+        <dt class="text-muted-foreground">{{ 'common.guestCount' | transloco }}</dt>
+        <dd>{{ 'common.guests' | transloco: { count: b.guests } }}</dd>
       </div>
     </dl>
   } @else {
     <p class="text-sm text-muted-foreground">
-      Giá từ <span class="font-serif text-lg text-foreground">{{ apt.pricing.weekday | number }} ₫</span> / đêm.
-      Tổng tiền được tính tự động sau khi bạn chọn ngày.
+      {{ 'common.priceFrom' | transloco }}
+      <span class="font-serif text-lg text-foreground">{{ apt.pricing.weekday | number }} ₫</span>
+      {{ 'common.perNight' | transloco }}. {{ 'summary.totalNote' | transloco }}
     </p>
   }
 
   @if (total() !== undefined) {
     <hr class="my-5" />
     <div class="flex items-baseline justify-between gap-4">
-      <span class="small-caps text-muted-foreground">Tổng cộng</span>
+      <span class="small-caps text-muted-foreground">{{ 'common.total' | transloco }}</span>
       <span class="font-serif text-2xl">{{ total() | number }} ₫</span>
     </div>
   }

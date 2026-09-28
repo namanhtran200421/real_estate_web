@@ -1,11 +1,12 @@
 import { Component, computed, input } from '@angular/core';
 import { NgOptimizedImage } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { Photo } from '../../models/apartment';
 
 @Component({
   selector: 'app-apartment-gallery',
-  imports: [NgOptimizedImage, RouterLink],
+  imports: [NgOptimizedImage, RouterLink, TranslocoPipe],
   templateUrl: './apartment-gallery.html',
 })
 export class ApartmentGallery {

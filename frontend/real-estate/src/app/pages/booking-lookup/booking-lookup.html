@@ -1,17 +1,17 @@
 <section class="pb-20 pt-16 md:pb-28 md:pt-20">
   <div class="container-editorial max-w-3xl">
     <div class="text-center">
-      <p class="section-label mx-auto max-w-sm">Đặt phòng của bạn</p>
-      <h1 class="text-4xl md:text-5xl">Tra cứu đặt phòng</h1>
+      <p class="section-label mx-auto max-w-sm">{{ 'common.yourBooking' | transloco }}</p>
+      <h1 class="text-4xl md:text-5xl">{{ 'nav.lookup' | transloco }}</h1>
       <p class="mx-auto mt-4 max-w-md text-muted-foreground">
-        Nhập mã đặt phòng và email hoặc số điện thoại đã dùng khi đặt để xem trạng thái.
+        {{ 'lookup.intro' | transloco }}
       </p>
     </div>
 
     <form class="card mt-12" (submit)="$event.preventDefault(); search()">
       <div class="grid gap-6 sm:grid-cols-2">
         <div>
-          <label class="label" for="lookup-reference">Mã đặt phòng</label>
+          <label class="label" for="lookup-reference">{{ 'common.reference' | transloco }}</label>
           <input
             id="lookup-reference"
             class="input uppercase"
@@ -25,12 +25,12 @@
           />
         </div>
         <div>
-          <label class="label" for="lookup-contact">Email hoặc số điện thoại</label>
+          <label class="label" for="lookup-contact">{{ 'common.emailOrPhone' | transloco }}</label>
           <input
             id="lookup-contact"
             class="input"
             type="text"
-            placeholder="ban@email.com"
+            [placeholder]="'common.emailPlaceholder' | transloco"
             autocomplete="email"
             maxlength="254"
             required
@@ -44,21 +44,23 @@
       }
       <button type="submit" class="btn btn-primary mt-6 w-full sm:w-auto" [disabled]="searching() || !reference() || !contact()">
         @if (searching()) {
-          Đang tìm…
+          {{ 'lookup.searching' | transloco }}
         } @else {
-          Tra cứu
+          {{ 'lookup.search' | transloco }}
         }
       </button>
     </form>
 
     @if (booking(); as b) {
       <div class="mt-16">
-        <p class="small-caps text-muted-foreground">Kết quả</p>
+        <p class="small-caps text-muted-foreground">{{ 'lookup.result' | transloco }}</p>
         <div class="card card-accent-top mt-4">
           <div class="flex flex-wrap items-start justify-between gap-4">
             <div>
               <p class="font-mono text-xl tracking-[0.1em]">{{ b.reference }}</p>
-              <p class="mt-1 text-sm text-muted-foreground">Đặt ngày {{ b.createdAt | date: 'dd/MM/yyyy' }}</p>
+              <p class="mt-1 text-sm text-muted-foreground">
+                {{ 'lookup.bookedOn' | transloco: { date: (b.createdAt | date: 'dd/MM/yyyy') } }}
+              </p>
             </div>
             <div class="flex flex-wrap gap-2">
               <app-status-badge [status]="b.status" />
@@ -80,7 +82,8 @@
                 <p class="small-caps text-[0.625rem] text-accent-deep">{{ apt.area }}</p>
                 <p class="mt-1 font-serif text-xl">{{ apt.name }}</p>
                 <p class="mt-1 text-sm text-muted-foreground">
-                  {{ b.checkIn | date: 'dd/MM/yyyy' }} – {{ b.checkOut | date: 'dd/MM/yyyy' }} · {{ b.guests }} khách
+                  {{ b.checkIn | date: 'dd/MM/yyyy' }} – {{ b.checkOut | date: 'dd/MM/yyyy' }} ·
+                  {{ 'common.guests' | transloco: { count: b.guests } }}
                 </p>
               </div>
             </div>
@@ -88,23 +91,25 @@
 
           <dl class="mt-6 grid grid-cols-3 gap-4 text-center">
             <div>
-              <dt class="small-caps text-[0.625rem] text-muted-foreground">Tổng tiền</dt>
+              <dt class="small-caps text-[0.625rem] text-muted-foreground">{{ 'common.totalPrice' | transloco }}</dt>
               <dd class="mt-2 whitespace-nowrap font-serif text-lg sm:text-xl">{{ b.quote.total | number }} ₫</dd>
             </div>
             <div class="border-x border-border">
-              <dt class="small-caps text-[0.625rem] text-muted-foreground">Đã trả</dt>
+              <dt class="small-caps text-[0.625rem] text-muted-foreground">{{ 'lookup.paid' | transloco }}</dt>
               <dd class="mt-2 whitespace-nowrap font-serif text-lg text-accent-deep sm:text-xl">{{ b.amountPaid | number }} ₫</dd>
             </div>
             <div>
-              <dt class="small-caps text-[0.625rem] text-muted-foreground">Còn lại</dt>
+              <dt class="small-caps text-[0.625rem] text-muted-foreground">{{ 'lookup.remaining' | transloco }}</dt>
               <dd class="mt-2 whitespace-nowrap font-serif text-lg sm:text-xl">{{ b.amountDue | number }} ₫</dd>
             </div>
           </dl>
 
           @if (b.pendingTransfer; as pending) {
             <p class="mt-6 rounded-md border border-accent bg-accent-muted p-4 text-sm text-accent-deep" role="status">
-              Chủ nhà đang kiểm tra khoản chuyển {{ pending.amount | number }} ₫ bạn báo lúc
-              {{ pending.reportedAt | date: 'HH:mm dd/MM' }}. Bạn sẽ nhận email khi đặt phòng được xác nhận.
+              {{
+                'lookup.checking'
+                  | transloco: { amount: (pending.amount | number), time: (pending.reportedAt | date: 'HH:mm dd/MM') }
+              }}
             </p>
           }
 
@@ -112,14 +117,16 @@
             @if (b.paymentOptions.full !== null) {
               <a routerLink="/book/payment" [queryParams]="{ ref: b.reference }" class="btn btn-primary">
                 @if (b.amountPaid > 0) {
-                  Thanh toán phần còn lại
+                  {{ 'payment.payRemaining' | transloco }}
                 } @else {
-                  Thanh toán
+                  {{ 'confirmation.pay' | transloco }}
                 }
               </a>
             }
-            <a routerLink="/contact" class="btn btn-outline">Liên hệ chủ nhà</a>
-            <a routerLink="/apartment" [queryParams]="{ apt: b.apartmentSlug }" class="btn btn-ghost">Xem căn hộ</a>
+            <a routerLink="/contact" class="btn btn-outline">{{ 'lookup.contactOwner' | transloco }}</a>
+            <a routerLink="/apartment" [queryParams]="{ apt: b.apartmentSlug }" class="btn btn-ghost">
+              {{ 'common.viewApartment' | transloco }}
+            </a>
           </div>
         </div>
       </div>

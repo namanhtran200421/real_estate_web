@@ -1,4 +1,4 @@
-<ol class="flex items-center gap-3 sm:gap-4" aria-label="Các bước đặt phòng">
+<ol class="flex items-center gap-3 sm:gap-4" [attr.aria-label]="'steps.label' | transloco">
   @for (step of steps; track step; let i = $index, last = $last) {
     @let n = i + 1;
     <li class="flex items-center gap-3 sm:gap-4" [class.flex-1]="!last" [attr.aria-current]="n === current() ? 'step' : null">
@@ -25,7 +25,7 @@
           class="hidden whitespace-nowrap text-sm font-medium md:inline"
           [class]="n === current() ? 'text-foreground' : 'text-muted-foreground'"
         >
-          {{ step }}
+          {{ step | transloco }}
         </span>
       </span>
       @if (!last) {
@@ -35,6 +35,8 @@
   }
 </ol>
 <p class="mt-4 text-sm md:hidden">
-  <span class="small-caps text-muted-foreground">Bước {{ current() }}/{{ steps.length }}</span>
-  <span class="ml-2 font-medium">{{ steps[current() - 1] }}</span>
+  <span class="small-caps text-muted-foreground">
+    {{ 'steps.progress' | transloco: { current: current(), total: steps.length } }}
+  </span>
+  <span class="ml-2 font-medium">{{ steps[current() - 1] | transloco }}</span>
 </p>

@@ -3,7 +3,7 @@
 <div class="pt-8 md:pt-12">
   <div class="container-editorial max-w-6xl">
     <nav aria-label="Breadcrumb" class="small-caps text-muted-foreground">
-      <a routerLink="/" class="link-subtle">Trang chủ</a>
+      <a routerLink="/" class="link-subtle">{{ 'nav.home' | transloco }}</a>
       <span class="mx-2 text-border" aria-hidden="true">/</span>
       <span class="text-foreground" aria-current="page">{{ apt.name }}</span>
     </nav>
@@ -14,12 +14,14 @@
         <h1 class="mt-2 text-4xl md:text-5xl">{{ apt.name }}</h1>
       </div>
       <p class="text-muted-foreground">
-        Từ <span class="font-serif text-2xl text-foreground">{{ apt.pricing.weekday | number }} ₫</span> / đêm
+        {{ 'common.from' | transloco }}
+        <span class="font-serif text-2xl text-foreground">{{ apt.pricing.weekday | number }} ₫</span>
+        {{ 'common.perNight' | transloco }}
       </p>
     </div>
 
     <nav
-      aria-label="Mục căn hộ"
+      [attr.aria-label]="'apartment.sections' | transloco"
       class="mt-8 flex gap-8 overflow-x-auto border-b border-border [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
     >
       @for (tab of tabs; track tab.path) {
@@ -31,7 +33,7 @@
           ariaCurrentWhenActive="page"
           class="nav-link small-caps shrink-0 py-4 [--nav-underline-offset:0px]"
         >
-          {{ tab.label }}
+          {{ tab.label | transloco }}
         </a>
       }
     </nav>

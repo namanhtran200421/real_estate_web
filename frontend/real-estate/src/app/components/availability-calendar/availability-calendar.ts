@@ -1,4 +1,6 @@
-import { Component, computed, input, signal } from '@angular/core';
+import { Component, computed, inject, input, signal } from '@angular/core';
+import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { WEEKDAYS } from '../../shared/dates';
 
 type DayStatus = 'past' | 'unavailable' | 'available';
 
@@ -7,16 +9,18 @@ const pad = (n: number) => String(n).padStart(2, '0');
 /** Single-month availability calendar with previous/next navigation. */
 @Component({
   selector: 'app-availability-calendar',
+  imports: [TranslocoPipe],
   templateUrl: './availability-calendar.html',
 })
 export class AvailabilityCalendar {
+  private readonly transloco = inject(TranslocoService);
+
   /** ISO dates (yyyy-mm-dd) that are booked or blocked. */
   readonly unavailableDates = input<string[]>([]);
   /** How many months ahead of the current one guests can browse. */
   readonly monthsAhead = input(11);
 
-  // Weeks start on Monday (Vietnamese convention).
-  protected readonly weekdays = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+  protected readonly weekdays = WEEKDAYS;
 
   /** Months from the current month; 0 = this month. */
   protected readonly offset = signal(0);
@@ -32,7 +36,10 @@ export class AvailabilityCalendar {
     const count = new Date(year, month + 1, 0).getDate();
 
     return {
-      label: `Tháng ${month + 1}, ${year}`,
+      label: this.transloco.translate('calendar.monthYear', {
+        month: this.transloco.translate(`calendar.months.${month + 1}`),
+        year,
+      }),
       blanks: Array.from({ length: (first.getDay() + 6) % 7 }, (_, i) => i),
       days: Array.from({ length: count }, (_, d) => {
         const day = d + 1;

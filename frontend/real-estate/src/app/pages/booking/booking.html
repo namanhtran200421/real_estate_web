@@ -3,18 +3,18 @@
     <div class="container-editorial max-w-6xl">
       <app-booking-steps [current]="1" />
 
-      <h1 class="mt-12 text-4xl md:text-5xl">Đặt lịch</h1>
-      <p class="mt-3 text-muted-foreground">Chọn ngày, số khách và để lại thông tin liên hệ của bạn.</p>
+      <h1 class="mt-12 text-4xl md:text-5xl">{{ 'booking.title' | transloco }}</h1>
+      <p class="mt-3 text-muted-foreground">{{ 'booking.intro' | transloco }}</p>
 
       <div class="mt-10 grid gap-10 lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-14">
         <form class="min-w-0 space-y-12" novalidate (submit)="$event.preventDefault(); continue()">
           <!-- Stay -->
           <fieldset class="space-y-6">
-            <legend class="font-serif text-2xl">Ngày lưu trú</legend>
+            <legend class="font-serif text-2xl">{{ 'booking.stay' | transloco }}</legend>
 
             @if (all().length > 1) {
               <div>
-                <label class="label" for="book-apartment">Căn hộ</label>
+                <label class="label" for="book-apartment">{{ 'booking.apartment' | transloco }}</label>
                 <app-select
                   inputId="book-apartment"
                   name="apartment"
@@ -26,7 +26,7 @@
             }
 
             <div role="group" aria-labelledby="book-dates-label">
-              <p class="label" id="book-dates-label">Ngày nhận phòng – ngày trả phòng</p>
+              <p class="label" id="book-dates-label">{{ 'booking.dates' | transloco }}</p>
               <app-date-range-picker
                 [unavailableDates]="apt.unavailableDates"
                 [checkIn]="draft().checkIn"
@@ -48,7 +48,7 @@
             }
 
             <div class="sm:max-w-[calc(50%-0.75rem)]">
-              <label class="label" for="book-guests">Số khách</label>
+              <label class="label" for="book-guests">{{ 'common.guestCount' | transloco }}</label>
               <app-select
                 inputId="book-guests"
                 name="guests"
@@ -56,23 +56,23 @@
                 [value]="'' + draft().guests"
                 (valueChange)="set('guests', toNumber($event))"
               />
-              <p class="mt-2 text-sm text-muted-foreground">Tối đa {{ apt.guests }} khách.</p>
+              <p class="mt-2 text-sm text-muted-foreground">{{ 'booking.maxGuests' | transloco: { count: apt.guests } }}</p>
             </div>
           </fieldset>
 
           <!-- Contact -->
           <div class="border-t border-border pt-12">
           <fieldset class="space-y-6">
-            <legend class="font-serif text-2xl">Thông tin liên hệ</legend>
+            <legend class="font-serif text-2xl">{{ 'booking.contact' | transloco }}</legend>
 
             <div>
-              <label class="label" for="book-name">Họ và tên</label>
+              <label class="label" for="book-name">{{ 'common.fullName' | transloco }}</label>
               <input
                 id="book-name"
                 class="input"
                 type="text"
                 autocomplete="name"
-                placeholder="Nguyễn Văn A"
+                [placeholder]="'common.namePlaceholder' | transloco"
                 maxlength="120"
                 [value]="draft().name"
                 (input)="set('name', fromInput($event))"
@@ -84,14 +84,14 @@
             </div>
             <div class="grid gap-6 sm:grid-cols-2">
               <div>
-                <label class="label" for="book-phone">Số điện thoại</label>
+                <label class="label" for="book-phone">{{ 'common.phone' | transloco }}</label>
                 <input
                   id="book-phone"
                   class="input"
                   type="tel"
                   inputmode="tel"
                   autocomplete="tel"
-                  placeholder="09xx xxx xxx"
+                  [placeholder]="'common.phonePlaceholder' | transloco"
                   maxlength="20"
                   [value]="draft().phone"
                   (input)="set('phone', fromInput($event))"
@@ -102,14 +102,14 @@
                 }
               </div>
               <div>
-                <label class="label" for="book-email">Email</label>
+                <label class="label" for="book-email">{{ 'common.email' | transloco }}</label>
                 <input
                   id="book-email"
                   class="input"
                   type="email"
                   inputmode="email"
                   autocomplete="email"
-                  placeholder="ban@email.com"
+                  [placeholder]="'common.emailPlaceholder' | transloco"
                   maxlength="254"
                   [value]="draft().email"
                   (input)="set('email', fromInput($event))"
@@ -118,18 +118,19 @@
                 @if (errors().email; as error) {
                   <p class="mt-2 text-sm text-accent-deep">{{ error }}</p>
                 } @else {
-                  <p class="mt-2 text-sm text-muted-foreground">Xác nhận đặt phòng được gửi tới email này.</p>
+                  <p class="mt-2 text-sm text-muted-foreground">{{ 'booking.emailNote' | transloco }}</p>
                 }
               </div>
             </div>
             <div>
               <label class="label" for="book-message">
-                Lời nhắn <span class="font-normal text-muted-foreground">(không bắt buộc)</span>
+                {{ 'common.message' | transloco }}
+                <span class="font-normal text-muted-foreground">{{ 'common.optional' | transloco }}</span>
               </label>
               <textarea
                 id="book-message"
                 class="input"
-                placeholder="Giờ đến dự kiến, yêu cầu đặc biệt…"
+                [placeholder]="'booking.messagePlaceholder' | transloco"
                 maxlength="1000"
                 [value]="draft().message"
                 (input)="set('message', fromInput($event))"
@@ -139,8 +140,8 @@
           </div>
 
           <div class="flex flex-col-reverse gap-3 border-t border-border pt-8 sm:flex-row sm:items-center sm:justify-between">
-            <a routerLink="/apartment" [queryParams]="{ apt: apt.slug }" class="btn btn-ghost">← Quay lại căn hộ</a>
-            <button type="submit" class="btn btn-primary" [disabled]="quote.isLoading()">Tiếp tục</button>
+            <a routerLink="/apartment" [queryParams]="{ apt: apt.slug }" class="btn btn-ghost">{{ 'booking.backToApartment' | transloco }}</a>
+            <button type="submit" class="btn btn-primary" [disabled]="quote.isLoading()">{{ 'common.continue' | transloco }}</button>
           </div>
         </form>
 
@@ -149,7 +150,7 @@
           @if (quoteValue(); as q) {
             @if (q.stayDiscount) {
               <p class="mt-3 text-center text-sm text-accent-deep">
-                Đã giảm {{ q.stayDiscount.amount | number }} ₫ cho kỳ nghỉ {{ q.nights }} đêm
+                {{ 'booking.discountApplied' | transloco: { amount: (q.stayDiscount.amount | number), nights: q.nights } }}
               </p>
             }
           }

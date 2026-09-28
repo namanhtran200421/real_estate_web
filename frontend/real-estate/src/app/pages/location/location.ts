@@ -1,5 +1,6 @@
 import { Component, computed, effect, inject, input } from '@angular/core';
 import { DomSanitizer } from '@angular/platform-browser';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { ApartmentHeader } from '../../components/apartment-header/apartment-header';
 import { ApartmentNotFound } from '../../components/apartment-not-found/apartment-not-found';
 import { ContactCards } from '../../components/contact-cards/contact-cards';
@@ -8,7 +9,7 @@ import { SeoService } from '../../services/seo.service';
 
 @Component({
   selector: 'app-location',
-  imports: [ApartmentHeader, ApartmentNotFound, ContactCards],
+  imports: [TranslocoPipe, ApartmentHeader, ApartmentNotFound, ContactCards],
   templateUrl: './location.html',
 })
 export class LocationPage {
@@ -24,7 +25,7 @@ export class LocationPage {
     const seo = inject(SeoService);
     effect(() => {
       const apt = this.apartment();
-      if (apt) seo.updateForApartment(apt, { label: 'Vị trí', path: '/location' });
+      if (apt) seo.updateForApartment(apt, { label: 'apartment.tabs.location', path: '/location' });
     });
   }
 

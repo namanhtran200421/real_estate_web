@@ -9,6 +9,7 @@ import {
   viewChild,
   viewChildren,
 } from '@angular/core';
+import { TranslocoPipe } from '@jsverse/transloco';
 
 export interface SelectOption {
   value: string;
@@ -22,6 +23,7 @@ export interface SelectOption {
  */
 @Component({
   selector: 'app-select',
+  imports: [TranslocoPipe],
   templateUrl: './select.html',
   host: {
     class: 'relative block',
@@ -34,7 +36,8 @@ export class Select {
   readonly value = model<string>('');
   /** Id for the trigger, so an existing <label for="…"> points at it. */
   readonly inputId = input.required<string>();
-  readonly placeholder = input('Chọn…');
+  /** Shown when nothing is selected; defaults to "Chọn…" / "Select…". */
+  readonly placeholder = input<string>();
   /** Optional form field name, submitted through a hidden input. */
   readonly name = input<string>();
 

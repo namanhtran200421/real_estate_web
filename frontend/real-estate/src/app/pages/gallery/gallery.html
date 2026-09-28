@@ -3,7 +3,7 @@
 
   <section class="pb-20 pt-10 md:pb-28">
     <div class="container-editorial max-w-6xl">
-      <p class="small-caps text-muted-foreground">{{ apt.photos.length }} ảnh</p>
+      <p class="small-caps text-muted-foreground">{{ 'gallery.count' | transloco: { count: apt.photos.length } }}</p>
 
       <div class="mt-6 grid gap-x-6 gap-y-10 sm:grid-cols-2">
         @for (photo of apt.photos; track photo.src; let first = $first) {
@@ -28,8 +28,8 @@
 
       <div class="mt-16 flex flex-col items-center gap-5 text-center">
         <span class="rule-accent"></span>
-        <p class="font-serif text-2xl">Thích căn hộ này?</p>
-        <a routerLink="/book" [queryParams]="{ apt: apt.slug }" class="btn btn-primary">Đặt lịch</a>
+        <p class="font-serif text-2xl">{{ 'gallery.like' | transloco }}</p>
+        <a routerLink="/book" [queryParams]="{ apt: apt.slug }" class="btn btn-primary">{{ 'nav.book' | transloco }}</a>
       </div>
     </div>
   </section>

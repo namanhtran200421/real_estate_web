@@ -7,6 +7,8 @@ export type PaymentProvider = 'bank_transfer' | 'cash';
 export type PaymentState = 'pending' | 'succeeded' | 'failed';
 export type PaymentOption = 'deposit' | 'full';
 
+// Labels for the owner's admin pages, which are Vietnamese only.
+// Guest pages use the translations in src/i18n/*.json ("status", "providers", "rates").
 export const BOOKING_STATUS_LABELS: Record<BookingStatus, string> = {
   pending: 'Chờ xác nhận',
   confirmed: 'Đã xác nhận',

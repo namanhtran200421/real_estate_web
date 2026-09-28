@@ -1,12 +1,12 @@
 <!-- Intro -->
 <section class="pb-12 pt-16 md:pb-16 md:pt-24">
   <div class="container-editorial text-center">
-    <p class="section-label mx-auto max-w-md">Sun Garden · Đà Lạt</p>
+    <p class="section-label mx-auto max-w-md">{{ 'home.eyebrow' | transloco }}</p>
     <h1 class="mx-auto max-w-3xl">
-      Một góc Đà Lạt <em class="text-accent-deep">của riêng bạn</em>
+      {{ 'home.titleStart' | transloco }} <em class="text-accent-deep">{{ 'home.titleEm' | transloco }}</em>
     </h1>
     <p class="mx-auto mt-6 max-w-xl text-lg text-muted-foreground">
-      Xem lịch trống, biết giá ngay và đặt phòng trực tuyến, tất cả trên điện thoại của bạn.
+      {{ 'home.intro' | transloco }}
     </p>
   </div>
 </section>
@@ -19,7 +19,7 @@
     }
 
     @if (others().length) {
-      <h2 class="mt-20 text-3xl md:text-4xl">Căn hộ khác</h2>
+      <h2 class="mt-20 text-3xl md:text-4xl">{{ 'home.otherApartments' | transloco }}</h2>
       <div class="mt-8 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
         @for (apt of others(); track apt.id) {
           <app-apartment-card [apartment]="apt" />
@@ -32,13 +32,13 @@
 <!-- Why book direct -->
 <section class="border-t border-border bg-muted py-20 md:py-28">
   <div class="container-editorial max-w-6xl">
-    <p class="section-label">Đặt trực tiếp</p>
+    <p class="section-label">{{ 'home.bookDirect' | transloco }}</p>
     <div class="mt-10 grid gap-10 md:grid-cols-3 md:gap-12">
-      @for (item of promises; track item.title; let i = $index) {
+      @for (item of promises; track item; let i = $index) {
         <div>
           <p class="font-serif text-4xl text-accent-deep">0{{ i + 1 }}</p>
-          <h3 class="mt-4">{{ item.title }}</h3>
-          <p class="mt-3 text-muted-foreground">{{ item.text }}</p>
+          <h3 class="mt-4">{{ item + '.title' | transloco }}</h3>
+          <p class="mt-3 text-muted-foreground">{{ item + '.text' | transloco }}</p>
         </div>
       }
     </div>
