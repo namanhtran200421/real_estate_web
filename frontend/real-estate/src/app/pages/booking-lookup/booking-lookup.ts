@@ -7,6 +7,8 @@ import { ApiErrorMessages, toApiError } from '../../core/api';
 import { Booking } from '../../models/booking';
 import { ApartmentService } from '../../services/apartment.service';
 import { BookingService } from '../../services/booking.service';
+import { GuestReview } from '../../models/guest-review';
+import { GuestReviewService } from '../../services/guest-review.service';
 
 /** Find a booking by reference + email or phone (also the landing page of email links). */
 @Component({
@@ -16,6 +18,7 @@ import { BookingService } from '../../services/booking.service';
 })
 export class BookingLookup {
   private readonly bookings = inject(BookingService);
+  private readonly reviews = inject(GuestReviewService);
   private readonly apartments = inject(ApartmentService);
   private readonly errorMessages = inject(ApiErrorMessages);
 
@@ -27,6 +30,12 @@ export class BookingLookup {
   protected readonly searching = signal(false);
   protected readonly error = signal<string | undefined>(undefined);
   protected readonly booking = signal<Booking | undefined>(undefined);
+  protected readonly review = signal<GuestReview | null | undefined>(undefined);
+  protected readonly reviewLoading = signal(false);
+  protected readonly reviewError = signal<string | undefined>(undefined);
+  protected readonly rating = signal(0);
+  protected readonly comment = signal('');
+  protected readonly submittingReview = signal(false);
 
   protected readonly apartment = computed(() => {
     const booking = this.booking();
@@ -52,8 +61,11 @@ export class BookingLookup {
     this.searching.set(true);
     this.error.set(undefined);
     this.booking.set(undefined);
+    this.review.set(undefined);
     try {
-      this.booking.set(await this.bookings.lookup(this.reference().trim(), this.contact().trim()));
+      const booking = await this.bookings.lookup(this.reference().trim(), this.contact().trim());
+      this.booking.set(booking);
+      void this.loadReview(booking);
     } catch (error) {
       this.error.set(this.errorMessages.message(toApiError(error)));
     } finally {
@@ -63,9 +75,40 @@ export class BookingLookup {
 
   private async load(reference: string): Promise<void> {
     try {
-      this.booking.set(await this.bookings.get(reference));
+      const booking = await this.bookings.get(reference);
+      this.booking.set(booking);
+      void this.loadReview(booking);
     } catch {
       // Token no longer valid: the guest uses the form.
+    }
+  }
+
+  private async loadReview(booking: Booking): Promise<void> {
+    if (booking.status !== 'completed') return;
+    this.reviewLoading.set(true);
+    this.reviewError.set(undefined);
+    try {
+      const review = await this.reviews.forBooking(booking.reference);
+      if (this.booking()?.reference === booking.reference) this.review.set(review);
+    } catch (error) {
+      if (this.booking()?.reference === booking.reference) this.reviewError.set(this.errorMessages.message(toApiError(error)));
+    } finally {
+      if (this.booking()?.reference === booking.reference) this.reviewLoading.set(false);
+    }
+  }
+
+  protected async submitReview(): Promise<void> {
+    const booking = this.booking();
+    const comment = this.comment().trim();
+    if (!booking || booking.status !== 'completed' || this.review() !== null || this.rating() < 1 || comment.length < 20 || this.submittingReview()) return;
+    this.submittingReview.set(true);
+    this.reviewError.set(undefined);
+    try {
+      this.review.set(await this.reviews.submit(booking.reference, this.rating(), comment));
+    } catch (error) {
+      this.reviewError.set(this.errorMessages.message(toApiError(error)));
+    } finally {
+      this.submittingReview.set(false);
     }
   }
 }

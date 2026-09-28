@@ -107,6 +107,11 @@ export class BookingService {
     return this.tokens()[reference] !== undefined;
   }
 
+  /** Used by other guest-only booking actions, such as a verified stay review. */
+  accessToken(reference: string): string | undefined {
+    return this.tokens()[reference];
+  }
+
   private tokens(): Record<string, string> {
     return readJson<Record<string, string>>('local', TOKENS_KEY) ?? {};
   }

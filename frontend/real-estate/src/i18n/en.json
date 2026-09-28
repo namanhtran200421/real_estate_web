@@ -142,6 +142,12 @@
     "reviewsEyebrow": "Guest feedback",
     "reviewsTitle": "Reviews from past guests",
     "reviewsPending": "Verified reviews from guests who stayed here will appear here when available.",
+    "reviewsLoading": "Loading guest reviews…",
+    "reviewsUnavailable": "Guest reviews are unavailable right now. Please try again later.",
+    "reviewsHow": "Stayed here? Find your completed booking to share your experience.",
+    "reviewsAction": "Write a review",
+    "reviewRating": "{{ rating }} out of 5 stars",
+    "verifiedGuest": "Verified guest",
     "sections": "Apartment sections",
     "tabs": {
       "overview": "Overview",
@@ -418,7 +424,7 @@
     "dueAtCheckIn": "Due at check-in"
   },
   "lookup": {
-    "intro": "Enter your booking reference and the email or phone number you booked with to see its status.",
+    "intro": "Enter your booking reference and the email or phone number you booked with to see its status or review a completed stay.",
     "search": "Look up",
     "searching": "Searching…",
     "result": "Result",
@@ -426,7 +432,20 @@
     "paid": "Paid",
     "remaining": "Remaining",
     "checking": "The owner is checking the {{ amount }} ₫ transfer you reported at {{ time }}. You’ll get an email once the booking is confirmed.",
-    "contactOwner": "Contact the owner"
+    "contactOwner": "Contact the owner",
+    "reviewAfterStay": "You can write a review here after your stay is completed.",
+    "reviewEyebrow": "Guest feedback",
+    "reviewTitle": "Share your stay",
+    "reviewLoading": "Checking your review…",
+    "reviewThanks": "Thank you. Your verified review is now on the apartment page.",
+    "reviewPublic": "Your rating and comments will be public. Your name and booking details will stay private.",
+    "reviewRating": "Your rating",
+    "reviewStar": "{{ rating }} stars",
+    "reviewComment": "Your feedback",
+    "reviewPlaceholder": "What was your stay like?",
+    "reviewLength": "Write at least 20 characters, up to 2,000.",
+    "reviewSubmit": "Publish review",
+    "reviewSubmitting": "Publishing…"
   },
   "contact": {
     "title": "We’re always happy to help",
@@ -466,6 +485,8 @@
     "BOOKING_NOT_PAYABLE": "This booking’s hold has expired or it can’t be paid. Please book again.",
     "PAYMENT_OPTION_UNAVAILABLE": "This payment option no longer applies to the booking.",
     "INVALID_STATUS": "This can’t be done in the booking’s current state.",
+    "REVIEW_NOT_ELIGIBLE": "You can review this apartment after your confirmed stay is completed.",
+    "REVIEW_ALREADY_SUBMITTED": "This booking already has a review.",
     "TOO_MANY_REQUESTS": "Too many requests. Please wait a moment and try again.",
     "UPSTREAM_ERROR": "A connected service isn’t responding. Please try again later.",
     "bookedDates": "Booked dates: {{ dates }}.",

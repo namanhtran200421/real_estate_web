@@ -142,6 +142,12 @@
     "reviewsEyebrow": "Cảm nhận của khách",
     "reviewsTitle": "Đánh giá của khách đã ở",
     "reviewsPending": "Đánh giá đã xác minh của khách từng lưu trú sẽ xuất hiện tại đây khi có.",
+    "reviewsLoading": "Đang tải đánh giá của khách…",
+    "reviewsUnavailable": "Hiện chưa tải được đánh giá. Vui lòng thử lại sau.",
+    "reviewsHow": "Bạn đã lưu trú tại đây? Hãy tra cứu đặt phòng đã hoàn tất để chia sẻ trải nghiệm.",
+    "reviewsAction": "Viết đánh giá",
+    "reviewRating": "{{ rating }} trên 5 sao",
+    "verifiedGuest": "Khách lưu trú đã xác minh",
     "sections": "Mục căn hộ",
     "tabs": {
       "overview": "Tổng quan",
@@ -418,7 +424,7 @@
     "dueAtCheckIn": "Còn lại khi nhận phòng"
   },
   "lookup": {
-    "intro": "Nhập mã đặt phòng và email hoặc số điện thoại đã dùng khi đặt để xem trạng thái.",
+    "intro": "Nhập mã đặt phòng và email hoặc số điện thoại đã dùng khi đặt để xem trạng thái hoặc đánh giá kỳ lưu trú đã hoàn tất.",
     "search": "Tra cứu",
     "searching": "Đang tìm…",
     "result": "Kết quả",
@@ -426,7 +432,20 @@
     "paid": "Đã trả",
     "remaining": "Còn lại",
     "checking": "Chủ nhà đang kiểm tra khoản chuyển {{ amount }} ₫ bạn báo lúc {{ time }}. Bạn sẽ nhận email khi đặt phòng được xác nhận.",
-    "contactOwner": "Liên hệ chủ nhà"
+    "contactOwner": "Liên hệ chủ nhà",
+    "reviewAfterStay": "Bạn có thể viết đánh giá tại đây sau khi kỳ lưu trú hoàn tất.",
+    "reviewEyebrow": "Cảm nhận của khách",
+    "reviewTitle": "Chia sẻ trải nghiệm lưu trú",
+    "reviewLoading": "Đang kiểm tra đánh giá của bạn…",
+    "reviewThanks": "Cảm ơn bạn. Đánh giá đã xác minh của bạn đã xuất hiện trên trang căn hộ.",
+    "reviewPublic": "Số sao và nội dung đánh giá sẽ được công khai. Tên và thông tin đặt phòng của bạn được giữ riêng tư.",
+    "reviewRating": "Số sao của bạn",
+    "reviewStar": "{{ rating }} sao",
+    "reviewComment": "Đánh giá của bạn",
+    "reviewPlaceholder": "Kỳ lưu trú của bạn thế nào?",
+    "reviewLength": "Viết ít nhất 20 ký tự, tối đa 2.000 ký tự.",
+    "reviewSubmit": "Đăng đánh giá",
+    "reviewSubmitting": "Đang đăng…"
   },
   "contact": {
     "title": "Chúng tôi luôn sẵn sàng hỗ trợ",
@@ -466,6 +485,8 @@
     "BOOKING_NOT_PAYABLE": "Đặt phòng này đã hết thời gian giữ chỗ hoặc không thể thanh toán. Vui lòng đặt lại.",
     "PAYMENT_OPTION_UNAVAILABLE": "Lựa chọn thanh toán này không còn áp dụng cho đặt phòng.",
     "INVALID_STATUS": "Không thể thực hiện với trạng thái hiện tại của đặt phòng.",
+    "REVIEW_NOT_ELIGIBLE": "Bạn có thể đánh giá sau khi kỳ lưu trú đã xác nhận hoàn tất.",
+    "REVIEW_ALREADY_SUBMITTED": "Đặt phòng này đã có đánh giá.",
     "TOO_MANY_REQUESTS": "Bạn thao tác quá nhanh. Vui lòng chờ một lát rồi thử lại.",
     "UPSTREAM_ERROR": "Dịch vụ liên kết chưa phản hồi. Vui lòng thử lại sau.",
     "bookedDates": "Ngày đã có người đặt: {{ dates }}.",

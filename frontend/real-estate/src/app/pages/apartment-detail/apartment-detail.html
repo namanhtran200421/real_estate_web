@@ -14,12 +14,38 @@
         <h2 id="apartment-reviews-title" class="mt-3 text-3xl md:text-4xl">{{ 'apartment.reviewsTitle' | transloco }}</h2>
         <span class="rule-accent mt-6"></span>
       </div>
-      <div class="flex min-h-44 items-center gap-5 rounded-lg border border-border bg-card p-7 shadow-sm md:p-9">
-        <svg viewBox="0 0 24 24" class="size-10 shrink-0 text-accent-deep" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H7l-4 2v-5.5a7.5 7.5 0 1 1 17-4Z" />
-          <path d="M8 11.5h.01M12 11.5h.01M16 11.5h.01" />
-        </svg>
-        <p class="text-base text-muted-foreground md:text-lg">{{ 'apartment.reviewsPending' | transloco }}</p>
+      <div>
+        @if (reviewsLoading()) {
+          <p class="text-muted-foreground" role="status">{{ 'apartment.reviewsLoading' | transloco }}</p>
+        } @else if (reviewsFailed()) {
+          <p class="text-muted-foreground" role="status">{{ 'apartment.reviewsUnavailable' | transloco }}</p>
+        } @else if (reviews().length) {
+          <div class="grid gap-4">
+            @for (review of reviews(); track review.id) {
+              <article class="rounded-lg border border-border bg-card p-6 shadow-sm md:p-8">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                  <span class="text-xl tracking-wider" [attr.aria-label]="'apartment.reviewRating' | transloco: { rating: review.rating }">
+                    @for (star of [1, 2, 3, 4, 5]; track star) {
+                      <span aria-hidden="true" [class]="star <= review.rating ? 'text-accent-deep' : 'text-border'">★</span>
+                    }
+                  </span>
+                  <p class="small-caps text-muted-foreground">{{ 'apartment.verifiedGuest' | transloco }} · {{ review.stayedAt | date: 'MM/yyyy' }}</p>
+                </div>
+                <p class="mt-5 whitespace-pre-line text-foreground">{{ review.comment }}</p>
+              </article>
+            }
+          </div>
+        } @else {
+          <div class="flex min-h-44 items-center gap-5 rounded-lg border border-border bg-card p-7 shadow-sm md:p-9">
+            <svg viewBox="0 0 24 24" class="size-10 shrink-0 text-accent-deep" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H7l-4 2v-5.5a7.5 7.5 0 1 1 17-4Z" />
+              <path d="M8 11.5h.01M12 11.5h.01M16 11.5h.01" />
+            </svg>
+            <p class="text-base text-muted-foreground md:text-lg">{{ 'apartment.reviewsPending' | transloco }}</p>
+          </div>
+        }
+        <p class="mt-5 text-sm text-muted-foreground">{{ 'apartment.reviewsHow' | transloco }}</p>
+        <a routerLink="/booking/manage" class="btn btn-outline mt-4">{{ 'apartment.reviewsAction' | transloco }}</a>
       </div>
     </div>
   </section>
