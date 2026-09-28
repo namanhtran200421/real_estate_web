@@ -188,11 +188,14 @@ Every response has an `X-Request-Id` that matches the logs.
 | GET    | `/apartments`                             | Published apartments with `unavailableDates`        |
 | GET    | `/apartments/:slug`                       | One apartment or 404                                |
 | GET    | `/apartments/:slug/quote`                 | `?checkIn&checkOut&guests&promoCode`; 409 if taken  |
+| GET    | `/apartments/:slug/reviews`               | Public reviews from completed stays                 |
 | POST   | `/bookings`                               | Creates a held booking → `{ booking, accessToken }` |
 | POST   | `/bookings/lookup`                        | `{ reference, contact }` → `{ booking, accessToken }` |
 | GET    | `/bookings/:reference`                    | `X-Booking-Token`                                   |
 | GET    | `/bookings/:reference/transfer`           | `?option=deposit|full` → account, amount, note, VietQR |
 | POST   | `/bookings/:reference/transfer`           | `{ option }` "I have transferred" → updated booking |
+| GET    | `/bookings/:reference/review`             | Guest's review or null; `X-Booking-Token` required  |
+| POST   | `/bookings/:reference/review`             | `{ rating, comment }` after checkout; one per booking |
 | POST   | `/contact`                                | Contact form (honeypot-protected)                   |
 | GET    | `/health`, `/health/ready`                | Liveness, readiness (outside `/api`)                |
 
