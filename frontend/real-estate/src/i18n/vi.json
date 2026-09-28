@@ -139,8 +139,9 @@
     "locationEyebrow": "Vị trí căn hộ",
     "locationTitle": "Tìm đường đến Sun Garden",
     "openMap": "Mở Google Maps",
+    "reviewsEyebrow": "Cảm nhận của khách",
     "reviewsTitle": "Đánh giá của khách đã ở",
-    "reviewsPending": "Chưa có đánh giá lưu trú được xác minh.",
+    "reviewsPending": "Đánh giá đã xác minh của khách từng lưu trú sẽ xuất hiện tại đây khi có.",
     "sections": "Mục căn hộ",
     "tabs": {
       "overview": "Tổng quan",

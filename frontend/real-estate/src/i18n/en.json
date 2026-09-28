@@ -139,8 +139,9 @@
     "locationEyebrow": "Apartment location",
     "locationTitle": "Find Sun Garden",
     "openMap": "Open Google Maps",
+    "reviewsEyebrow": "Guest feedback",
     "reviewsTitle": "Reviews from past guests",
-    "reviewsPending": "No verified guest reviews yet.",
+    "reviewsPending": "Verified reviews from guests who stayed here will appear here when available.",
     "sections": "Apartment sections",
     "tabs": {
       "overview": "Overview",
