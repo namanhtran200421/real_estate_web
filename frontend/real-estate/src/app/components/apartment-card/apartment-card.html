@@ -4,31 +4,48 @@
   class="group grid h-full overflow-hidden rounded-lg border border-border bg-card transition-[border-color,box-shadow] hover:border-border-hover"
   [class]="featured() ? 'shadow-md hover:shadow-lg md:grid-cols-[1.3fr_0.7fr]' : 'grid-rows-[auto_1fr] shadow-sm hover:shadow-md'"
 >
-  <div class="relative aspect-[4/3] overflow-hidden bg-muted" [class]="featured() ? 'md:aspect-auto md:min-h-[26rem]' : ''">
-    @for (photo of [currentPhoto()]; track photo.src) {
+  <div #carousel class="relative isolate aspect-[4/3] overflow-hidden bg-muted" [class]="featured() ? 'md:aspect-auto md:min-h-[26rem]' : ''">
+    <img
+      [ngSrc]="currentPhoto().src"
+      [alt]="currentPhoto().alt"
+      fill
+      [priority]="featured()"
+      [sizes]="featured() ? '(min-width: 768px) 60vw, 100vw' : '(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw'"
+      class="carousel-photo"
+      [class.carousel-photo--exit-left]="moving() && direction() === 1"
+      [class.carousel-photo--exit-right]="moving() && direction() === -1"
+    />
+    @if (incomingIndex() !== null) {
       <img
-        [ngSrc]="photo.src"
-        [alt]="photo.alt"
-        fill
-        [priority]="featured() && photoIndex() === 0"
-        [sizes]="featured() ? '(min-width: 768px) 60vw, 100vw' : '(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw'"
-        class="animate-fade-in object-cover"
+        [src]="incomingSrc()"
+        alt=""
+        aria-hidden="true"
+        class="carousel-photo"
+        [class.carousel-photo--enter-right]="direction() === 1"
+        [class.carousel-photo--enter-left]="direction() === -1"
+        [class.carousel-photo--arrive]="moving()"
+        (transitionend)="completeSlide($event)"
       />
     }
     @if (featured() && apt.photos.length > 1) {
-      <button
-        type="button"
-        class="absolute left-3 top-1/2 grid size-11 -translate-y-1/2 cursor-pointer place-items-center rounded-full bg-card/90 text-foreground shadow-sm transition-colors hover:bg-card focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-deep"
-        [attr.aria-label]="'apartment.previousPhoto' | transloco"
-        (click)="changePhoto(-1)"
-      >‹</button>
-      <button
-        type="button"
-        class="absolute right-3 top-1/2 grid size-11 -translate-y-1/2 cursor-pointer place-items-center rounded-full bg-card/90 text-foreground shadow-sm transition-colors hover:bg-card focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-deep"
-        [attr.aria-label]="'apartment.nextPhoto' | transloco"
-        (click)="changePhoto(1)"
-      >›</button>
-      <span class="absolute bottom-3 right-3 rounded-full bg-foreground/80 px-3 py-1 text-xs text-background" aria-hidden="true">{{ photoIndex() + 1 }} / {{ apt.photos.length }}</span>
+      <div class="absolute inset-x-0 bottom-0 z-10 h-28 bg-gradient-to-t from-black/40 to-transparent pointer-events-none" aria-hidden="true"></div>
+      <div class="absolute bottom-5 left-1/2 z-20 flex -translate-x-1/2 items-center gap-1 rounded-full border border-white/25 bg-black/55 p-1 text-white shadow-lg backdrop-blur-md">
+        <button type="button" class="carousel-control" [attr.aria-label]="'apartment.previousPhoto' | transloco" (click)="previous()">
+          <svg viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 6-6 6 6 6" /></svg>
+        </button>
+        <span class="min-w-15 text-center font-mono text-xs tabular-nums" aria-live="polite">{{ photoIndex() + 1 }} / {{ apt.photos.length }}</span>
+        <button type="button" class="carousel-control" [attr.aria-label]="'apartment.nextPhoto' | transloco" (click)="next()">
+          <svg viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m10 6 6 6-6 6" /></svg>
+        </button>
+        <span class="mx-0.5 h-5 w-px bg-white/30" aria-hidden="true"></span>
+        <button type="button" class="carousel-control" [attr.aria-label]="(playing() ? 'apartment.pausePhotos' : 'apartment.playPhotos') | transloco" [attr.aria-pressed]="!playing()" (click)="togglePlaying()">
+          @if (playing()) {
+            <svg viewBox="0 0 24 24" class="size-4" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1" /><rect x="14" y="5" width="4" height="14" rx="1" /></svg>
+          } @else {
+            <svg viewBox="0 0 24 24" class="size-4" fill="currentColor" aria-hidden="true"><path d="M7 4.5a1 1 0 0 1 1.5-.86l11 7.5a1 1 0 0 1 0 1.72l-11 7.5A1 1 0 0 1 7 19.5v-15Z" /></svg>
+          }
+        </button>
+      </div>
     }
   </div>
 

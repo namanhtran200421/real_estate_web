@@ -136,6 +136,8 @@
     "viewDetails": "View details",
     "previousPhoto": "Previous photo",
     "nextPhoto": "Next photo",
+    "pausePhotos": "Pause photo slideshow",
+    "playPhotos": "Resume photo slideshow",
     "locationEyebrow": "Apartment location",
     "locationTitle": "Find Sun Garden",
     "openMap": "Open Google Maps",
