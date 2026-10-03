@@ -26,7 +26,7 @@ export function localizeSunGarden(apartment: Apartment): Apartment {
     })),
     keyFacilities: [
       'Two-bedroom apartment', 'Fully furnished', 'Fully equipped private kitchen',
-      'Two private bathrooms', 'Free Wi-Fi', 'Washer and dryer',
+      'Two private bathrooms', 'Washer and dryer',
     ],
     facilities: [
       'Hot water', 'Shower', 'Complimentary toiletries', 'Toilet paper',

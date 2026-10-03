@@ -1,6 +1,6 @@
 {
   "site": {
-    "tagline": "Sun Garden apartment A04-12, Nam Ho, Da Lat.",
+    "tagline": "Your Stay, Your Style, Dalat awaits",
     "description": "Discover Sun Garden apartment A04-12 in Da Lat: 78 m², 2 bedrooms, 2 bathrooms and an airy balcony.",
     "contact": {
       "phone": "Phone",
@@ -122,6 +122,7 @@
     "latestCheckOut": "· latest check-out {{ date }}",
     "booked": "Booked",
     "selected": "Your dates",
+    "oneDay": "Note: you are booking for only 1 day (1 night).",
     "day": {
       "available": "available",
       "booked": "booked",
@@ -181,7 +182,7 @@
     "living": { "title": "Living room", "sofa": "Sofa", "desk": "Desk", "television": "Flat-screen TV", "ceilingFan": "Ceiling fan" },
     "kitchen": { "title": "Kitchen", "fridge": "Refrigerator", "inductionHob": "Double induction hob", "extractor": "Extractor hood", "tableware": "Tableware", "cookware": "Cookware", "kettle": "Electric kettle" },
     "bedrooms": { "title": "2 bedrooms", "doubleBed": "Large double bed", "bedding": "Bedding", "wardrobe": "Wardrobe", "clothesRack": "Clothes rack", "standingFan": "Standing fan" },
-    "shared": { "title": "Shared amenities", "washerDryer": "Washer and dryer", "dryingRack": "Drying rack", "hangers": "Hangers", "slippers": "Four pairs of slippers", "wifi": "Free Wi-Fi" },
+    "shared": { "title": "Other amenities", "washerDryer": "Washer and dryer", "dryingRack": "Drying rack", "hangers": "Hangers", "slippers": "Four pairs of slippers", "wifi": "Free Wi-Fi" },
     "building": { "title": "Building facilities", "lift": "Lift", "extinguisher": "Fire extinguisher", "paidParking": "Paid parking", "noPets": "No pets" },
     "safety": { "title": "Safety", "smokeAlarm": "Smoke alarm" }
   },
@@ -253,7 +254,7 @@
     "bookDirect": "Book direct",
     "promises": {
       "availability": {
-        "title": "Always up-to-date availability",
+        "title": "Check the calendar – Book in a tap",
         "text": "See which dates are free and book right away, no need to message first."
       },
       "prices": {
@@ -320,7 +321,6 @@
     "stay": "Your stay",
     "apartment": "Apartment",
     "dates": "Check-in – check-out",
-    "maxGuests": "Up to {{ count }} [[ plural({{ count }}, guest, guests) ]].",
     "contact": "Contact details",
     "emailNote": "We’ll send your booking confirmation to this email.",
     "messagePlaceholder": "Expected arrival time, special requests…",

@@ -2,7 +2,7 @@ import { Component, computed, effect, inject, input, signal } from '@angular/cor
 import { DecimalPipe } from '@angular/common';
 import { httpResource } from '@angular/common/http';
 import { Router, RouterLink } from '@angular/router';
-import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { Select, SelectOption } from '../../components/select/select';
 import { ApartmentNotFound } from '../../components/apartment-not-found/apartment-not-found';
 import { BookingSteps } from '../../components/booking-steps/booking-steps';
@@ -15,7 +15,7 @@ import { BookingDraft, BookingDraftService } from '../../services/booking-draft.
 import { BookingService } from '../../services/booking.service';
 import { MAX_DAYS_AHEAD, MAX_NIGHTS, addDaysIso, todayIso } from '../../shared/dates';
 
-/** Step 1: dates, guests and contact details. The price updates live as dates change. */
+/** Step 1: dates and contact details. The price updates live as dates change. */
 @Component({
   selector: 'app-booking',
   imports: [DecimalPipe, RouterLink, TranslocoPipe, ApartmentNotFound, BookingSteps, BookingSummary, DateRangePicker, Select],
@@ -25,7 +25,6 @@ export class BookingPage {
   private readonly apartments = inject(ApartmentService);
   private readonly bookings = inject(BookingService);
   private readonly router = inject(Router);
-  private readonly transloco = inject(TranslocoService);
   private readonly errorMessages = inject(ApiErrorMessages);
   protected readonly drafts = inject(BookingDraftService);
 
@@ -48,12 +47,6 @@ export class BookingPage {
 
   protected readonly apartmentOptions = computed<SelectOption[]>(() =>
     this.all().map((a) => ({ value: a.slug, label: `${a.name} · ${a.area}` })),
-  );
-  protected readonly guestOptions = computed<SelectOption[]>(() =>
-    Array.from({ length: this.apartment()?.guests ?? 1 }, (_, i) => ({
-      value: String(i + 1),
-      label: this.transloco.translate('common.guests', { count: i + 1 }),
-    })),
   );
 
   /** Live price for the chosen dates; reloads whenever apartment, dates or guests change. */
@@ -113,10 +106,6 @@ export class BookingPage {
 
   protected fromInput(event: Event): string {
     return (event.target as HTMLInputElement).value;
-  }
-
-  protected toNumber(value: string): number {
-    return Number(value);
   }
 
   protected chooseApartment(slug: string): void {

@@ -55,7 +55,7 @@
     @if (featured()) {
       <ul class="mt-5 flex flex-wrap gap-2">
         @for (item of apt.keyFacilities; track item) {
-          <li class="rounded-md border border-border px-3 py-1 text-sm">{{ item }}</li>
+          <li class="rounded-md border border-accent bg-accent-muted px-3 py-1 text-sm">{{ item }}</li>
         }
       </ul>
     }

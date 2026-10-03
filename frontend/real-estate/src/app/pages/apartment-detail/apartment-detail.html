@@ -88,7 +88,7 @@
         </div>
         <ul class="mt-7 grid gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
           @for (item of apt.keyFacilities; track item) {
-            <li class="flex min-h-16 items-center gap-3 rounded-md border border-border bg-card px-4 py-3 text-sm leading-snug shadow-sm">
+            <li class="flex min-h-16 items-center gap-3 rounded-md border border-accent bg-accent-muted px-4 py-3 text-sm leading-snug shadow-sm">
               <svg viewBox="0 0 24 24" class="size-6 shrink-0 text-accent-deep" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 @switch (facilityIcon(item)) {
                   @case ('apartment') { <path d="M4 21V7l8-5 8 5v14M3 21h18M9 21v-8h6v8M8 9h.01M16 9h.01" /> }
