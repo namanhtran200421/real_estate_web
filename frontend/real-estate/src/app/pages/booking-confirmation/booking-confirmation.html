@@ -49,6 +49,46 @@
             {{ 'confirmation.reportedText' | transloco: { name: b.customer.name, amount: (pending.amount | number) } }}
             <span class="text-foreground">{{ b.customer.email }}</span>{{ 'confirmation.reportedTextEnd' | transloco }}
           </p>
+
+          <!-- Where the booking stands: two steps done, the owner's check in progress -->
+          <ol class="mx-auto mt-10 max-w-sm space-y-4 text-left">
+            <li class="flex items-center gap-3">
+              <span class="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-accent text-accent-foreground">
+                <svg viewBox="0 0 20 20" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <path d="m4 10.5 4 4 8-9" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </span>
+              <span>{{ 'confirmation.progress.created' | transloco }}</span>
+            </li>
+            <li class="flex items-center gap-3">
+              <span class="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-accent text-accent-foreground">
+                <svg viewBox="0 0 20 20" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <path d="m4 10.5 4 4 8-9" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </span>
+              <span>{{ 'confirmation.progress.sent' | transloco: { amount: (pending.amount | number) } }}</span>
+            </li>
+            <li class="flex items-center gap-3" aria-current="step">
+              <span class="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-accent-deep">
+                <span class="h-2.5 w-2.5 animate-pulse rounded-full bg-accent-deep"></span>
+              </span>
+              <span class="font-medium">{{ 'confirmation.progress.checking' | transloco }}</span>
+            </li>
+            <li class="flex items-center gap-3 text-muted-foreground">
+              <span class="h-7 w-7 shrink-0 rounded-full border border-border"></span>
+              <span>{{ 'confirmation.progress.confirmed' | transloco }}</span>
+            </li>
+          </ol>
+
+          <p class="mt-10 text-sm text-muted-foreground">
+            {{ 'confirmation.questions' | transloco }}
+            @for (c of contact; track c.href; let last = $last) {
+              <a [href]="c.href" class="link" target="_blank" rel="noopener">{{ c.label | transloco }} {{ c.value }}</a>
+              @if (!last) {
+                ·
+              }
+            }
+          </p>
         } @else if (b.amountPaid > 0 && b.status === 'confirmed') {
           <span class="mx-auto grid h-16 w-16 place-items-center rounded-full border border-accent bg-accent-muted text-accent-deep">
             <svg viewBox="0 0 20 20" class="h-7 w-7" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">

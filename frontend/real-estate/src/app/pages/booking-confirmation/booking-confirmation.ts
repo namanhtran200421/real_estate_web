@@ -5,6 +5,7 @@ import { TranslocoPipe } from '@jsverse/transloco';
 import { BookingSteps } from '../../components/booking-steps/booking-steps';
 import { StatusBadge } from '../../components/status-badge/status-badge';
 import { ApiErrorMessages, toApiError } from '../../core/api';
+import { SITE } from '../../data/site';
 import { ApartmentService } from '../../services/apartment.service';
 import { BookingDraftService } from '../../services/booking-draft.service';
 import { BookingService } from '../../services/booking.service';
@@ -29,6 +30,9 @@ export class BookingConfirmation {
 
   /** Bound from the `:reference` route param. */
   readonly reference = input.required<string>();
+
+  /** Phone and Zalo, for guests with a question while the owner confirms. */
+  protected readonly contact = SITE.contact.filter((c) => !c.href.startsWith('mailto:'));
 
   protected readonly booking = resource({
     params: () => this.reference(),

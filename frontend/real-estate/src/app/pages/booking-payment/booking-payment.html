@@ -167,7 +167,7 @@
                   </div>
 
                   <ol class="mt-8 list-decimal space-y-2 pl-5 text-sm text-muted-foreground">
-                    <li>{{ 'payment.steps.scan' | transloco }}</li>
+                    <li>{{ 'payment.steps.scan' | transloco: { name: t.accountName } }}</li>
                     <li>{{ 'payment.steps.phone' | transloco }}</li>
                     <li>
                       {{ 'payment.steps.keepNoteBefore' | transloco }}
