@@ -282,7 +282,7 @@ Without Docker: `npm ci && npm run build && npm run db:migrate && npm start`.
 - [ ] `NODE_ENV=production`; `SITE_URL` is the real `https://` address (links in emails)
 - [ ] Fresh secrets: `BOOKING_TOKEN_SECRET`, `INTERNAL_API_KEY` (same value in the website's environment); `openssl rand -base64 48`
 - [ ] `DATABASE_URL` for production, `DB_SSL=true` for managed Postgres; `instances × DB_POOL_MAX` < `max_connections`
-- [ ] `TRUST_PROXY_HOPS` = number of trusted proxies in front of the API (defaults to 1 on Render, 0 locally); override if your setup differs
+- [ ] `TRUST_PROXY_HOPS` = number of trusted proxies in front of the API (defaults to 3 on Render: Cloudflare edge, load balancer, local proxy; 0 locally). Check after deploying: the request log's `ip` must be your own address, also when you send a forged `X-Forwarded-For`
 - [ ] Cloudflare Turnstile widget created for the website's domain(s) → `TURNSTILE_SECRET_KEY` here, `TURNSTILE_SITE_KEY` in the website's build; then submit the contact form once to check
 
 An existing Turnstile widget can be reused after its hostname list includes this website.

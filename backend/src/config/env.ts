@@ -157,9 +157,10 @@ export const env = Object.freeze({
    * find the real client IP in `X-Forwarded-For`, which the rate limiter keys on.
    * 0 = the app is exposed directly. Setting it higher than reality lets clients spoof their IP.
    */
-  // Render injects RENDER=true and puts one trusted load balancer in front of the app.
+  // Render injects RENDER=true. Its requests pass Cloudflare (Render's edge), a load balancer and
+  // a local proxy: 3 hops, measured in October 2026 (real IP seen, forged X-Forwarded-For ignored).
   // Keep local/direct-host traffic at 0 unless an explicit proxy count is configured.
-  trustProxyHops: integer('TRUST_PROXY_HOPS', process.env.RENDER === 'true' ? 1 : 0, 0, 10),
+  trustProxyHops: integer('TRUST_PROXY_HOPS', process.env.RENDER === 'true' ? 3 : 0, 0, 10),
 
   /** Browser origins allowed to call the API. Empty = only SITE_URL. */
   corsOrigins: list('CORS_ORIGINS'),
