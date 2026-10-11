@@ -1,6 +1,6 @@
 {
   "site": {
-    "tagline": "Căn hộ Sun Garden A04-12, Nam Hồ, Đà Lạt.",
+    "tagline": "Tìm phòng hợp gu, vi vu phố núi",
     "description": "Khám phá căn hộ Sun Garden A04-12 tại Đà Lạt: 78 m², 2 phòng ngủ, 2 phòng tắm và ban công thoáng.",
     "contact": {
       "phone": "Điện thoại",
@@ -122,6 +122,7 @@
     "latestCheckOut": "· trả phòng muộn nhất {{ date }}",
     "booked": "Đã có người đặt",
     "selected": "Ngày bạn chọn",
+    "oneDay": "Lưu ý: Bạn đang đặt phòng chỉ cho 1 ngày (1 đêm).",
     "day": {
       "available": "còn trống",
       "booked": "đã có người đặt",
@@ -181,7 +182,7 @@
     "living": { "title": "Phòng khách", "sofa": "Sofa", "desk": "Bàn làm việc", "television": "TV màn hình phẳng", "ceilingFan": "Quạt trần" },
     "kitchen": { "title": "Phòng bếp", "fridge": "Tủ lạnh", "inductionHob": "Bếp từ đôi", "extractor": "Máy hút mùi", "tableware": "Bộ bát đũa", "cookware": "Dụng cụ nấu ăn", "kettle": "Ấm siêu tốc" },
     "bedrooms": { "title": "2 phòng ngủ", "doubleBed": "Giường đôi lớn", "bedding": "Bộ chăn, ga, gối, đệm", "wardrobe": "Tủ để quần áo", "clothesRack": "Giá treo đồ", "standingFan": "Quạt cây" },
-    "shared": { "title": "Tiện ích chung", "washerDryer": "Máy giặt / sấy", "dryingRack": "Giá phơi đồ", "hangers": "Móc treo đồ", "slippers": "Dép lê (4 đôi)", "wifi": "Wi-Fi miễn phí" },
+    "shared": { "title": "Tiện ích khác", "washerDryer": "Máy giặt / sấy", "dryingRack": "Giá phơi đồ", "hangers": "Móc treo đồ", "slippers": "Dép lê (4 đôi)", "wifi": "Wi-Fi miễn phí" },
     "building": { "title": "Tiện nghi tòa nhà", "lift": "Thang máy", "extinguisher": "Bình chữa cháy", "paidParking": "Chỗ đậu xe (có phí)", "noPets": "Không vật nuôi" },
     "safety": { "title": "An ninh", "smokeAlarm": "Thiết bị báo cháy" }
   },
@@ -253,7 +254,7 @@
     "bookDirect": "Đặt trực tiếp",
     "promises": {
       "availability": {
-        "title": "Lịch trống dễ đặt - Liên tục cập nhật",
+        "title": "Xem lịch ngay – Đặt liền tay",
         "text": "Xem ngày còn trống và đặt ngay, không cần nhắn tin hỏi trước."
       },
       "prices": {
@@ -320,7 +321,6 @@
     "stay": "Ngày lưu trú",
     "apartment": "Căn hộ",
     "dates": "Ngày nhận phòng – ngày trả phòng",
-    "maxGuests": "Tối đa {{ count }} khách.",
     "contact": "Thông tin liên hệ",
     "emailNote": "Xác nhận đặt phòng được gửi tới email này.",
     "messagePlaceholder": "Giờ đến dự kiến, yêu cầu đặc biệt…",

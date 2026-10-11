@@ -46,18 +46,6 @@
                 {{ error }}
               </p>
             }
-
-            <div class="sm:max-w-[calc(50%-0.75rem)]">
-              <label class="label" for="book-guests">{{ 'common.guestCount' | transloco }}</label>
-              <app-select
-                inputId="book-guests"
-                name="guests"
-                [options]="guestOptions()"
-                [value]="'' + draft().guests"
-                (valueChange)="set('guests', toNumber($event))"
-              />
-              <p class="mt-2 text-sm text-muted-foreground">{{ 'booking.maxGuests' | transloco: { count: apt.guests } }}</p>
-            </div>
           </fieldset>
 
           <!-- Contact -->

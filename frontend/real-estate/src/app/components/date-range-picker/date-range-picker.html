@@ -9,6 +9,11 @@
         </span>
       </p>
       <button type="button" class="link text-sm" (click)="clear()">{{ 'picker.clear' | transloco }}</button>
+      @if (nights() === 1) {
+        <p class="w-full rounded-md border border-accent bg-accent-muted px-4 py-3 text-sm text-accent-deep">
+          {{ 'picker.oneDay' | transloco }}
+        </p>
+      }
     } @else if (choosingCheckOut()) {
       <p>
         <span class="font-medium">{{ 'picker.chooseCheckOut' | transloco }}</span>
