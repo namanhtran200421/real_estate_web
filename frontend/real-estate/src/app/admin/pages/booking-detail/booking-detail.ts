@@ -135,13 +135,17 @@ export class AdminBookingDetailPage {
     return reference.replaceAll('-', '');
   }
 
-  /** The transfer is in the bank account: records it, which confirms the booking and emails the guest. */
-  protected async received(amount: number): Promise<void> {
+  /**
+   * Money arrived: records it. The first payment confirms the booking; the rest (usually at
+   * check-in) makes it fully paid. The guest is emailed either way.
+   */
+  protected async received(amount: number, method: 'bank_transfer' | 'cash' = 'bank_transfer', rest = false): Promise<void> {
     const reference = this.reference();
-    if (!confirm(`Xác nhận đã nhận ${amount.toLocaleString('vi-VN')} ₫ cho ${reference}?`)) return;
-    await this.run(() =>
-      this.api.recordPayment(reference, { method: 'bank_transfer', amount, note: `Chuyển khoản ${this.transferNote(reference)}` }),
-    );
+    const how = method === 'cash' ? 'tiền mặt' : 'chuyển khoản';
+    if (!confirm(`Xác nhận đã nhận ${amount.toLocaleString('vi-VN')} ₫ (${how}) cho ${reference}?`)) return;
+    let note = method === 'cash' ? 'Tiền mặt' : `Chuyển khoản ${this.transferNote(reference)}`;
+    if (rest) note += ', phần còn lại';
+    await this.run(() => this.api.recordPayment(reference, { method, amount, note }));
   }
 
   protected async recordPayment(): Promise<void> {

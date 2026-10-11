@@ -110,9 +110,24 @@ export interface AdminSessionInfo {
   current: boolean;
 }
 
+/** Part paid (usually the deposit); the rest is collected at check-in. */
+export interface BalanceDue {
+  reference: string;
+  customerName: string;
+  apartmentName: string;
+  checkIn: string;
+  checkOut: string;
+  totalAmount: number;
+  amountPaid: number;
+  balance: number;
+  /** Transfer note, if the guest transfers the rest. */
+  note: string;
+}
+
 export interface AdminSummary {
   transfersToCheck: TransferToCheck[];
   bookingsAwaitingPayment: AwaitingPayment[];
+  bookingsWithBalanceDue: BalanceDue[];
   awaitingConfirmation: number;
   awaitingPayment: number;
   inHouse: number;

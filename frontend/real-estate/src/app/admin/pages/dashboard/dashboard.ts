@@ -4,7 +4,7 @@ import { RouterLink } from '@angular/router';
 import { StatusBadge } from '../../../components/status-badge/status-badge';
 import { toApiError } from '../../../core/api';
 import { AdminApiService } from '../../admin-api.service';
-import { AwaitingPayment, MonthStats } from '../../admin.types';
+import { AwaitingPayment, BalanceDue, MonthStats } from '../../admin.types';
 import { ChartPoint, ColumnChart } from '../../components/column-chart';
 
 const VND = new Intl.NumberFormat('vi-VN');
@@ -27,6 +27,24 @@ function monthLabel(month: string): string {
 function monthDetail(month: string): string {
   const [year, number] = month.split('-');
   return `Tháng ${Number(number)}/${year}`;
+}
+
+/** Today in the browser, "2026-10-11" (the owner works in Vietnam time). */
+function todayIso(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+}
+
+/** "Đang lưu trú", "Hôm nay" or "Ngày mai" when the guest is close; otherwise nothing. */
+function arrivalHint(checkIn: string): string | undefined {
+  const today = todayIso();
+  if (checkIn < today) return 'Đang lưu trú';
+  if (checkIn === today) return 'Nhận phòng hôm nay';
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const next = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
+  if (checkIn === next) return 'Nhận phòng ngày mai';
+  return undefined;
 }
 
 function occupancy(month: MonthStats): number {
@@ -57,15 +75,15 @@ function change(current: number, previous: number): { text: string; up: boolean 
       @let s = summary.value();
 
       <!-- What needs the owner now -->
+      @if (actionError(); as message) {
+        <p class="mt-8 rounded-md border border-accent bg-accent-muted p-3 text-sm text-accent-deep" role="alert">{{ message }}</p>
+      }
       @if (s.bookingsAwaitingPayment.length) {
         <section class="card card-accent-top mt-8" aria-labelledby="awaiting-heading">
           <h2 id="awaiting-heading" class="text-2xl">Chờ tiền về ({{ s.bookingsAwaitingPayment.length }})</h2>
           <p class="mt-2 text-sm text-muted-foreground">
             Tìm khoản chuyển theo nội dung trong ứng dụng ngân hàng. Thấy tiền thì bấm "Đã nhận": đặt phòng được xác nhận và khách nhận email.
           </p>
-          @if (actionError(); as message) {
-            <p class="mt-4 text-sm text-accent-deep" role="alert">{{ message }}</p>
-          }
           <ul class="mt-6 divide-y divide-border border-y border-border">
             @for (a of s.bookingsAwaitingPayment; track a.reference) {
               <li class="py-4">
@@ -84,6 +102,40 @@ function change(current: number, previous: number): { text: string; up: boolean 
                   <button type="button" class="btn btn-outline" [disabled]="busy()" (click)="received(a, a.totalAmount)">
                     Đã nhận đủ {{ a.totalAmount | number }} ₫
                   </button>
+                </div>
+              </li>
+            }
+          </ul>
+        </section>
+      }
+
+      @if (s.bookingsWithBalanceDue.length) {
+        <section class="card mt-8" aria-labelledby="balance-heading">
+          <h2 id="balance-heading" class="text-2xl">Còn thiếu tiền ({{ s.bookingsWithBalanceDue.length }})</h2>
+          <p class="mt-2 text-sm text-muted-foreground">
+            Đã đặt cọc, phần còn lại thu khi khách nhận phòng: tiền mặt, hoặc chuyển khoản với nội dung bên dưới.
+          </p>
+          <ul class="mt-6 divide-y divide-border border-y border-border">
+            @for (d of s.bookingsWithBalanceDue; track d.reference) {
+              <li class="py-4">
+                <div class="flex flex-wrap items-baseline gap-x-6 gap-y-1">
+                  <span class="w-24 shrink-0 font-medium">{{ d.checkIn | date: 'EEE dd/MM' }}</span>
+                  <a [routerLink]="['/admin/bookings', d.reference]" class="min-w-0 flex-1 text-sm text-muted-foreground hover:underline">
+                    {{ d.customerName }} · <span class="font-mono text-accent-deep">{{ d.note }}</span> · đã trả
+                    {{ d.amountPaid | number }}/{{ d.totalAmount | number }} ₫
+                  </a>
+                  <span class="text-right">
+                    <span class="block font-serif text-xl">{{ d.balance | number }} ₫</span>
+                    @if (hint(d.checkIn); as h) {
+                      <span class="block text-xs font-medium text-accent-deep">{{ h }}</span>
+                    }
+                  </span>
+                </div>
+                <div class="mt-3 flex flex-wrap gap-3">
+                  <button type="button" class="btn btn-outline" [disabled]="busy()" (click)="balanceReceived(d, 'bank_transfer')">
+                    Đã nhận chuyển khoản
+                  </button>
+                  <button type="button" class="btn btn-ghost" [disabled]="busy()" (click)="balanceReceived(d, 'cash')">Đã nhận tiền mặt</button>
                 </div>
               </li>
             }
@@ -249,6 +301,7 @@ export class AdminDashboard {
 
   protected readonly busy = signal(false);
   protected readonly actionError = signal<string | undefined>(undefined);
+  protected readonly hint = arrivalHint;
 
   /** This month and last, from the chart data. */
   protected readonly kpis = computed(() => {
@@ -301,12 +354,23 @@ export class AdminDashboard {
   });
 
   /** The transfer is in the bank account: records it, which confirms the booking and emails the guest. */
-  protected async received(booking: AwaitingPayment, amount: number): Promise<void> {
-    if (!confirm(`Xác nhận đã nhận ${amount.toLocaleString('vi-VN')} ₫ cho ${booking.reference}?`)) return;
+  protected received(booking: AwaitingPayment, amount: number): Promise<void> {
+    return this.record(booking.reference, { method: 'bank_transfer', amount, note: `Chuyển khoản ${booking.note}` });
+  }
+
+  /** The rest of the price arrived (usually at check-in): the booking becomes fully paid. */
+  protected balanceReceived(booking: BalanceDue, method: 'bank_transfer' | 'cash'): Promise<void> {
+    const note = method === 'cash' ? 'Tiền mặt, phần còn lại' : `Chuyển khoản ${booking.note}, phần còn lại`;
+    return this.record(booking.reference, { method, amount: booking.balance, note });
+  }
+
+  private async record(reference: string, payment: { method: 'bank_transfer' | 'cash'; amount: number; note: string }): Promise<void> {
+    const how = payment.method === 'cash' ? 'tiền mặt' : 'chuyển khoản';
+    if (!confirm(`Xác nhận đã nhận ${payment.amount.toLocaleString('vi-VN')} ₫ (${how}) cho ${reference}?`)) return;
     this.busy.set(true);
     this.actionError.set(undefined);
     try {
-      await this.api.recordPayment(booking.reference, { method: 'bank_transfer', amount, note: `Chuyển khoản ${booking.note}` });
+      await this.api.recordPayment(reference, payment);
       this.summary.reload();
       this.stats.reload();
     } catch (error) {

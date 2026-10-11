@@ -266,6 +266,24 @@
           </div>
         }
 
+        @if (b.amountPaid > 0 && b.amountDue > 0 && !b.pendingTransfer && (b.status === 'pending' || b.status === 'confirmed')) {
+          <!-- Deposit paid: the rest is usually collected at check-in -->
+          <div class="mt-6 space-y-3 rounded-md border border-border bg-muted p-4">
+            <p class="text-sm">
+              Còn thiếu <span class="font-semibold">{{ b.amountDue | number }} ₫</span>, thu khi khách nhận phòng: tiền mặt, hoặc chuyển khoản với nội dung
+              <span class="font-mono font-medium text-accent-deep">{{ transferNote(b.reference) }}</span>.
+            </p>
+            <div class="flex flex-wrap gap-3">
+              <button type="button" class="btn btn-primary" [disabled]="busy()" (click)="received(b.amountDue, 'bank_transfer', true)">
+                Đã nhận chuyển khoản {{ b.amountDue | number }} ₫
+              </button>
+              <button type="button" class="btn btn-outline" [disabled]="busy()" (click)="received(b.amountDue, 'cash', true)">
+                Đã nhận tiền mặt
+              </button>
+            </div>
+          </div>
+        }
+
         @if (b.status !== 'cancelled') {
           <form class="mt-8 space-y-4" (submit)="$event.preventDefault(); recordPayment()">
             <h3>Ghi nhận thanh toán</h3>

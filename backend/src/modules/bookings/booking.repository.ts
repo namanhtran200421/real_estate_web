@@ -10,6 +10,7 @@ import type {
   AdminStats,
   AdminSummary,
   AwaitingPayment,
+  BalanceDue,
   BookingEvent,
   BookingRecord,
   BookingStatus,
@@ -415,9 +416,11 @@ async function list(filters: AdminBookingFilters): Promise<Page<AdminBookingList
   };
 }
 
-/** Four independent reads, run in parallel on separate pool connections. */
+/** Five independent reads, run in parallel on separate pool connections. */
 async function summary(today: string, weekAhead: string): Promise<AdminSummary> {
-  const countsQuery = queryOne<Omit<AdminSummary, 'arrivalsNext7Days' | 'transfersToCheck' | 'bookingsAwaitingPayment'>>(
+  const countsQuery = queryOne<
+    Omit<AdminSummary, 'arrivalsNext7Days' | 'transfersToCheck' | 'bookingsAwaitingPayment' | 'bookingsWithBalanceDue'>
+  >(
     `SELECT
        (SELECT count(*)::int FROM bookings WHERE status = 'pending' AND amount_paid > 0) AS "awaitingConfirmation",
        (SELECT count(*)::int FROM bookings
@@ -478,10 +481,49 @@ async function summary(today: string, weekAhead: string): Promise<AdminSummary> 
      LIMIT 50`,
   );
 
-  const [counts, arrivals, transfers, awaiting] = await Promise.all([countsQuery, arrivalsQuery, transfersQuery, awaitingQuery]);
+  // Part paid, stay not over yet: the owner collects the rest, usually at check-in.
+  const balanceQuery = query<{
+    reference: string;
+    customer_name: string;
+    apartment_name: string;
+    check_in: string;
+    check_out: string;
+    total_amount: number;
+    amount_paid: number;
+  }>(
+    `SELECT b.reference, b.customer_name, a.name AS apartment_name, b.check_in, b.check_out, b.total_amount, b.amount_paid
+     FROM bookings b
+     JOIN apartments a ON a.id = b.apartment_id
+     WHERE b.status IN ('pending', 'confirmed') AND b.amount_paid > 0 AND b.amount_paid < b.total_amount
+       AND b.check_out > $1
+     ORDER BY b.check_in
+     LIMIT 50`,
+    [today],
+  );
+
+  const [counts, arrivals, transfers, awaiting, balances] = await Promise.all([
+    countsQuery,
+    arrivalsQuery,
+    transfersQuery,
+    awaitingQuery,
+    balanceQuery,
+  ]);
 
   return {
     ...counts!,
+    bookingsWithBalanceDue: balances.map(
+      (row): BalanceDue => ({
+        reference: row.reference,
+        customerName: row.customer_name,
+        apartmentName: row.apartment_name,
+        checkIn: row.check_in,
+        checkOut: row.check_out,
+        totalAmount: row.total_amount,
+        amountPaid: row.amount_paid,
+        balance: row.total_amount - row.amount_paid,
+        note: row.reference.replaceAll('-', ''),
+      }),
+    ),
     bookingsAwaitingPayment: awaiting.map(
       (row): AwaitingPayment => ({
         reference: row.reference,

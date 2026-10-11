@@ -232,9 +232,25 @@ export interface AdminStats {
   months: MonthStats[];
 }
 
+/** A booking with part of its price paid (usually the deposit): the rest is due at check-in. */
+export interface BalanceDue {
+  reference: string;
+  customerName: string;
+  apartmentName: string;
+  checkIn: string;
+  checkOut: string;
+  totalAmount: number;
+  amountPaid: number;
+  /** What is still owed. */
+  balance: number;
+  /** Transfer note, if the guest transfers the rest. */
+  note: string;
+}
+
 export interface AdminSummary {
   transfersToCheck: TransferToCheck[];
   bookingsAwaitingPayment: AwaitingPayment[];
+  bookingsWithBalanceDue: BalanceDue[];
   awaitingConfirmation: number;
   awaitingPayment: number;
   inHouse: number;
