@@ -4,38 +4,59 @@
   class="group grid h-full overflow-hidden rounded-lg border border-border bg-card transition-[border-color,box-shadow] hover:border-border-hover"
   [class]="featured() ? 'shadow-md hover:shadow-lg md:grid-cols-[1.3fr_0.7fr]' : 'grid-rows-[auto_1fr] shadow-sm hover:shadow-md'"
 >
-  <div #carousel class="relative isolate aspect-[4/3] overflow-hidden bg-muted" [class]="featured() ? 'md:aspect-auto md:min-h-[26rem]' : ''">
-    <img
-      [ngSrc]="currentPhoto().src"
-      [alt]="currentPhoto().alt"
-      fill
-      [priority]="featured()"
-      [sizes]="featured() ? '(min-width: 768px) 60vw, 100vw' : '(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw'"
-      class="carousel-photo"
-      [class.carousel-photo--snap]="settling()"
-      [class.carousel-photo--exit-left]="moving() && direction() === 1"
-      [class.carousel-photo--exit-right]="moving() && direction() === -1"
-    />
-    @if (incomingIndex() !== null) {
-      <img
-        [src]="incomingSrc()"
-        alt=""
-        aria-hidden="true"
-        class="carousel-photo"
-        [class.carousel-photo--enter-right]="direction() === 1"
-        [class.carousel-photo--enter-left]="direction() === -1"
-        [class.carousel-photo--arrive]="moving()"
-        (transitionend)="completeSlide($event)"
-      />
-    }
-    @if (featured() && apt.photos.length > 1) {
+  <div class="relative isolate aspect-[4/3] overflow-hidden bg-muted" [class]="featured() ? 'md:aspect-auto md:min-h-[26rem]' : ''">
+    @if (slides()) {
+      <!-- Embla moves the track inside this viewport: swipe, drag, buttons or arrow keys -->
+      <div
+        #viewport
+        class="absolute inset-0 cursor-grab overflow-hidden outline-none active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white"
+        role="region"
+        aria-roledescription="carousel"
+        [attr.aria-label]="apt.name"
+        tabindex="0"
+        (keydown)="onKeydown($event)"
+      >
+        <div class="flex h-full touch-pan-y">
+          @for (photo of apt.photos; track photo.src; let i = $index) {
+            <div
+              class="relative h-full min-w-0 flex-[0_0_100%]"
+              role="group"
+              aria-roledescription="slide"
+              [attr.aria-label]="i + 1 + ' / ' + apt.photos.length"
+              [attr.aria-hidden]="i !== photoIndex()"
+            >
+              @if (mounted().has(i)) {
+                <img
+                  [ngSrc]="photo.src"
+                  [alt]="photo.alt"
+                  fill
+                  [priority]="i === 0"
+                  [loading]="i === 0 ? undefined : 'eager'"
+                  sizes="(min-width: 768px) 60vw, 100vw"
+                  class="select-none object-cover"
+                  draggable="false"
+                />
+              }
+            </div>
+          }
+        </div>
+      </div>
       <button type="button" class="carousel-control left-4 md:left-5" [attr.aria-label]="'apartment.previousPhoto' | transloco" (click)="previous()">
         <svg viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 6-6 6 6 6" /></svg>
       </button>
       <button type="button" class="carousel-control right-4 md:right-5" [attr.aria-label]="'apartment.nextPhoto' | transloco" (click)="next()">
         <svg viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m10 6 6 6-6 6" /></svg>
       </button>
-      <span class="absolute bottom-4 right-4 z-20 rounded-full border border-white/25 bg-black/55 px-3 py-1.5 font-mono text-xs tabular-nums text-white shadow-sm backdrop-blur-md md:bottom-5 md:right-5" aria-live="polite">{{ photoIndex() + 1 }} / {{ apt.photos.length }}</span>
+      <span class="pointer-events-none absolute bottom-4 right-4 z-20 rounded-full border border-white/25 bg-black/55 px-3 py-1.5 font-mono text-xs tabular-nums text-white shadow-sm backdrop-blur-md md:bottom-5 md:right-5" aria-live="polite">{{ photoIndex() + 1 }} / {{ apt.photos.length }}</span>
+    } @else if (apt.photos[0]; as photo) {
+      <img
+        [ngSrc]="photo.src"
+        [alt]="photo.alt"
+        fill
+        [priority]="featured()"
+        [sizes]="featured() ? '(min-width: 768px) 60vw, 100vw' : '(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw'"
+        class="object-cover"
+      />
     }
   </div>
 
