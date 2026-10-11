@@ -2,7 +2,7 @@
  * Admin accounts and sessions data access.
  */
 import { query, queryOne } from '../../db/pool.js';
-import type { AdminIdentity } from './admin-auth.types.js';
+import type { AdminIdentity, AdminSessionInfo } from './admin-auth.types.js';
 
 interface AdminRow {
   id: string;
@@ -53,14 +53,54 @@ async function createSession(
   return row!.expires_at;
 }
 
-/** The admin behind an unexpired session. */
-async function findSessionAdmin(tokenHash: string): Promise<AdminIdentity | undefined> {
-  return queryOne<AdminIdentity>(
-    `SELECT u.id, u.email, u.name
-     FROM admin_sessions s JOIN admin_users u ON u.id = s.admin_id
-     WHERE s.token_hash = $1 AND s.expires_at > now()`,
-    [tokenHash],
+/**
+ * The admin behind a live session (not expired, used within `idleMinutes`), marking it as used
+ * now so an active admin stays signed in.
+ */
+async function touchSession(tokenHash: string, idleMinutes: number): Promise<{ admin: AdminIdentity; sessionId: string } | undefined> {
+  const row = await queryOne<AdminIdentity & { session_id: string }>(
+    `UPDATE admin_sessions s SET last_seen_at = now()
+     FROM admin_users u
+     WHERE s.token_hash = $1 AND u.id = s.admin_id
+       AND s.expires_at > now() AND s.last_seen_at > now() - make_interval(mins => $2)
+     RETURNING u.id, u.email, u.name, s.id AS session_id`,
+    [tokenHash, idleMinutes],
   );
+  if (!row) return undefined;
+  return { admin: { id: row.id, email: row.email, name: row.name }, sessionId: row.session_id };
+}
+
+/** The admin's live sessions, most recently used first. */
+async function listSessions(adminId: string, idleMinutes: number, currentSessionId: string): Promise<AdminSessionInfo[]> {
+  const rows = await query<{
+    id: string;
+    created_at: Date;
+    last_seen_at: Date;
+    expires_at: Date;
+    ip: string | null;
+    user_agent: string | null;
+  }>(
+    `SELECT id, created_at, last_seen_at, expires_at, host(ip) AS ip, user_agent
+     FROM admin_sessions
+     WHERE admin_id = $1 AND expires_at > now() AND last_seen_at > now() - make_interval(mins => $2)
+     ORDER BY last_seen_at DESC`,
+    [adminId, idleMinutes],
+  );
+  return rows.map((row) => ({
+    id: row.id,
+    createdAt: row.created_at.toISOString(),
+    lastSeenAt: row.last_seen_at.toISOString(),
+    expiresAt: row.expires_at.toISOString(),
+    ip: row.ip,
+    userAgent: row.user_agent,
+    current: row.id === currentSessionId,
+  }));
+}
+
+/** Signs one of the admin's own sessions out. @returns false when there was no such session */
+async function deleteOwnSession(adminId: string, sessionId: string): Promise<boolean> {
+  const rows = await query('DELETE FROM admin_sessions WHERE id = $1 AND admin_id = $2 RETURNING id', [sessionId, adminId]);
+  return rows.length > 0;
 }
 
 async function deleteSession(tokenHash: string): Promise<void> {
@@ -72,8 +112,12 @@ async function deleteOtherSessions(adminId: string, keepTokenHash: string): Prom
   await query('DELETE FROM admin_sessions WHERE admin_id = $1 AND token_hash <> $2', [adminId, keepTokenHash]);
 }
 
-async function deleteExpiredSessions(): Promise<number> {
-  const rows = await query('DELETE FROM admin_sessions WHERE expires_at < now() RETURNING id');
+/** Sessions past their absolute expiry or idle for longer than `idleMinutes`. */
+async function deleteExpiredSessions(idleMinutes: number): Promise<number> {
+  const rows = await query(
+    'DELETE FROM admin_sessions WHERE expires_at < now() OR last_seen_at < now() - make_interval(mins => $1) RETURNING id',
+    [idleMinutes],
+  );
   return rows.length;
 }
 
@@ -84,7 +128,9 @@ export const adminAuthRepository = {
   updatePassword,
   recordLogin,
   createSession,
-  findSessionAdmin,
+  touchSession,
+  listSessions,
+  deleteOwnSession,
   deleteSession,
   deleteOtherSessions,
   deleteExpiredSessions,

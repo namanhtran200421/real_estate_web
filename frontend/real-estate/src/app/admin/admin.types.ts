@@ -81,6 +81,35 @@ export interface AwaitingPayment {
   createdAt: string;
 }
 
+/** One calendar month of the dashboard charts. */
+export interface MonthStats {
+  /** "2026-10" */
+  month: string;
+  /** Money received that month, minus refunds. */
+  revenue: number;
+  /** Bookings confirmed that month. */
+  bookings: number;
+  nightsBooked: number;
+  nightsAvailable: number;
+}
+
+export interface AdminStats {
+  currentMonth: string;
+  /** 11 months back to 6 months ahead, oldest first. */
+  months: MonthStats[];
+}
+
+/** A signed-in device on the account page. */
+export interface AdminSessionInfo {
+  id: string;
+  createdAt: string;
+  lastSeenAt: string;
+  expiresAt: string;
+  ip: string | null;
+  userAgent: string | null;
+  current: boolean;
+}
+
 export interface AdminSummary {
   transfersToCheck: TransferToCheck[];
   bookingsAwaitingPayment: AwaitingPayment[];

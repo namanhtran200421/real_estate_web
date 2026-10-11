@@ -1,17 +1,20 @@
 /**
  * Admin authentication.
  *
- * Login issues a random bearer token (256 bits). Only its SHA-256 hash is stored, so a leaked
- * database backup cannot be used to sign in. Sessions expire after ADMIN_SESSION_HOURS and
- * can be revoked by logging out or changing the password.
+ * Login (CAPTCHA + rate limits in front) issues a random bearer token (256 bits). Only its SHA-256
+ * hash is stored, so a leaked database backup cannot be used to sign in. A session ends after
+ * ADMIN_IDLE_MINUTES without use or ADMIN_SESSION_HOURS in all, and can be revoked: by logging
+ * out, from the account page's device list, or by changing the password (which signs out every
+ * other device and emails the admin).
  */
 import { env } from '../../config/env.js';
 import { isPgError, PG_ERROR } from '../../db/pool.js';
 import { randomToken, sha256Hex } from '../../lib/crypto.js';
 import { HttpError } from '../../lib/http-error.js';
+import { emailService } from '../notifications/email.service.js';
 import { adminAuthRepository } from './admin-auth.repository.js';
-import type { AdminIdentity, AdminSession } from './admin-auth.types.js';
-import { DUMMY_HASH, hashPassword, MIN_PASSWORD_LENGTH, verifyPassword } from './password.js';
+import type { AdminIdentity, AdminSession, AdminSessionInfo } from './admin-auth.types.js';
+import { DUMMY_HASH, hashPassword, passwordProblem, verifyPassword } from './password.js';
 
 interface ClientInfo {
   ip: string | undefined;
@@ -38,41 +41,63 @@ async function login(email: string, password: string, client: ClientInfo): Promi
   return { token, expiresAt: expiresAt.toISOString(), admin: { id: admin.id, email: admin.email, name: admin.name } };
 }
 
-/** @returns the admin for a valid, unexpired token, or undefined. */
-async function authenticate(token: string): Promise<AdminIdentity | undefined> {
-  return adminAuthRepository.findSessionAdmin(sha256Hex(token));
+/** @returns the admin and session for a live token (marking it used), or undefined. */
+async function authenticate(token: string): Promise<{ admin: AdminIdentity; sessionId: string } | undefined> {
+  return adminAuthRepository.touchSession(sha256Hex(token), env.admin.idleMinutes);
 }
 
 async function logout(token: string): Promise<void> {
   await adminAuthRepository.deleteSession(sha256Hex(token));
 }
 
-function assertStrongPassword(password: string): void {
-  if (password.length < MIN_PASSWORD_LENGTH) {
-    throw HttpError.validation([{ path: 'newPassword', message: `Mật khẩu cần ít nhất ${MIN_PASSWORD_LENGTH} ký tự.` }]);
+/** The admin's signed-in devices, the current one marked. */
+async function listSessions(admin: AdminIdentity, currentSessionId: string): Promise<AdminSessionInfo[]> {
+  return adminAuthRepository.listSessions(admin.id, env.admin.idleMinutes, currentSessionId);
+}
+
+/** Signs one of the admin's own devices out (the current one too: that is logging out). */
+async function revokeSession(admin: AdminIdentity, sessionId: string): Promise<void> {
+  if (!(await adminAuthRepository.deleteOwnSession(admin.id, sessionId))) {
+    throw HttpError.notFound('Không tìm thấy phiên đăng nhập.');
   }
 }
 
-/** Changes the password and signs out every other session of this admin. */
+async function revokeOtherSessions(admin: AdminIdentity, currentToken: string): Promise<void> {
+  await adminAuthRepository.deleteOtherSessions(admin.id, sha256Hex(currentToken));
+}
+
+function assertStrongPassword(password: string, email: string): void {
+  const problem = passwordProblem(password, email);
+  if (problem) throw HttpError.validation([{ path: 'newPassword', message: problem }]);
+}
+
+/**
+ * Changes the password, signs out every other device of this admin, and emails the admin so a
+ * change they did not make does not go unnoticed.
+ */
 async function changePassword(
   admin: AdminIdentity,
   currentToken: string,
-  currentPassword: string,
-  newPassword: string,
+  passwords: { currentPassword: string; newPassword: string },
+  client: ClientInfo,
 ): Promise<void> {
   const account = await adminAuthRepository.findById(admin.id);
-  if (!account || !(await verifyPassword(currentPassword, account.password_hash))) {
+  if (!account || !(await verifyPassword(passwords.currentPassword, account.password_hash))) {
     throw HttpError.validation([{ path: 'currentPassword', message: 'Mật khẩu hiện tại không đúng.' }]);
   }
-  assertStrongPassword(newPassword);
+  assertStrongPassword(passwords.newPassword, account.email);
+  if (await verifyPassword(passwords.newPassword, account.password_hash)) {
+    throw HttpError.validation([{ path: 'newPassword', message: 'Mật khẩu mới phải khác mật khẩu hiện tại.' }]);
+  }
 
-  await adminAuthRepository.updatePassword(admin.id, await hashPassword(newPassword));
+  await adminAuthRepository.updatePassword(admin.id, await hashPassword(passwords.newPassword));
   await adminAuthRepository.deleteOtherSessions(admin.id, sha256Hex(currentToken));
+  await emailService.queueAdminPasswordChanged({ name: account.name, email: account.email, ...client, at: new Date() });
 }
 
 /** Used by the `admin:create` command. */
 async function createAdmin(email: string, name: string, password: string): Promise<AdminIdentity> {
-  assertStrongPassword(password);
+  assertStrongPassword(password, email);
   try {
     return await adminAuthRepository.create(email, name, await hashPassword(password));
   } catch (error) {
@@ -84,7 +109,17 @@ async function createAdmin(email: string, name: string, password: string): Promi
 }
 
 async function purgeExpiredSessions(): Promise<number> {
-  return adminAuthRepository.deleteExpiredSessions();
+  return adminAuthRepository.deleteExpiredSessions(env.admin.idleMinutes);
 }
 
-export const adminAuthService = { login, authenticate, logout, changePassword, createAdmin, purgeExpiredSessions };
+export const adminAuthService = {
+  login,
+  authenticate,
+  logout,
+  listSessions,
+  revokeSession,
+  revokeOtherSessions,
+  changePassword,
+  createAdmin,
+  purgeExpiredSessions,
+};

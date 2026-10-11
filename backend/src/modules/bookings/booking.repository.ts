@@ -7,6 +7,7 @@ import type { PriceBreakdown } from '../pricing/pricing.js';
 import type {
   AdminBookingFilters,
   AdminBookingListItem,
+  AdminStats,
   AdminSummary,
   AwaitingPayment,
   BookingEvent,
@@ -506,6 +507,71 @@ async function summary(today: string, weekAhead: string): Promise<AdminSummary> 
   };
 }
 
+/**
+ * Month-by-month figures for the dashboard charts, from 11 months back to 6 months ahead. Months
+ * follow the business time zone (the database session's zone, see db/pool.ts).
+ * @param today in the business time zone
+ */
+async function monthlyStats(today: string): Promise<AdminStats> {
+  const rows = await query<{
+    month: string;
+    revenue: number;
+    bookings: number;
+    nights_booked: number;
+    nights_available: number;
+  }>(
+    `WITH months AS (
+       SELECT m::date AS month, (m + interval '1 month')::date AS next
+       FROM generate_series(date_trunc('month', $1::date) - interval '11 months',
+                            date_trunc('month', $1::date) + interval '6 months', interval '1 month') AS m
+     ),
+     span AS (SELECT min(month) AS first, max(next) AS last FROM months),
+     received AS (
+       SELECT date_trunc('month', paid_at)::date AS month, sum(amount) AS amount
+       FROM payments, span WHERE state = 'succeeded' AND paid_at >= span.first GROUP BY 1
+     ),
+     refunded AS (
+       SELECT date_trunc('month', completed_at)::date AS month, sum(amount) AS amount
+       FROM refunds, span WHERE state = 'succeeded' AND completed_at >= span.first GROUP BY 1
+     ),
+     confirmed AS (
+       SELECT date_trunc('month', confirmed_at)::date AS month, count(*) AS bookings
+       FROM bookings, span
+       WHERE status IN ('confirmed', 'completed') AND confirmed_at >= span.first GROUP BY 1
+     ),
+     nights AS (
+       SELECT date_trunc('month', night)::date AS month, count(*) AS nights
+       FROM bookings b, span, generate_series(b.check_in, b.check_out - 1, interval '1 day') AS night
+       WHERE b.status IN ('confirmed', 'completed') AND b.check_out > span.first AND b.check_in < span.last
+       GROUP BY 1
+     ),
+     listed AS (SELECT count(*) AS apartments FROM apartments WHERE is_active)
+     SELECT to_char(m.month, 'YYYY-MM') AS month,
+            (coalesce(r.amount, 0) - coalesce(f.amount, 0))::float8 AS revenue,
+            coalesce(c.bookings, 0)::int AS bookings,
+            coalesce(n.nights, 0)::int AS nights_booked,
+            (listed.apartments * (m.next - m.month))::int AS nights_available
+     FROM months m
+     CROSS JOIN listed
+     LEFT JOIN received r ON r.month = m.month
+     LEFT JOIN refunded f ON f.month = m.month
+     LEFT JOIN confirmed c ON c.month = m.month
+     LEFT JOIN nights n ON n.month = m.month
+     ORDER BY m.month`,
+    [today],
+  );
+  return {
+    currentMonth: today.slice(0, 7),
+    months: rows.map((row) => ({
+      month: row.month,
+      revenue: row.revenue,
+      bookings: row.bookings,
+      nightsBooked: row.nights_booked,
+      nightsAvailable: row.nights_available,
+    })),
+  };
+}
+
 export const bookingRepository = {
   insert,
   findByReference,
@@ -527,4 +593,5 @@ export const bookingRepository = {
   emailContext,
   list,
   summary,
+  monthlyStats,
 };

@@ -211,6 +211,27 @@ export interface AwaitingPayment {
   createdAt: string;
 }
 
+/** One calendar month of the dashboard charts (business time zone). */
+export interface MonthStats {
+  /** "2026-10" */
+  month: string;
+  /** Money received that month (by payment date), minus refunds made that month. */
+  revenue: number;
+  /** Bookings confirmed that month. */
+  bookings: number;
+  /** Nights in that month taken by confirmed or completed stays. */
+  nightsBooked: number;
+  /** Nights the published apartments could be let that month. */
+  nightsAvailable: number;
+}
+
+export interface AdminStats {
+  /** The current month, "2026-10". */
+  currentMonth: string;
+  /** From 11 months back to 6 months ahead, oldest first. */
+  months: MonthStats[];
+}
+
 export interface AdminSummary {
   transfersToCheck: TransferToCheck[];
   bookingsAwaitingPayment: AwaitingPayment[];

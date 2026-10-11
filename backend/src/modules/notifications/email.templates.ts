@@ -349,6 +349,31 @@ export function ownerHoldEndingEmail(booking: BookingEmailContext, note: string)
   });
 }
 
+export interface PasswordChangedContext {
+  name: string;
+  email: string;
+  at: Date;
+  ip: string | undefined;
+  userAgent: string | undefined;
+}
+
+/** Security notice: the admin password changed. Sent to the admin's own address. */
+export function adminPasswordChangedEmail(change: PasswordChangedContext): Content {
+  return render({
+    subject: 'Mật khẩu quản trị vừa được đổi',
+    heading: 'Mật khẩu đã được đổi',
+    paragraphs: [
+      `${change.name}, mật khẩu đăng nhập trang quản lý của ${change.email} vừa được đổi lúc ${formatDeadline(change.at)}. Các thiết bị khác đã bị đăng xuất.`,
+      'Nếu không phải bạn đổi, hãy đăng nhập ngay và đổi lại mật khẩu, hoặc liên hệ người quản trị kỹ thuật.',
+    ],
+    rows: [
+      ['Địa chỉ IP', change.ip ?? 'không rõ'],
+      ['Thiết bị', change.userAgent?.slice(0, 200) ?? 'không rõ'],
+    ],
+    button: { label: 'Mở trang quản lý', url: `${env.siteUrl}/admin/account` },
+  });
+}
+
 export interface ContactEmailContext {
   name: string;
   phone: string;

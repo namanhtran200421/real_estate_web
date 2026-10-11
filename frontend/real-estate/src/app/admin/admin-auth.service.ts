@@ -4,6 +4,7 @@ import { CanActivateFn, Router } from '@angular/router';
 import { catchError, firstValueFrom, throwError } from 'rxjs';
 import { API_URL, ApiResponse, captchaHeaders } from '../core/api';
 import { readJson, removeItem, writeJson } from '../services/browser-storage';
+import type { AdminSessionInfo } from './admin.types';
 
 export interface AdminIdentity {
   id: string;
@@ -26,8 +27,9 @@ function storedSession(): AdminSession | undefined {
 }
 
 /**
- * Owner/staff sign-in. The API issues a bearer token that expires after a few hours; it is
- * kept in this browser until then or until sign-out.
+ * Owner/staff sign-in. The API issues a bearer token that ends after a while without use or a
+ * few hours in all; it is kept in this browser until then or until sign-out. The API is the
+ * judge: any 401 drops the local copy and returns to the sign-in page.
  */
 @Injectable({ providedIn: 'root' })
 export class AdminAuthService {
@@ -67,8 +69,28 @@ export class AdminAuthService {
     void this.router.navigate(['/admin/login']);
   }
 
+  /** Signs every other device out; the API emails the admin about the change. */
   async changePassword(currentPassword: string, newPassword: string): Promise<void> {
     await firstValueFrom(this.http.post(`${this.api}/password`, { currentPassword, newPassword }));
+  }
+
+  /** Devices signed in to this account. */
+  async sessions(): Promise<AdminSessionInfo[]> {
+    const response = await firstValueFrom(this.http.get<ApiResponse<AdminSessionInfo[]>>(`${this.api}/sessions`));
+    return response.data;
+  }
+
+  /** Signs one device out; signing out this device is logging out. */
+  async revokeSession(session: AdminSessionInfo): Promise<void> {
+    await firstValueFrom(this.http.delete(`${this.api}/sessions/${session.id}`));
+    if (session.current) {
+      this.forget();
+      void this.router.navigate(['/admin/login']);
+    }
+  }
+
+  async revokeOtherSessions(): Promise<void> {
+    await firstValueFrom(this.http.post(`${this.api}/sessions/revoke-others`, {}));
   }
 
   /** Drops the local session (after logout or when the API says it expired). */

@@ -5,6 +5,18 @@ export interface AdminIdentity {
   name: string;
 }
 
+/** One signed-in device, as listed on the account page. */
+export interface AdminSessionInfo {
+  id: string;
+  createdAt: string;
+  lastSeenAt: string;
+  expiresAt: string;
+  ip: string | null;
+  userAgent: string | null;
+  /** The session making this request. */
+  current: boolean;
+}
+
 export interface AdminSession {
   /** Bearer token; shown once at login and stored only as a hash. */
   token: string;

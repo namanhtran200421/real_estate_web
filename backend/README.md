@@ -181,7 +181,7 @@ on restart. Without `RESEND_API_KEY` (development only), emails are written to t
 | expire-holds           | 1 min  | Release dates of unpaid bookings                     |
 | remind-owner           | 1 min  | Remind the owner once, 30 min before a hold runs out |
 | complete-stays         | 15 min | Confirmed stays become completed after check-out     |
-| purge-admin-sessions   | 1 h    | Delete expired admin sessions                        |
+| purge-admin-sessions   | 1 h    | Delete expired or idle admin sessions                |
 | purge-emails           | 6 h    | Delete sent emails after 90 days (guests' details)   |
 
 Each run takes a transaction-scoped Postgres advisory lock (safe behind Neon's pooler), so with
@@ -220,7 +220,7 @@ Every response has an `X-Request-Id` that matches the logs.
 | POST   | `/contact`                                | Contact form (CAPTCHA + honeypot)                   |
 | GET    | `/health`, `/health/ready`                | Liveness, readiness (outside `/api`)                |
 
-**Admin** (`/api/v1/admin/*`, `Authorization: Bearer <token>`): login/logout/password,
+**Admin** (`/api/v1/admin/*`, `Authorization: Bearer <token>`): login/logout/password, signed-in devices (list, sign out one or all others), dashboard charts (`/stats`),
 dashboard summary (with bookings waiting for their money), bookings (list, detail, verify / reject a reported
 transfer, record payment, refund, cancel, complete), apartments (create, edit, publish, blocked dates), holidays, promo codes,
 contact inbox. Full list: `src/modules/admin/admin.router.ts`.
@@ -248,6 +248,8 @@ contact inbox. Full list: `src/modules/admin/admin.router.ts`.
 | Stored XSS via listing photos        | Photo addresses must be a site path or `https://` (no `javascript:` / `data:`); the website adds a nonce-based CSP |
 | Email header injection               | Subjects stripped of control characters; every guest value HTML-escaped in bodies        |
 | Leaking internals / stolen DB dump   | Bare 500s (details only in logs); admin session tokens stored as SHA-256 hashes; sent emails purged after 90 days |
+| Stolen or forgotten admin sign-in    | Sessions end after `ADMIN_IDLE_MINUTES` (120) without use and `ADMIN_SESSION_HOURS` (12) in all; the account page lists every signed-in device to sign out; a password change signs out all other devices and emails the admin |
+| Weak admin passwords                 | scrypt hashing; new passwords need 12+ characters, not a common password, not the email name, not the current one (`admin-auth/password.ts`, unit-tested) |
 
 In production the API logs a warning at startup when `TURNSTILE_SECRET_KEY`, `TRUST_PROXY_HOPS`
 or `INTERNAL_API_KEY` is missing.

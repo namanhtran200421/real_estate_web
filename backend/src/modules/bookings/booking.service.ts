@@ -37,6 +37,7 @@ import type {
   AdminBookingFilters,
   AdminBookingListItem,
   AdminPayment,
+  AdminStats,
   AdminSummary,
   BookingRecord,
   CreateBookingRequest,
@@ -399,6 +400,10 @@ async function complete(reference: string, admin: AdminIdentity): Promise<AdminB
   });
 }
 
+async function stats(): Promise<AdminStats> {
+  return bookingRepository.monthlyStats(todayIn(env.timezone));
+}
+
 async function summary(): Promise<AdminSummary> {
   const today = todayIn(env.timezone);
   return bookingRepository.summary(today, addDays(today, 7));
@@ -445,6 +450,7 @@ export const bookingService = {
   cancel,
   complete,
   summary,
+  stats,
   expireStaleHolds,
   remindOwnerOfEndingHolds,
   completeFinishedStays,

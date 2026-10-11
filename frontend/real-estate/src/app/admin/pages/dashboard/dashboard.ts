@@ -1,20 +1,62 @@
-import { Component, inject, resource, signal } from '@angular/core';
+import { Component, computed, inject, resource, signal } from '@angular/core';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { StatusBadge } from '../../../components/status-badge/status-badge';
 import { toApiError } from '../../../core/api';
 import { AdminApiService } from '../../admin-api.service';
-import { AwaitingPayment } from '../../admin.types';
+import { AwaitingPayment, MonthStats } from '../../admin.types';
+import { ChartPoint, ColumnChart } from '../../components/column-chart';
+
+const VND = new Intl.NumberFormat('vi-VN');
+
+/** 1500000 → "1,5 tr", 500000 → "500k": short labels for the chart gridlines. */
+function compactVnd(value: number): string {
+  const format = (n: number) => n.toLocaleString('vi-VN', { maximumFractionDigits: 1 });
+  if (value >= 1_000_000_000) return `${format(value / 1_000_000_000)} tỷ`;
+  if (value >= 1_000_000) return `${format(value / 1_000_000)} tr`;
+  if (value >= 1_000) return `${format(value / 1_000)}k`;
+  return String(value);
+}
+
+/** "2026-10" → "T10" (with the year in January, where the axis crosses one). */
+function monthLabel(month: string): string {
+  const [year, number] = month.split('-');
+  return number === '01' ? `T1/${year!.slice(2)}` : `T${Number(number)}`;
+}
+
+function monthDetail(month: string): string {
+  const [year, number] = month.split('-');
+  return `Tháng ${Number(number)}/${year}`;
+}
+
+function occupancy(month: MonthStats): number {
+  if (month.nightsAvailable === 0) return 0;
+  return Math.round((month.nightsBooked / month.nightsAvailable) * 100);
+}
+
+/** Change against the previous period, e.g. "+12%"; null when there is nothing to compare with. */
+function change(current: number, previous: number): { text: string; up: boolean } | null {
+  if (previous <= 0) return null;
+  const percent = Math.round(((current - previous) / previous) * 100);
+  return { text: `${percent > 0 ? '+' : ''}${percent}%`, up: percent >= 0 };
+}
 
 @Component({
   selector: 'app-admin-dashboard',
-  imports: [DatePipe, DecimalPipe, RouterLink, StatusBadge],
+  imports: [DatePipe, DecimalPipe, RouterLink, StatusBadge, ColumnChart],
   template: `
-    <h1 class="text-4xl">Tổng quan</h1>
+    <header class="flex flex-wrap items-end justify-between gap-4">
+      <div>
+        <p class="small-caps text-accent-deep">{{ today | date: 'EEEE, dd/MM/yyyy' }}</p>
+        <h1 class="mt-2 text-4xl">Tổng quan</h1>
+      </div>
+      <a routerLink="/admin/bookings" class="btn btn-outline">Tất cả đặt phòng</a>
+    </header>
 
     @if (summary.hasValue()) {
       @let s = summary.value();
 
+      <!-- What needs the owner now -->
       @if (s.bookingsAwaitingPayment.length) {
         <section class="card card-accent-top mt-8" aria-labelledby="awaiting-heading">
           <h2 id="awaiting-heading" class="text-2xl">Chờ tiền về ({{ s.bookingsAwaitingPayment.length }})</h2>
@@ -72,66 +114,191 @@ import { AwaitingPayment } from '../../admin.types';
         </section>
       }
 
-      <div class="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-        <a routerLink="/admin/bookings" [queryParams]="{ status: 'pending' }" class="card card-hover p-5">
-          <p class="small-caps text-muted-foreground">Chờ xác nhận</p>
-          <p class="mt-2 font-serif text-4xl" [class.text-accent-deep]="s.awaitingConfirmation > 0">{{ s.awaitingConfirmation }}</p>
-          <p class="mt-1 text-sm text-muted-foreground">Đã có tiền, chưa xác nhận</p>
-        </a>
-        <div class="card p-5">
-          <p class="small-caps text-muted-foreground">Chờ thanh toán</p>
-          <p class="mt-2 font-serif text-4xl">{{ s.awaitingPayment }}</p>
-          <p class="mt-1 text-sm text-muted-foreground">Đang giữ chỗ</p>
-        </div>
-        <div class="card p-5">
-          <p class="small-caps text-muted-foreground">Đang lưu trú</p>
-          <p class="mt-2 font-serif text-4xl">{{ s.inHouse }}</p>
-        </div>
-        <div class="card p-5">
-          <p class="small-caps text-muted-foreground">Doanh thu tháng này</p>
-          <p class="mt-2 font-serif text-2xl">{{ s.revenueThisMonth | number }} ₫</p>
-          <p class="mt-1 text-sm text-muted-foreground">Đã nhận, trừ hoàn tiền</p>
-        </div>
-        <a routerLink="/admin/messages" class="card card-hover p-5">
-          <p class="small-caps text-muted-foreground">Tin nhắn mới</p>
-          <p class="mt-2 font-serif text-4xl" [class.text-accent-deep]="s.unhandledMessages > 0">{{ s.unhandledMessages }}</p>
-        </a>
-      </div>
-
-      <h2 class="mt-14 text-2xl">Khách đến trong 7 ngày tới</h2>
-      @if (s.arrivalsNext7Days.length) {
-        <ul class="mt-6 divide-y divide-border rounded-lg border border-border bg-card">
-          @for (b of s.arrivalsNext7Days; track b.reference) {
-            <li>
-              <a [routerLink]="['/admin/bookings', b.reference]" class="flex flex-wrap items-center gap-x-6 gap-y-2 px-5 py-4 hover:bg-muted/50">
-                <span class="w-28 font-medium">{{ b.checkIn | date: 'EEE dd/MM' }}</span>
-                <span class="min-w-0 flex-1">
-                  <span class="block">{{ b.customerName }} · {{ b.guests }} khách</span>
-                  <span class="block text-sm text-muted-foreground">{{ b.apartmentName }} · {{ b.reference }}</span>
-                </span>
-                <app-status-badge [status]="b.status" />
-                <app-status-badge [status]="b.paymentStatus" />
-              </a>
-            </li>
+      @if (s.awaitingConfirmation > 0 || s.unhandledMessages > 0) {
+        <div class="mt-6 flex flex-wrap gap-3">
+          @if (s.awaitingConfirmation > 0) {
+            <a routerLink="/admin/bookings" [queryParams]="{ status: 'pending' }" class="rounded-md border border-accent bg-accent-muted px-4 py-2.5 text-sm hover:border-accent-deep">
+              {{ s.awaitingConfirmation }} đặt phòng đã có tiền, chờ xác nhận →
+            </a>
           }
-        </ul>
-      } @else {
-        <p class="mt-4 text-muted-foreground">Không có khách đến trong 7 ngày tới.</p>
+          @if (s.unhandledMessages > 0) {
+            <a routerLink="/admin/messages" class="rounded-md border border-accent bg-accent-muted px-4 py-2.5 text-sm hover:border-accent-deep">
+              {{ s.unhandledMessages }} tin nhắn chưa trả lời →
+            </a>
+          }
+        </div>
       }
+
+      <!-- Key figures -->
+      <section aria-label="Số liệu chính" class="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        @if (kpis(); as k) {
+          <div class="card p-5">
+            <p class="text-sm text-muted-foreground">Doanh thu tháng này</p>
+            <p class="mt-2 text-2xl font-semibold">{{ k.revenue | number }} ₫</p>
+            <p class="mt-1 text-sm text-muted-foreground">
+              @if (k.revenueChange; as c) {
+                <span class="font-medium text-foreground">{{ c.up ? '▲' : '▼' }} {{ c.text }}</span> so với tháng trước
+              } @else {
+                Tháng trước chưa có doanh thu
+              }
+            </p>
+          </div>
+          <div class="card p-5">
+            <p class="text-sm text-muted-foreground">Đặt phòng xác nhận tháng này</p>
+            <p class="mt-2 text-2xl font-semibold">{{ k.bookings }}</p>
+            <p class="mt-1 text-sm text-muted-foreground">
+              @if (k.bookingsChange; as c) {
+                <span class="font-medium text-foreground">{{ c.up ? '▲' : '▼' }} {{ c.text }}</span> so với tháng trước
+              } @else {
+                Tháng trước: {{ k.previousBookings }}
+              }
+            </p>
+          </div>
+          <div class="card p-5">
+            <p class="text-sm text-muted-foreground">Công suất phòng tháng này</p>
+            <p class="mt-2 text-2xl font-semibold">{{ k.occupancy }}%</p>
+            <div class="mt-3 h-1.5 rounded-full bg-accent-muted" role="presentation">
+              <div class="h-1.5 rounded-full bg-accent-deep" [style.width.%]="k.occupancy"></div>
+            </div>
+            <p class="mt-2 text-sm text-muted-foreground">{{ k.nightsBooked }}/{{ k.nightsAvailable }} đêm đã có khách</p>
+          </div>
+        }
+        <div class="card p-5">
+          <p class="text-sm text-muted-foreground">Đang lưu trú</p>
+          <p class="mt-2 text-2xl font-semibold">{{ s.inHouse }}</p>
+          <p class="mt-1 text-sm text-muted-foreground">{{ s.arrivalsNext7Days.length }} khách đến trong 7 ngày tới</p>
+        </div>
+      </section>
     } @else if (summary.error()) {
       <p class="mt-8 text-accent-deep" role="alert">Không tải được dữ liệu.</p>
       <button type="button" class="btn btn-outline mt-4" (click)="summary.reload()">Thử lại</button>
     } @else {
       <p class="mt-8 text-muted-foreground" role="status">Đang tải…</p>
     }
+
+    <!-- Charts -->
+    @if (stats.hasValue()) {
+      <section aria-label="Biểu đồ" class="mt-8 grid gap-6 lg:grid-cols-2" [class.opacity-60]="stats.isLoading()">
+        <div class="card min-w-0 p-5 sm:p-6">
+          <h2 class="text-xl">Doanh thu theo tháng</h2>
+          <p class="mt-1 text-sm text-muted-foreground">12 tháng gần nhất · tiền đã nhận, trừ hoàn tiền</p>
+          <app-column-chart
+            class="mt-6 block"
+            label="Doanh thu 12 tháng gần nhất"
+            [points]="revenuePoints()"
+            [highlight]="stats.value().currentMonth"
+            [tickFormat]="compactVnd"
+          />
+        </div>
+        <div class="card min-w-0 p-5 sm:p-6">
+          <h2 class="text-xl">Công suất phòng</h2>
+          <p class="mt-1 text-sm text-muted-foreground">6 tháng qua và 6 tháng tới · tháng tới tính theo đặt phòng đã xác nhận</p>
+          <app-column-chart
+            class="mt-6 block"
+            label="Tỷ lệ đêm có khách theo tháng"
+            [points]="occupancyPoints()"
+            [highlight]="stats.value().currentMonth"
+            [max]="100"
+            [tickFormat]="percent"
+          />
+        </div>
+      </section>
+    } @else if (stats.error()) {
+      <p class="mt-8 text-sm text-muted-foreground" role="alert">
+        Không tải được biểu đồ.
+        <button type="button" class="link" (click)="stats.reload()">Thử lại</button>
+      </p>
+    }
+
+    @if (summary.hasValue()) {
+      @let s = summary.value();
+      <section class="mt-10" aria-labelledby="arrivals-heading">
+        <h2 id="arrivals-heading" class="text-2xl">Khách đến trong 7 ngày tới</h2>
+        @if (s.arrivalsNext7Days.length) {
+          <ul class="mt-6 divide-y divide-border rounded-lg border border-border bg-card">
+            @for (b of s.arrivalsNext7Days; track b.reference) {
+              <li>
+                <a [routerLink]="['/admin/bookings', b.reference]" class="flex flex-wrap items-center gap-x-6 gap-y-2 px-5 py-4 hover:bg-muted/50">
+                  <span class="w-28 font-medium">{{ b.checkIn | date: 'EEE dd/MM' }}</span>
+                  <span class="min-w-0 flex-1">
+                    <span class="block">{{ b.customerName }} · {{ b.guests }} khách</span>
+                    <span class="block text-sm text-muted-foreground">{{ b.apartmentName }} · {{ b.reference }}</span>
+                  </span>
+                  <app-status-badge [status]="b.status" />
+                  <app-status-badge [status]="b.paymentStatus" />
+                </a>
+              </li>
+            }
+          </ul>
+        } @else {
+          <p class="mt-4 text-muted-foreground">Không có khách đến trong 7 ngày tới.</p>
+        }
+      </section>
+    }
   `,
 })
 export class AdminDashboard {
   private readonly api = inject(AdminApiService);
+
+  protected readonly today = new Date();
   protected readonly summary = resource({ loader: () => this.api.summary() });
+  protected readonly stats = resource({ loader: () => this.api.stats() });
+
+  protected readonly compactVnd = compactVnd;
+  protected readonly percent = (value: number) => `${value}%`;
 
   protected readonly busy = signal(false);
   protected readonly actionError = signal<string | undefined>(undefined);
+
+  /** This month and last, from the chart data. */
+  protected readonly kpis = computed(() => {
+    if (!this.stats.hasValue()) return undefined;
+    const { months, currentMonth } = this.stats.value();
+    const index = months.findIndex((m) => m.month === currentMonth);
+    const current = months[index];
+    const previous = months[index - 1];
+    if (!current) return undefined;
+    return {
+      revenue: current.revenue,
+      revenueChange: change(current.revenue, previous?.revenue ?? 0),
+      bookings: current.bookings,
+      previousBookings: previous?.bookings ?? 0,
+      bookingsChange: change(current.bookings, previous?.bookings ?? 0),
+      occupancy: occupancy(current),
+      nightsBooked: current.nightsBooked,
+      nightsAvailable: current.nightsAvailable,
+    };
+  });
+
+  /** The last 12 months, up to and including this one. */
+  protected readonly revenuePoints = computed<ChartPoint[]>(() => {
+    if (!this.stats.hasValue()) return [];
+    const { months, currentMonth } = this.stats.value();
+    return months
+      .filter((m) => m.month <= currentMonth)
+      .slice(-12)
+      .map((m) => ({
+        key: m.month,
+        label: monthLabel(m.month),
+        detail: `${monthDetail(m.month)} · ${m.bookings} đặt phòng xác nhận`,
+        value: m.revenue,
+        display: `${VND.format(m.revenue)} ₫`,
+      }));
+  });
+
+  /** Six months back to six months ahead. */
+  protected readonly occupancyPoints = computed<ChartPoint[]>(() => {
+    if (!this.stats.hasValue()) return [];
+    const { months, currentMonth } = this.stats.value();
+    const index = months.findIndex((m) => m.month === currentMonth);
+    return months.slice(Math.max(0, index - 5), index + 7).map((m) => ({
+      key: m.month,
+      label: monthLabel(m.month),
+      detail: `${monthDetail(m.month)} · ${m.nightsBooked}/${m.nightsAvailable} đêm`,
+      value: occupancy(m),
+      display: `${occupancy(m)}%`,
+    }));
+  });
 
   /** The transfer is in the bank account: records it, which confirms the booking and emails the guest. */
   protected async received(booking: AwaitingPayment, amount: number): Promise<void> {
@@ -141,6 +308,7 @@ export class AdminDashboard {
     try {
       await this.api.recordPayment(booking.reference, { method: 'bank_transfer', amount, note: `Chuyển khoản ${booking.note}` });
       this.summary.reload();
+      this.stats.reload();
     } catch (error) {
       this.actionError.set(toApiError(error).message);
     } finally {

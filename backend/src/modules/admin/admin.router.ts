@@ -6,9 +6,13 @@
  *   POST /auth/login                       { email, password } → { token, expiresAt, admin }
  *   POST /auth/logout
  *   GET  /auth/me
- *   POST /auth/password                    { currentPassword, newPassword }
+ *   POST /auth/password                    { currentPassword, newPassword } (signs out other devices)
+ *   GET  /auth/sessions                    signed-in devices
+ *   DELETE /auth/sessions/:id              sign one device out
+ *   POST /auth/sessions/revoke-others      sign out every other device
  * Dashboard
  *   GET  /summary
+ *   GET  /stats                            revenue, bookings, occupancy by month (charts)
  * Bookings
  *   GET  /bookings                         ?status=&apartment=&search=&from=&to=&sort=&page=&pageSize=
  *   GET  /bookings/:reference
@@ -44,8 +48,12 @@ adminRouter.use(requireAdmin);
 adminRouter.post('/auth/logout', adminAuthController.logout);
 adminRouter.get('/auth/me', adminAuthController.me);
 adminRouter.post('/auth/password', adminAuthController.changePassword);
+adminRouter.get('/auth/sessions', adminAuthController.sessions);
+adminRouter.delete('/auth/sessions/:id', adminAuthController.revokeSession);
+adminRouter.post('/auth/sessions/revoke-others', adminAuthController.revokeOtherSessions);
 
 adminRouter.get('/summary', bookingAdminController.summary);
+adminRouter.get('/stats', bookingAdminController.stats);
 
 adminRouter.get('/bookings', bookingAdminController.list);
 adminRouter.get('/bookings/:reference', bookingAdminController.get);

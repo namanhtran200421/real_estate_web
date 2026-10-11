@@ -6,6 +6,7 @@ import {
   AdminApartment,
   AdminBookingDetail,
   AdminBookingListItem,
+  AdminStats,
   AdminSummary,
   ApartmentInput,
   BlockedDate,
@@ -51,6 +52,11 @@ export class AdminApiService {
 
   summary(): Promise<AdminSummary> {
     return this.get('/summary');
+  }
+
+  /** Revenue, bookings and occupancy by month, for the dashboard charts. */
+  stats(): Promise<AdminStats> {
+    return this.get('/stats');
   }
 
   bookings(filters: BookingFilters): Promise<Page<AdminBookingListItem>> {

@@ -32,6 +32,11 @@ async function summary(_req: Request, res: Response): Promise<void> {
   res.json({ data: await bookingService.summary() });
 }
 
+/** GET /admin/stats — month-by-month revenue, bookings and occupancy for the dashboard charts */
+async function stats(_req: Request, res: Response): Promise<void> {
+  res.json({ data: await bookingService.stats() });
+}
+
 /** GET /admin/bookings?status=&apartment=&search=&from=&to=&sort=&page=&pageSize= */
 async function list(req: Request, res: Response): Promise<void> {
   const query = parse(listQuery, req.query);
@@ -100,6 +105,7 @@ async function refund(req: Request<{ paymentId: string }>, res: Response): Promi
 
 export const bookingAdminController = {
   summary,
+  stats,
   list,
   get,
   confirm,

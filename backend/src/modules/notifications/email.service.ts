@@ -9,6 +9,7 @@ import type { Db } from '../../db/pool.js';
 import { logger } from '../../lib/logger.js';
 import { emailRepository } from './email.repository.js';
 import {
+  adminPasswordChangedEmail,
   bookingCancelledEmail,
   bookingConfirmedEmail,
   bookingHeldEmail,
@@ -22,6 +23,7 @@ import {
   transferReportedEmail,
   type BookingEmailContext,
   type ContactEmailContext,
+  type PasswordChangedContext,
   type TransferContext,
 } from './email.templates.js';
 import { sendEmail } from './resend.client.js';
@@ -68,6 +70,10 @@ async function queueRefundIssued(booking: BookingEmailContext, amount: number, d
   await emailRepository.enqueue({ to: booking.customerEmail, ...refundIssuedEmail(booking, amount) }, db);
 }
 
+async function queueAdminPasswordChanged(change: PasswordChangedContext): Promise<void> {
+  await emailRepository.enqueue({ to: change.email, ...adminPasswordChangedEmail(change) });
+}
+
 async function queueContactMessage(contact: ContactEmailContext, db: Db): Promise<void> {
   await emailRepository.enqueue({ to: env.email.ownerAddress, ...ownerContactEmail(contact) }, db);
 }
@@ -111,6 +117,7 @@ export const emailService = {
   queueBookingConfirmed,
   queueBookingCancelled,
   queueRefundIssued,
+  queueAdminPasswordChanged,
   queueContactMessage,
   deliverDueEmails,
 };

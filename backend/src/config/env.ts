@@ -214,8 +214,10 @@ export const env = Object.freeze({
   }),
 
   admin: Object.freeze({
-    /** Lifetime of an admin login. */
+    /** Longest an admin login lasts, however active. */
     sessionHours: integer('ADMIN_SESSION_HOURS', 12, 1, 24 * 30),
+    /** An admin login ends after this long without any request (a phone left signed in). */
+    idleMinutes: integer('ADMIN_IDLE_MINUTES', 120, 5, 24 * 60),
   }),
 
   email: Object.freeze({
