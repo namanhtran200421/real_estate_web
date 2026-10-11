@@ -3,15 +3,16 @@
  *
  * Flow:
  *   1. The guest picks deposit or full payment; `transferInstructions` returns the account and a
- *      VietQR code with the amount and the booking reference (as transfer note) filled in.
- *   2. After transferring, the guest reports it (`reportTransfer`). The booking's dates are then
- *      held without a deadline, and the owner is emailed to check the bank account.
- *   3. The owner either verifies it (`verifyTransfer`): the money counts and the booking is
- *      confirmed; or rejects it (`rejectTransfer`): the guest gets a short hold to sort it out.
+ *      VietQR code with the amount and the booking reference (as transfer note) filled in. The
+ *      guest pays and is done: the site cannot see the bank account, so it asks for no report.
+ *   2. The owner, emailed when the booking was made, sees the transfer in the bank app and records
+ *      it (`recordManualPayment`): the money counts and the booking is confirmed. Money seen after
+ *      the hold ran out still confirms the booking while its dates are free.
  * A booking is only confirmed once its money has been confirmed by the owner.
  *
- * Money received in person (cash, or a transfer the guest never reported) is recorded directly by
- * the owner; refunds are made by the owner and recorded here.
+ * The earlier flow, where the guest reports the transfer (`reportTransfer`) and the owner verifies
+ * or rejects the report, stays for pages loaded before the website stopped offering it.
+ * Cash is recorded the same way as transfers; refunds are made by the owner and recorded here.
  */
 import QRCode from 'qrcode';
 import { env } from '../../config/env.js';
@@ -189,7 +190,11 @@ async function rejectTransfer(paymentId: string, reason: string, admin: AdminIde
   });
 }
 
-/** Records money the owner received directly, e.g. the balance paid at check-in. Confirms a pending booking. */
+/**
+ * Records money the owner received: a transfer seen in the bank app, or cash at check-in.
+ * Confirms a pending booking, or one whose hold ran out if its dates are still free.
+ * @throws 409 DATES_TAKEN when an expired booking's dates were booked by someone else
+ */
 async function recordManualPayment(
   reference: string,
   payment: { method: PaymentProvider; amount: number; note?: string },
@@ -198,8 +203,21 @@ async function recordManualPayment(
   await withTransaction(async (db) => {
     const booking = await bookingRepository.findByReference(reference, db, true);
     if (!booking) throw HttpError.notFound('Không tìm thấy đặt phòng.');
-    if (booking.status === 'cancelled' || booking.status === 'expired') {
-      throw HttpError.conflict('INVALID_STATUS', 'Không ghi nhận thanh toán cho đặt phòng đã huỷ hoặc hết hạn.');
+    if (booking.status === 'cancelled') {
+      throw HttpError.conflict('INVALID_STATUS', 'Không ghi nhận thanh toán cho đặt phòng đã huỷ.');
+    }
+
+    // The money showed up after the hold ran out: the booking stands if its dates are still free.
+    let current = booking;
+    if (booking.status === 'expired') {
+      if (!(await bookingRepository.reactivate(booking.id, db))) {
+        throw HttpError.conflict(
+          'DATES_TAKEN',
+          'Ngày của đặt phòng này đã có khách khác đặt. Hãy liên hệ khách để đổi ngày hoặc hoàn tiền.',
+        );
+      }
+      current = { ...booking, status: 'pending' };
+      await bookingRepository.addEvent(booking.id, 'reactivated', admin.email, { reason: 'late_payment' }, db);
     }
 
     const paymentId = await paymentRepository.insertManual(
@@ -213,9 +231,9 @@ async function recordManualPayment(
       { method: payment.method, amount: payment.amount, paymentId, note: payment.note },
       db,
     );
-    await recalculate(booking, db);
-    const newlyConfirmed = await confirmIfPending(booking, admin.email, db);
-    await queueOwnerPaymentResult(booking, payment.amount, newlyConfirmed, db);
+    await recalculate(current, db);
+    const newlyConfirmed = await confirmIfPending(current, admin.email, db);
+    await queueOwnerPaymentResult(current, payment.amount, newlyConfirmed, db);
   });
 }
 

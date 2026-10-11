@@ -1,13 +1,14 @@
 /**
  * Booking data access: bookings, their audit events, and the admin list and dashboard queries.
  */
-import { query, queryOne, type Db } from '../../db/pool.js';
+import { isPgError, PG_ERROR, query, queryOne, type Db } from '../../db/pool.js';
 import type { BookingEmailContext } from '../notifications/email.templates.js';
 import type { PriceBreakdown } from '../pricing/pricing.js';
 import type {
   AdminBookingFilters,
   AdminBookingListItem,
   AdminSummary,
+  AwaitingPayment,
   BookingEvent,
   BookingRecord,
   BookingStatus,
@@ -188,6 +189,42 @@ async function expireStaleHolds(db?: Db): Promise<number> {
   return rows.length;
 }
 
+/**
+ * Unpaid bookings whose hold runs out within `withinMinutes`, made at least that long ago (so a
+ * short hold does not remind right after the new-booking email), not reminded yet. Marks them
+ * reminded; run it in the transaction that queues the reminders.
+ */
+async function claimHoldsEndingSoon(withinMinutes: number, db: Db): Promise<string[]> {
+  const rows = await query<{ id: string }>(
+    `UPDATE bookings SET owner_reminded_at = now()
+     WHERE status = 'pending' AND amount_paid = 0 AND owner_reminded_at IS NULL
+       AND hold_expires_at > now() AND hold_expires_at <= now() + make_interval(mins => $1)
+       AND created_at <= now() - make_interval(mins => $1)
+     RETURNING id`,
+    [withinMinutes],
+    db,
+  );
+  return rows.map((row) => row.id);
+}
+
+/**
+ * Brings an expired booking back to pending: the owner saw its money after the hold ran out.
+ * @returns false when another stay now holds the dates. The exclusion constraints refuse the
+ *          change, and only that statement is undone (savepoint), not the caller's transaction.
+ */
+async function reactivate(id: string, db: Db): Promise<boolean> {
+  await query('SAVEPOINT reactivate', [], db);
+  try {
+    await query(`UPDATE bookings SET status = 'pending', hold_expires_at = NULL WHERE id = $1 AND status = 'expired'`, [id], db);
+    await query('RELEASE SAVEPOINT reactivate', [], db);
+    return true;
+  } catch (error) {
+    if (!isPgError(error, PG_ERROR.exclusionViolation)) throw error;
+    await query('ROLLBACK TO SAVEPOINT reactivate', [], db);
+    return false;
+  }
+}
+
 /** Unpaid bookings currently holding dates for this email, phone or IP. */
 async function countActiveHolds(identity: { email: string; phone: string; ip: string | undefined }, db: Db): Promise<number> {
   const row = await queryOne<{ count: number }>(
@@ -276,8 +313,8 @@ async function emailContext(bookingId: string, db?: Db): Promise<BookingEmailCon
             b.customer_phone AS "customerPhone", a.name AS "apartmentName", a.address AS "apartmentAddress",
             b.check_in AS "checkIn", b.check_out AS "checkOut",
             to_char(a.check_in_time, 'HH24:MI') AS "checkInTime", to_char(a.check_out_time, 'HH24:MI') AS "checkOutTime",
-            b.guests, (b.check_out - b.check_in) AS nights, b.total_amount AS total, b.amount_paid AS "amountPaid",
-            b.status::text AS status, b.message
+            b.guests, (b.check_out - b.check_in) AS nights, b.total_amount AS total, b.deposit_amount AS deposit,
+            b.amount_paid AS "amountPaid", b.hold_expires_at AS "holdExpiresAt", b.status::text AS status, b.message
      FROM bookings b JOIN apartments a ON a.id = b.apartment_id
      WHERE b.id = $1`,
     [bookingId],
@@ -377,9 +414,9 @@ async function list(filters: AdminBookingFilters): Promise<Page<AdminBookingList
   };
 }
 
-/** Three independent reads, run in parallel on separate pool connections. */
+/** Four independent reads, run in parallel on separate pool connections. */
 async function summary(today: string, weekAhead: string): Promise<AdminSummary> {
-  const countsQuery = queryOne<Omit<AdminSummary, 'arrivalsNext7Days' | 'transfersToCheck'>>(
+  const countsQuery = queryOne<Omit<AdminSummary, 'arrivalsNext7Days' | 'transfersToCheck' | 'bookingsAwaitingPayment'>>(
     `SELECT
        (SELECT count(*)::int FROM bookings WHERE status = 'pending' AND amount_paid > 0) AS "awaitingConfirmation",
        (SELECT count(*)::int FROM bookings
@@ -422,10 +459,40 @@ async function summary(today: string, weekAhead: string): Promise<AdminSummary> 
      ORDER BY p.created_at`,
   );
 
-  const [counts, arrivals, transfers] = await Promise.all([countsQuery, arrivalsQuery, transfersQuery]);
+  const awaitingQuery = query<{
+    reference: string;
+    customer_name: string;
+    apartment_name: string;
+    deposit_amount: number;
+    total_amount: number;
+    hold_expires_at: Date;
+    created_at: Date;
+  }>(
+    `SELECT b.reference, b.customer_name, a.name AS apartment_name, b.deposit_amount, b.total_amount,
+            b.hold_expires_at, b.created_at
+     FROM bookings b
+     JOIN apartments a ON a.id = b.apartment_id
+     WHERE b.status = 'pending' AND b.amount_paid = 0 AND b.hold_expires_at > now()
+     ORDER BY b.hold_expires_at
+     LIMIT 50`,
+  );
+
+  const [counts, arrivals, transfers, awaiting] = await Promise.all([countsQuery, arrivalsQuery, transfersQuery, awaitingQuery]);
 
   return {
     ...counts!,
+    bookingsAwaitingPayment: awaiting.map(
+      (row): AwaitingPayment => ({
+        reference: row.reference,
+        customerName: row.customer_name,
+        apartmentName: row.apartment_name,
+        note: row.reference.replaceAll('-', ''),
+        depositAmount: row.deposit_amount,
+        totalAmount: row.total_amount,
+        holdExpiresAt: row.hold_expires_at.toISOString(),
+        createdAt: row.created_at.toISOString(),
+      }),
+    ),
     transfersToCheck: transfers.map((row) => ({
       paymentId: row.payment_id,
       reference: row.reference,
@@ -446,6 +513,8 @@ export const bookingRepository = {
   addEvent,
   listEvents,
   expireStaleHolds,
+  claimHoldsEndingSoon,
+  reactivate,
   countActiveHolds,
   hasGuestOverlap,
   markConfirmed,

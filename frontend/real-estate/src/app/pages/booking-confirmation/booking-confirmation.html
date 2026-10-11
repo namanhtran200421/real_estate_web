@@ -104,13 +104,18 @@
         } @else if (b.status === 'cancelled' || b.status === 'expired') {
           <p class="small-caps text-muted-foreground">{{ 'confirmation.inactive' | transloco }}</p>
           <h1 class="mt-3 text-4xl md:text-5xl">{{ 'confirmation.bookingRef' | transloco: { reference: b.reference } }}</h1>
+          @if (b.status === 'expired') {
+            <p class="mx-auto mt-4 max-w-lg text-muted-foreground">{{ 'payment.expiredAlreadyPaid' | transloco }}</p>
+          }
           <a routerLink="/book" [queryParams]="{ apt: b.apartmentSlug }" class="btn btn-primary mt-8">
             {{ 'payment.bookAgain' | transloco }}
           </a>
         } @else if (b.paymentOptions.full !== null) {
-          <p class="small-caps text-accent-deep">{{ 'confirmation.unpaid' | transloco }}</p>
+          <p class="small-caps text-accent-deep" role="status">{{ 'confirmation.unpaid' | transloco }}</p>
           <h1 class="mt-3 text-4xl md:text-5xl">{{ 'confirmation.bookingRef' | transloco: { reference: b.reference } }}</h1>
-          <p class="mx-auto mt-4 max-w-lg text-muted-foreground">{{ 'confirmation.unpaidText' | transloco }}</p>
+          <p class="mx-auto mt-4 max-w-lg text-muted-foreground">
+            {{ 'confirmation.unpaidText' | transloco: { time: (b.holdExpiresAt | date: 'HH:mm dd/MM') } }}
+          </p>
           <a routerLink="/book/payment" [queryParams]="{ ref: b.reference }" class="btn btn-primary mt-8">
             {{ 'confirmation.pay' | transloco }}
           </a>

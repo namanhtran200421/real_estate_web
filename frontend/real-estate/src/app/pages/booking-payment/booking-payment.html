@@ -29,6 +29,7 @@
             <p class="mt-3 text-muted-foreground">
               {{ 'payment.expiredText' | transloco: { reference: b.reference } }}
             </p>
+            <p class="mt-3 text-sm text-muted-foreground">{{ 'payment.expiredAlreadyPaid' | transloco }}</p>
             <a routerLink="/book" [queryParams]="{ apt: b.apartmentSlug }" class="btn btn-primary mt-6">
               {{ 'payment.bookAgain' | transloco }}
             </a>
@@ -174,7 +175,7 @@
                       <span class="font-mono text-foreground">{{ t.note }}</span>
                       {{ 'payment.steps.keepNoteAfter' | transloco }}
                     </li>
-                    <li>{{ 'payment.steps.report' | transloco }}</li>
+                    <li>{{ 'payment.steps.done' | transloco }}</li>
                   </ol>
                 } @else if (transfer.error()) {
                   <p class="text-sm text-accent-deep" role="alert">{{ 'payment.transferLoadFailed' | transloco }}</p>
@@ -185,19 +186,17 @@
                   <p class="text-muted-foreground" role="status">{{ 'payment.creatingQr' | transloco }}</p>
                 }
 
-                @if (reportError(); as error) {
-                  <p class="mt-6 rounded-md border border-accent bg-accent-muted p-3 text-sm text-accent-deep" role="alert">
-                    {{ error }}
+                <!-- Nothing to press: the owner confirms when the money shows in the bank app -->
+                <div class="mt-8 rounded-md border border-border bg-muted p-4 text-sm">
+                  <p class="font-medium">{{ 'payment.doneTitle' | transloco }}</p>
+                  <p class="mt-1 text-muted-foreground">
+                    {{ 'payment.doneText' | transloco }}
+                    <span class="text-foreground">{{ b.customer.email }}</span>{{ 'payment.doneTextEnd' | transloco }}
                   </p>
-                }
-
-                <button type="button" class="btn btn-primary mt-8 w-full" [disabled]="!t() || reporting()" (click)="report()">
-                  @if (reporting()) {
-                    {{ 'common.sending' | transloco }}
-                  } @else {
-                    {{ 'payment.reportButton' | transloco: { amount: (t()?.amount | number) } }}
-                  }
-                </button>
+                </div>
+                <a [routerLink]="['/booking', b.reference, 'confirmation']" class="btn btn-outline mt-4 w-full">
+                  {{ 'payment.viewStatus' | transloco }}
+                </a>
                 <p class="mt-4 text-center text-xs text-muted-foreground">
                   {{ 'payment.disclaimer' | transloco }}
                 </p>

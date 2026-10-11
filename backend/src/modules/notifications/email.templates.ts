@@ -5,6 +5,7 @@
  * Every value that can come from a guest is HTML-escaped before it is placed in the markup.
  */
 import { env } from '../../config/env.js';
+import { MIN_TRANSFER } from '../bookings/booking.rules.js';
 import type { OutgoingEmail } from './email.repository.js';
 
 /** Everything the booking emails show. */
@@ -22,7 +23,10 @@ export interface BookingEmailContext {
   guests: number;
   nights: number;
   total: number;
+  deposit: number;
   amountPaid: number;
+  /** Unpaid bookings are released at this time. */
+  holdExpiresAt: Date | null;
   status: string;
   message: string | null;
 }
@@ -58,6 +62,36 @@ export function formatDate(date: string): string {
     year: 'numeric',
     timeZone: 'UTC',
   }).format(new Date(`${date}T00:00:00Z`));
+}
+
+/** "14:30 ngày 11/10", in the business time zone. */
+export function formatDeadline(date: Date): string {
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat('en-GB', {
+      hour: '2-digit',
+      minute: '2-digit',
+      day: '2-digit',
+      month: '2-digit',
+      hourCycle: 'h23',
+      timeZone: env.timezone,
+    })
+      .formatToParts(date)
+      .map((part) => [part.type, part.value]),
+  );
+  return `${parts['hour']}:${parts['minute']} ngày ${parts['day']}/${parts['month']}`;
+}
+
+/** What the guest can transfer for an unpaid booking: the deposit (when there is one) and the full price. */
+function amountRows(booking: BookingEmailContext): Rows {
+  const rows: Rows = [];
+  if (booking.deposit >= MIN_TRANSFER && booking.deposit < booking.total) rows.push(['Đặt cọc', formatVnd(booking.deposit)]);
+  rows.push(['Thanh toán đủ', formatVnd(booking.total)]);
+  return rows;
+}
+
+function holdDeadline(booking: BookingEmailContext): string {
+  if (!booking.holdExpiresAt) return 'khi chủ nhà xác nhận';
+  return formatDeadline(booking.holdExpiresAt);
 }
 
 function lookupUrl(reference: string): string {
@@ -195,6 +229,27 @@ export function refundIssuedEmail(booking: BookingEmailContext, amount: number):
   });
 }
 
+/** Right after booking: the dates are held, here is how to pay. Nothing to report afterwards. */
+export function bookingHeldEmail(booking: BookingEmailContext, note: string): Content {
+  return render({
+    subject: `Đã giữ ngày cho bạn · ${booking.reference}`,
+    heading: `Cảm ơn bạn, ${booking.customerName}`,
+    paragraphs: [
+      `Ngày của bạn được giữ đến ${holdDeadline(booking)}. Vui lòng chuyển khoản trước thời gian này, giữ đúng nội dung "${note}".`,
+      'Nếu đã chuyển, bạn không cần làm gì thêm: chủ nhà xác nhận ngay khi thấy tiền về và bạn sẽ nhận email xác nhận.',
+    ],
+    rows: [
+      ['Ngân hàng', env.bank.name],
+      ['Chủ tài khoản', env.bank.accountName],
+      ['Số tài khoản', env.bank.accountNumber],
+      ['Nội dung chuyển khoản', note],
+      ...amountRows(booking),
+      ...bookingRows(booking),
+    ],
+    button: { label: 'Xem đặt phòng và mã QR', url: lookupUrl(booking.reference) },
+  });
+}
+
 export function transferReportedEmail(booking: BookingEmailContext, transfer: TransferContext): Content {
   return render({
     subject: `Đã nhận thông báo chuyển khoản · ${booking.reference}`,
@@ -251,6 +306,45 @@ export function ownerTransferReportedEmail(booking: BookingEmailContext, transfe
       'Hãy kiểm tra tài khoản ngân hàng, rồi bấm "Đã nhận tiền" (đặt phòng được xác nhận) hoặc "Chưa nhận được" trong trang quản lý. Ngày của khách được giữ cho đến khi bạn xử lý.',
     ],
     rows,
+    button: { label: 'Mở đặt phòng', url: adminBookingUrl(booking.reference) },
+  });
+}
+
+function guestRows(booking: BookingEmailContext): Rows {
+  const rows: Rows = [
+    ['Khách', booking.customerName],
+    ['Điện thoại', booking.customerPhone],
+    ['Email', booking.customerEmail],
+  ];
+  if (booking.message) rows.push(['Lời nhắn', booking.message]);
+  return rows;
+}
+
+/** A guest booked: the owner confirms once the transfer shows in the bank app. */
+export function ownerNewBookingEmail(booking: BookingEmailContext, note: string): Content {
+  return render({
+    subject: `[${booking.reference}] Đặt phòng mới · chờ tiền về`,
+    heading: 'Đặt phòng mới',
+    paragraphs: [
+      `${booking.customerName} vừa đặt ${booking.apartmentName}, ${booking.nights} đêm từ ${formatDate(booking.checkIn)}.`,
+      `Khi thấy tiền về với nội dung "${note}", mở đặt phòng và bấm "Đã nhận cọc" hoặc "Đã nhận đủ": đặt phòng được xác nhận và khách nhận email.`,
+      `Ngày được giữ đến ${holdDeadline(booking)}. Sau đó đặt phòng tự hết hạn; nếu tiền về muộn, bạn vẫn xác nhận được khi ngày còn trống.`,
+    ],
+    rows: [['Nội dung chuyển khoản', note], ...amountRows(booking), ...guestRows(booking), ...bookingRows(booking)],
+    button: { label: 'Mở đặt phòng', url: adminBookingUrl(booking.reference) },
+  });
+}
+
+/** Sent once, shortly before an unpaid booking's hold runs out. */
+export function ownerHoldEndingEmail(booking: BookingEmailContext, note: string): Content {
+  return render({
+    subject: `[${booking.reference}] Sắp hết hạn giữ chỗ · đã nhận tiền chưa?`,
+    heading: 'Sắp hết hạn giữ chỗ',
+    paragraphs: [
+      `Đặt phòng của ${booking.customerName} hết hạn giữ chỗ lúc ${holdDeadline(booking)}.`,
+      `Nếu đã thấy tiền với nội dung "${note}", hãy bấm "Đã nhận cọc" hoặc "Đã nhận đủ" trong trang quản lý. Nếu không thấy, không cần làm gì: ngày sẽ tự mở lại cho khách khác.`,
+    ],
+    rows: [['Nội dung chuyển khoản', note], ...amountRows(booking), ...guestRows(booking)],
     button: { label: 'Mở đặt phòng', url: adminBookingUrl(booking.reference) },
   });
 }

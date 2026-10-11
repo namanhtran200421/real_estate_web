@@ -10,12 +10,12 @@ import { ApartmentService } from '../../services/apartment.service';
 import { BookingDraftService } from '../../services/booking-draft.service';
 import { BookingService } from '../../services/booking.service';
 
-/** While the owner checks a reported transfer, the page refreshes itself this often. */
+/** While the owner has yet to confirm the money, the page refreshes itself this often. */
 const REFRESH_WHILE_CHECKING_MS = 30_000;
 
 /**
- * Step 4: shown after the guest reports a transfer, and linked from emails. Tells the guest
- * where the booking stands: transfer being checked, confirmed, or still unpaid.
+ * Step 4: linked from the payment page and from emails. Tells the guest where the booking stands:
+ * waiting for the owner to see the money, confirmed, or no longer active.
  */
 @Component({
   selector: 'app-booking-confirmation',
@@ -65,7 +65,10 @@ export class BookingConfirmation {
 
   constructor() {
     const timer = setInterval(() => {
-      if (this.b()?.pendingTransfer) this.booking.reload();
+      const booking = this.b();
+      if (booking && (booking.pendingTransfer || (booking.status === 'pending' && booking.amountPaid === 0))) {
+        this.booking.reload();
+      }
     }, REFRESH_WHILE_CHECKING_MS);
     inject(DestroyRef).onDestroy(() => clearInterval(timer));
 

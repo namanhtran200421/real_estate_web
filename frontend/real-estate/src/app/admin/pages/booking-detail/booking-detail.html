@@ -242,9 +242,33 @@
           <p class="mt-4 text-muted-foreground">Chưa có thanh toán.</p>
         }
 
-        @if (b.status !== 'cancelled' && b.status !== 'expired') {
+        @if (b.amountPaid === 0 && !b.pendingTransfer && (b.status === 'pending' || b.status === 'expired')) {
+          <!-- Waiting for the guest's transfer: the owner looks for it in the bank app -->
+          <div class="mt-6 space-y-3 rounded-md border border-accent bg-accent-muted p-4">
+            <p class="text-sm">
+              Mở ứng dụng ngân hàng và tìm khoản chuyển với nội dung
+              <span class="font-mono font-medium text-accent-deep">{{ transferNote(b.reference) }}</span>.
+              @if (b.status === 'expired') {
+                Đặt phòng đã hết hạn giữ chỗ; vẫn xác nhận được nếu ngày còn trống.
+              }
+            </p>
+            <div class="flex flex-wrap gap-3">
+              @if (b.quote.deposit > 0 && b.quote.deposit < b.amountDue) {
+                <button type="button" class="btn btn-primary" [disabled]="busy()" (click)="received(b.quote.deposit)">
+                  Đã nhận cọc {{ b.quote.deposit | number }} ₫
+                </button>
+              }
+              <button type="button" class="btn btn-primary" [disabled]="busy()" (click)="received(b.amountDue)">
+                Đã nhận đủ {{ b.amountDue | number }} ₫
+              </button>
+            </div>
+            <p class="text-xs text-muted-foreground">Số tiền khác? Dùng "Ghi nhận thanh toán" bên dưới.</p>
+          </div>
+        }
+
+        @if (b.status !== 'cancelled') {
           <form class="mt-8 space-y-4" (submit)="$event.preventDefault(); recordPayment()">
-            <h3>Ghi nhận thanh toán trực tiếp</h3>
+            <h3>Ghi nhận thanh toán</h3>
             <p class="text-sm text-muted-foreground">Chỉ ghi nhận số tiền đã thực nhận. Đặt phòng đang chờ sẽ được xác nhận và khách nhận email.</p>
             <div class="grid gap-4 sm:grid-cols-3">
               <div>

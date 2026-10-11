@@ -17,6 +17,7 @@ const EVENT_LABELS: Record<string, string> = {
   cancelled: 'Huỷ đặt phòng',
   completed: 'Hoàn thành',
   expired: 'Hết hạn giữ chỗ',
+  reactivated: 'Mở lại đặt phòng (tiền về sau khi hết hạn giữ chỗ)',
   refund_recorded: 'Ghi nhận hoàn tiền',
 };
 
@@ -127,6 +128,20 @@ export class AdminBookingDetailPage {
   protected async cancel(): Promise<void> {
     const done = await this.run(() => this.api.cancel(this.reference(), this.cancelReason().trim()));
     if (done) this.cancelling.set(false);
+  }
+
+  /** The transfer note the guest's banking app filled in: the reference without dashes. */
+  protected transferNote(reference: string): string {
+    return reference.replaceAll('-', '');
+  }
+
+  /** The transfer is in the bank account: records it, which confirms the booking and emails the guest. */
+  protected async received(amount: number): Promise<void> {
+    const reference = this.reference();
+    if (!confirm(`Xác nhận đã nhận ${amount.toLocaleString('vi-VN')} ₫ cho ${reference}?`)) return;
+    await this.run(() =>
+      this.api.recordPayment(reference, { method: 'bank_transfer', amount, note: `Chuyển khoản ${this.transferNote(reference)}` }),
+    );
   }
 
   protected async recordPayment(): Promise<void> {

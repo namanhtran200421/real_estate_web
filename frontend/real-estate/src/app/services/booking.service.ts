@@ -93,18 +93,6 @@ export class BookingService {
     return response.data;
   }
 
-  /** "I have transferred": the owner checks the account and confirms. Returns the updated booking. */
-  async reportTransfer(reference: string, option: PaymentOption): Promise<Booking> {
-    const response = await firstValueFrom(
-      this.http.post<ApiResponse<Booking>>(
-        `${this.api}/bookings/${encodeURIComponent(reference)}/transfer`,
-        { option },
-        { headers: this.tokenHeaders(reference) },
-      ),
-    );
-    return response.data;
-  }
-
   /** Whether this browser can open the booking without the lookup form. */
   hasAccess(reference: string): boolean {
     return this.tokens()[reference] !== undefined;

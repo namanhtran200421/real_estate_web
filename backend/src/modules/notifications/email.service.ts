@@ -11,7 +11,10 @@ import { emailRepository } from './email.repository.js';
 import {
   bookingCancelledEmail,
   bookingConfirmedEmail,
+  bookingHeldEmail,
   ownerContactEmail,
+  ownerHoldEndingEmail,
+  ownerNewBookingEmail,
   ownerTransferReportedEmail,
   paymentReceivedEmail,
   refundIssuedEmail,
@@ -27,6 +30,16 @@ const BATCH_SIZE = 10;
 const MAX_ATTEMPTS = 8;
 /** Sent emails are kept this long for support questions, then deleted. */
 const RETENTION_DAYS = 90;
+
+/** New booking: how to pay, to the guest; "watch for this transfer", to the owner. */
+async function queueBookingHeld(booking: BookingEmailContext, note: string, db: Db): Promise<void> {
+  await emailRepository.enqueue({ to: booking.customerEmail, ...bookingHeldEmail(booking, note) }, db);
+  await emailRepository.enqueue({ to: env.email.ownerAddress, ...ownerNewBookingEmail(booking, note) }, db);
+}
+
+async function queueHoldEndingReminder(booking: BookingEmailContext, note: string, db: Db): Promise<void> {
+  await emailRepository.enqueue({ to: env.email.ownerAddress, ...ownerHoldEndingEmail(booking, note) }, db);
+}
 
 /** Acknowledgement to the guest; "please check your bank account" to the owner. */
 async function queueTransferReported(booking: BookingEmailContext, transfer: TransferContext, db: Db): Promise<void> {
@@ -90,6 +103,8 @@ async function purgeOldEmails(): Promise<number> {
 
 export const emailService = {
   purgeOldEmails,
+  queueBookingHeld,
+  queueHoldEndingReminder,
   queueTransferReported,
   queueTransferNotReceived,
   queuePaymentReceived,

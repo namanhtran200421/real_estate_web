@@ -1,4 +1,4 @@
-import { Component, DestroyRef, computed, effect, inject, input, resource, signal } from '@angular/core';
+import { Component, DestroyRef, afterNextRender, computed, effect, inject, input, resource, signal } from '@angular/core';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
@@ -9,9 +9,13 @@ import { PaymentOption, Stay } from '../../models/booking';
 import { ApartmentService } from '../../services/apartment.service';
 import { BookingService } from '../../services/booking.service';
 
+/** While the guest is on the page, it checks this often whether the owner has confirmed. */
+const WATCH_INTERVAL_MS = 20_000;
+
 /**
- * Step 3: choose deposit or full payment, transfer with the VietQR code, then report it.
- * The owner checks the bank account and confirms; only then is the booking confirmed.
+ * Step 3: choose deposit or full payment and transfer with the VietQR code. That is all the
+ * guest does: the owner confirms when the money shows in the bank app, and the page moves on to
+ * the confirmation if it is still open.
  */
 @Component({
   selector: 'app-booking-payment',
@@ -88,12 +92,17 @@ export class BookingPayment {
   });
 
   protected readonly copied = signal<string | undefined>(undefined);
-  protected readonly reporting = signal(false);
-  protected readonly reportError = signal<string | undefined>(undefined);
 
   constructor() {
     const timer = setInterval(() => this.now.set(Date.now()), 15_000);
-    inject(DestroyRef).onDestroy(() => clearInterval(timer));
+    const destroyRef = inject(DestroyRef);
+    destroyRef.onDestroy(() => clearInterval(timer));
+
+    // Browser only: the server render never polls.
+    afterNextRender(() => {
+      const watch = setInterval(() => void this.checkForPayment(), WATCH_INTERVAL_MS);
+      destroyRef.onDestroy(() => clearInterval(watch));
+    });
 
     effect(() => {
       if (this.b()?.paymentOptions.deposit === null) this.option.set('full');
@@ -110,21 +119,19 @@ export class BookingPayment {
     }
   }
 
-  /** "I have transferred": tells the owner to check, then shows the waiting page. */
-  protected async report(): Promise<void> {
-    const booking = this.b();
-    const option = this.effectiveOption();
-    if (!booking || !option) return;
-
-    this.reporting.set(true);
-    this.reportError.set(undefined);
+  /** Moves on to the confirmation once the owner has recorded the money. */
+  private async checkForPayment(): Promise<void> {
+    const current = this.b();
+    if (!current || document.hidden) return;
     try {
-      await this.bookings.reportTransfer(booking.reference, option);
-      void this.router.navigate(['/booking', booking.reference, 'confirmation']);
-    } catch (error) {
-      this.reportError.set(this.errorMessages.userMessage(toApiError(error)));
-      this.reporting.set(false);
-      this.booking.reload();
+      const fresh = await this.bookings.get(current.reference);
+      if (fresh.amountPaid > current.amountPaid) {
+        void this.router.navigate(['/booking', fresh.reference, 'confirmation']);
+      } else if (fresh.status !== current.status) {
+        this.booking.reload();
+      }
+    } catch {
+      // A missed check is retried on the next tick.
     }
   }
 }

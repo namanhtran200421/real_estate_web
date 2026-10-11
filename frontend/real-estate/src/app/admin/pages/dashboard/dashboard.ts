@@ -1,8 +1,10 @@
-import { Component, inject, resource } from '@angular/core';
+import { Component, inject, resource, signal } from '@angular/core';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { StatusBadge } from '../../../components/status-badge/status-badge';
+import { toApiError } from '../../../core/api';
 import { AdminApiService } from '../../admin-api.service';
+import { AwaitingPayment } from '../../admin.types';
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -12,6 +14,40 @@ import { AdminApiService } from '../../admin-api.service';
 
     @if (summary.hasValue()) {
       @let s = summary.value();
+
+      @if (s.bookingsAwaitingPayment.length) {
+        <section class="card card-accent-top mt-8" aria-labelledby="awaiting-heading">
+          <h2 id="awaiting-heading" class="text-2xl">Chờ tiền về ({{ s.bookingsAwaitingPayment.length }})</h2>
+          <p class="mt-2 text-sm text-muted-foreground">
+            Tìm khoản chuyển theo nội dung trong ứng dụng ngân hàng. Thấy tiền thì bấm "Đã nhận": đặt phòng được xác nhận và khách nhận email.
+          </p>
+          @if (actionError(); as message) {
+            <p class="mt-4 text-sm text-accent-deep" role="alert">{{ message }}</p>
+          }
+          <ul class="mt-6 divide-y divide-border border-y border-border">
+            @for (a of s.bookingsAwaitingPayment; track a.reference) {
+              <li class="py-4">
+                <div class="flex flex-wrap items-baseline gap-x-6 gap-y-1">
+                  <span class="font-mono text-accent-deep">{{ a.note }}</span>
+                  <a [routerLink]="['/admin/bookings', a.reference]" class="min-w-0 flex-1 text-sm text-muted-foreground hover:underline">
+                    {{ a.customerName }} · {{ a.apartmentName }} · giữ đến {{ a.holdExpiresAt | date: 'HH:mm dd/MM' }}
+                  </a>
+                </div>
+                <div class="mt-3 flex flex-wrap gap-3">
+                  @if (a.depositAmount > 0 && a.depositAmount < a.totalAmount) {
+                    <button type="button" class="btn btn-outline" [disabled]="busy()" (click)="received(a, a.depositAmount)">
+                      Đã nhận cọc {{ a.depositAmount | number }} ₫
+                    </button>
+                  }
+                  <button type="button" class="btn btn-outline" [disabled]="busy()" (click)="received(a, a.totalAmount)">
+                    Đã nhận đủ {{ a.totalAmount | number }} ₫
+                  </button>
+                </div>
+              </li>
+            }
+          </ul>
+        </section>
+      }
 
       @if (s.transfersToCheck.length) {
         <section class="card card-accent-top mt-8" aria-labelledby="transfers-heading">
@@ -93,4 +129,22 @@ import { AdminApiService } from '../../admin-api.service';
 export class AdminDashboard {
   private readonly api = inject(AdminApiService);
   protected readonly summary = resource({ loader: () => this.api.summary() });
+
+  protected readonly busy = signal(false);
+  protected readonly actionError = signal<string | undefined>(undefined);
+
+  /** The transfer is in the bank account: records it, which confirms the booking and emails the guest. */
+  protected async received(booking: AwaitingPayment, amount: number): Promise<void> {
+    if (!confirm(`Xác nhận đã nhận ${amount.toLocaleString('vi-VN')} ₫ cho ${booking.reference}?`)) return;
+    this.busy.set(true);
+    this.actionError.set(undefined);
+    try {
+      await this.api.recordPayment(booking.reference, { method: 'bank_transfer', amount, note: `Chuyển khoản ${booking.note}` });
+      this.summary.reload();
+    } catch (error) {
+      this.actionError.set(toApiError(error).message);
+    } finally {
+      this.busy.set(false);
+    }
+  }
 }

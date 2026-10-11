@@ -110,13 +110,13 @@ change existing bookings.
 ### Booking lifecycle
 
 ```
-pending ──owner confirms the money arrived──▶ confirmed ──check-out passes──▶ completed
-   ├──no transfer reported when the hold runs out──▶ expired
+pending ──owner sees the money arrive──▶ confirmed ──check-out passes──▶ completed
+   ├──unpaid when the hold runs out──▶ expired ──money seen late, dates still free──▶ confirmed
    └──owner cancels──▶ cancelled                 confirmed ──owner cancels──▶ cancelled
 ```
 
-- A new booking **holds its dates for `BOOKING_HOLD_MINUTES`** (default 30) while the guest
-  transfers. Once the guest reports the transfer, or anything is paid, the hold has no deadline.
+- A new booking **holds its dates for `BOOKING_HOLD_MINUTES`** (default 180) while the guest
+  transfers and the owner looks for the money. Once anything is paid, the hold has no deadline.
 - **Double bookings are blocked by Postgres**: exclusion constraints reject overlapping
   pending/confirmed bookings for the same apartment or the same guest email or phone,
   even under concurrent requests. Adjacent stays are allowed. Duplicate guest requests
@@ -129,13 +129,22 @@ pending ──owner confirms the money arrived──▶ confirmed ──check-ou
 
 ### Payments: bank transfer, confirmed by the owner
 
+The site cannot see the bank account, so it does not ask the guest to report anything: the guest
+scans the QR code and pays, and the owner confirms when the money shows in the bank app.
+
 ```
+Guest books ──▶ dates held 3 h · guest emailed bank details · owner emailed "watch for RE2611K7Q3M"
 Guest picks deposit / full ──GET /bookings/:ref/transfer──▶ account + VietQR (amount and note pre-filled)
-Guest transfers in their bank app, taps "Báo đã chuyển khoản" ──POST /bookings/:ref/transfer──▶ payment `pending`
-      dates held (no deadline) · owner emailed "check this transfer" · dashboard lists it
-Owner checks the bank app ──"Đã nhận tiền"──▶ payment `succeeded`, booking CONFIRMED, guest emailed
-                          └─"Chưa nhận được"─▶ payment `failed`, guest emailed, gets a fresh 30-min hold
+Guest transfers in their bank app. Done: the payment page polls and moves on once confirmed.
+Owner sees the transfer ──"Đã nhận cọc" / "Đã nhận đủ" (dashboard "Chờ tiền về" or booking page)
+      ──POST /admin/bookings/:ref/payments──▶ payment `succeeded`, booking CONFIRMED, guest emailed
+30 min before the hold runs out, still unpaid ──▶ owner reminded once (job `remind-owner`)
+Hold runs out ──▶ booking expired, dates released. Money seen later still confirms it while the
+      dates are free; otherwise 409 DATES_TAKEN and the owner refunds from the bank app.
 ```
+
+The earlier flow, where the guest taps "Tôi đã chuyển khoản" (`POST /bookings/:ref/transfer`) and the
+owner verifies or rejects the report, still works for pages loaded before the website dropped it.
 
 - **A booking is only confirmed once its money is confirmed by the owner.** Verifying a transfer,
   or recording money received in person, confirms it and queues one booking-confirmation email;
@@ -161,8 +170,8 @@ on restart. Without `RESEND_API_KEY` (development only), emails are written to t
 
 | Recipient | When                                                                  |
 | --------- | --------------------------------------------------------------------- |
-| Guest     | Transfer report received · booking confirmed by owner · later payment received · transfer not received · booking cancelled · refund |
-| Owner     | A guest reported a transfer: check the bank account · contact message |
+| Guest     | Dates held, with bank details · booking confirmed by owner · later payment received · booking cancelled · refund |
+| Owner     | New booking: watch for this transfer · hold about to run out, still unpaid · contact message |
 
 ### Background jobs (`src/jobs`)
 
@@ -170,6 +179,7 @@ on restart. Without `RESEND_API_KEY` (development only), emails are written to t
 | ---------------------- | ------ | ---------------------------------------------------- |
 | send-emails            | 15 s   | Deliver queued emails                                |
 | expire-holds           | 1 min  | Release dates of unpaid bookings                     |
+| remind-owner           | 1 min  | Remind the owner once, 30 min before a hold runs out |
 | complete-stays         | 15 min | Confirmed stays become completed after check-out     |
 | purge-admin-sessions   | 1 h    | Delete expired admin sessions                        |
 | purge-emails           | 6 h    | Delete sent emails after 90 days (guests' details)   |
@@ -211,7 +221,7 @@ Every response has an `X-Request-Id` that matches the logs.
 | GET    | `/health`, `/health/ready`                | Liveness, readiness (outside `/api`)                |
 
 **Admin** (`/api/v1/admin/*`, `Authorization: Bearer <token>`): login/logout/password,
-dashboard summary (with transfers to check), bookings (list, detail, verify / reject a reported
+dashboard summary (with bookings waiting for their money), bookings (list, detail, verify / reject a reported
 transfer, record payment, refund, cancel, complete), apartments (create, edit, publish, blocked dates), holidays, promo codes,
 contact inbox. Full list: `src/modules/admin/admin.router.ts`.
 

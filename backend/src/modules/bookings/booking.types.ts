@@ -198,8 +198,22 @@ export interface TransferToCheck {
   reportedAt: string;
 }
 
+/** An unpaid booking holding its dates: the owner confirms it once the transfer shows in the bank app. */
+export interface AwaitingPayment {
+  reference: string;
+  customerName: string;
+  apartmentName: string;
+  /** Transfer note to look for in the bank app. */
+  note: string;
+  depositAmount: number;
+  totalAmount: number;
+  holdExpiresAt: string;
+  createdAt: string;
+}
+
 export interface AdminSummary {
   transfersToCheck: TransferToCheck[];
+  bookingsAwaitingPayment: AwaitingPayment[];
   awaitingConfirmation: number;
   awaitingPayment: number;
   inHouse: number;

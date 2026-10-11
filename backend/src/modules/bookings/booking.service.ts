@@ -2,13 +2,15 @@
  * Booking business logic.
  *
  * Lifecycle:
- *   pending ──(owner confirms the money arrived)──▶ confirmed ──(check-out passes)──▶ completed
- *      │                                                │
- *      ├──(hold runs out, no transfer reported)──▶ expired └──(owner cancels)──▶ cancelled
+ *   pending ──(owner sees the money arrive)──▶ confirmed ──(check-out passes)──▶ completed
+ *      │                                           │
+ *      ├──(hold runs out, unpaid)──▶ expired        └──(owner cancels)──▶ cancelled
+ *      │      (money seen late, dates still free: back to pending and confirmed)
  *      └──(owner cancels)──▶ cancelled
  *
- * A new booking holds its dates for BOOKING_HOLD_MINUTES while the guest transfers; a reported
- * transfer holds them until the owner has checked it (see payment.service.ts). Double bookings
+ * A new booking holds its dates for BOOKING_HOLD_MINUTES. The guest scans the VietQR code and
+ * pays; nothing else. The owner is emailed at once, reminded shortly before the hold runs out,
+ * and confirms when the transfer shows in the bank app (see payment.service.ts). Double bookings
  * are prevented by the database (exclusion constraint), not by application checks alone, so
  * two guests racing for the same dates can never both succeed.
  */
@@ -24,6 +26,7 @@ import type { AdminApartment } from '../apartments/apartment.types.js';
 import { holidayService } from '../holidays/holiday.service.js';
 import { emailService } from '../notifications/email.service.js';
 import { paymentRepository, type PaymentRecord, type RefundRecord } from '../payments/payment.repository.js';
+import { transferNote } from '../payments/payment.service.js';
 import { priceStay } from '../pricing/pricing.js';
 import { promoCodeService } from '../promo-codes/promo-code.service.js';
 import { accessTokenFor, assertAccess } from './booking-access.js';
@@ -45,6 +48,8 @@ import type {
 } from './booking.types.js';
 
 const REFERENCE_ATTEMPTS = 5;
+/** How long before an unpaid booking's hold runs out the owner is reminded to look for the transfer. */
+const REMINDER_LEAD_MINUTES = 30;
 
 function notFound(): HttpError {
   return HttpError.notFound('Không tìm thấy đặt phòng.');
@@ -248,6 +253,8 @@ async function createBooking(
       }
       if (id) {
         await bookingRepository.addEvent(id, 'created', 'guest', { total: price.total, promoCode: request.promoCode }, db);
+        const context = await bookingRepository.emailContext(id, db);
+        await emailService.queueBookingHeld(context, transferNote(context.reference), db);
         return id;
       }
     }
@@ -409,6 +416,18 @@ async function expireStaleHolds(): Promise<number> {
   return expired;
 }
 
+/** Reminds the owner, once per booking, to look for the transfer before the hold runs out. */
+async function remindOwnerOfEndingHolds(): Promise<number> {
+  return withTransaction(async (db) => {
+    const ids = await bookingRepository.claimHoldsEndingSoon(REMINDER_LEAD_MINUTES, db);
+    for (const id of ids) {
+      const context = await bookingRepository.emailContext(id, db);
+      await emailService.queueHoldEndingReminder(context, transferNote(context.reference), db);
+    }
+    return ids.length;
+  });
+}
+
 async function completeFinishedStays(): Promise<number> {
   const completed = await bookingRepository.completeFinishedStays(todayIn(env.timezone));
   if (completed > 0) invalidateCaches();
@@ -427,5 +446,6 @@ export const bookingService = {
   complete,
   summary,
   expireStaleHolds,
+  remindOwnerOfEndingHolds,
   completeFinishedStays,
 };
