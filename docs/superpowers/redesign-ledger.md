@@ -31,7 +31,7 @@ brainstorming spec → council review of spec → writing-plans → council revi
 - [x] Branch created, baseline green (frontend 18 tests, backend 58 tests)
 - [x] Spec written (commit 12495ec)
 - [x] Council: spec reviewed and revised (spec v2)
-- [ ] Plan written
+- [x] Plan written (`docs/superpowers/plans/2026-10-13-light-cinematic-redesign.md`, 14 tasks)
 - [ ] Council: plan reviewed
 - [ ] Implementation (see plan task list)
 - [ ] Visual verification
@@ -44,6 +44,7 @@ brainstorming spec → council review of spec → writing-plans → council revi
 - 2026-10-13 ~00:20: council round 1 launched on the spec. Creative director reported (findings below). Guest-UX and Angular/perf reviewers stopped on the session usage limit (reset 00:40); relaunched at 01:25.
 
 - 2026-10-13 ~02:00: all three round-1 reviews in; spec rewritten as v2 incorporating every blocking finding.
+- 2026-10-13 ~02:40: implementation plan written (14 tasks) and self-reviewed; council plan review launched.
 
 ## Council round 1: creative director (received)
 
