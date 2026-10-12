@@ -731,6 +731,27 @@
     opacity: 0;
   }
 
+  /* Split text: line clips get room for Vietnamese stacked marks (ể, ộ), dots below (ạ) and the overhang of the last glyph (tight tracking). */
+  .split-line {
+    overflow: clip;
+    padding: 0.15em 0.1em;
+    margin: -0.15em -0.1em;
+  }
+
+  /* Statement fill: slate text with a navy copy on top whose words fade in. */
+  .split-fill {
+    display: grid;
+  }
+
+  .split-fill .split-visual {
+    grid-area: 1 / 1;
+    color: var(--color-muted-foreground);
+  }
+
+  .split-fill .split-top {
+    color: var(--color-foreground);
+  }
+
   /* Two-tone focus over photos. */
   .focus-photo:focus-visible {
     outline: 2px solid #11305a;
