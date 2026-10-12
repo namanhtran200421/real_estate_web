@@ -36,6 +36,7 @@ interface NavLink {
  */
 @Component({
   selector: 'app-admin-layout',
+  styleUrl: '../admin-theme.css',
   imports: [RouterLink, RouterLinkActive, RouterOutlet],
   template: `
     <div class="min-h-screen lg:grid lg:grid-cols-[16rem_minmax(0,1fr)]">

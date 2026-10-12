@@ -6,6 +6,7 @@ import { AdminAuthService } from '../../admin-auth.service';
 
 @Component({
   selector: 'app-admin-login',
+  styleUrl: '../../admin-theme.css',
   imports: [RouterLink, Captcha],
   template: `
     <section class="section">

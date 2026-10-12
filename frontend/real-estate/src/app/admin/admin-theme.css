@@ -1,0 +1,26 @@
+/* The owner admin keeps the original look: today's tokens and fonts, inherited by everything inside. */
+:host {
+  --color-background: #fafaf8;
+  --color-foreground: #1a1a1a;
+  --color-muted: #f5f3f0;
+  --color-muted-foreground: #6b6b6b;
+  --color-accent: #ddb37f;
+  --color-accent-secondary: #e6c194;
+  --color-accent-foreground: #1a1a1a;
+  --color-accent-deep: #8a612e;
+  --color-accent-muted: rgb(221 179 127 / 0.12);
+  --color-border: #e8e4df;
+  --color-border-hover: #d6d0c8;
+  --color-input: #e8e4df;
+  --color-card: #ffffff;
+  --color-ring: #8a612e;
+  --font-serif: 'Playfair Display', Georgia, serif;
+  --font-sans: 'Source Sans 3', system-ui, sans-serif;
+  --shadow-accent: 0 4px 14px rgb(138 97 46 / 0.2);
+
+  display: block;
+  min-height: 100dvh;
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
+}

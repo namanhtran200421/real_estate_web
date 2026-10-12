@@ -9,7 +9,8 @@ import { SiteHeader } from './components/site-header/site-header';
   selector: 'app-root',
   imports: [RouterOutlet, SiteHeader, SiteFooter],
   templateUrl: './app.html',
-  styleUrl: './app.css'
+  styleUrl: './app.css',
+  host: { class: 'block', '[class.guest]': '!inAdmin()' },
 })
 export class App {
   private readonly router = inject(Router);
