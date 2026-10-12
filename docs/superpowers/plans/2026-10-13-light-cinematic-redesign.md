@@ -136,6 +136,8 @@ export function captureErrors(page) {
   const cspViolations = [];
   page.on('console', (m) => {
     const text = m.text();
+    // Dev mode logs a skipped view transition (reduced motion, Tier 2, same page) as an error: expected.
+    if (/Transition was skipped/.test(text)) return;
     if (m.type() === 'error' || /NG05\d\d/.test(text)) errors.push(text);
   });
   page.on('pageerror', (e) => errors.push(e.message));
@@ -229,7 +231,7 @@ Run against a running site (the checks do not start servers).
 # 1. API on a disposable local database (never the Neon URL in backend/.env)
 cd backend
 PORT=3100 DATABASE_URL=postgresql://localhost/real_estate_test DB_SSL=false TURNSTILE_SECRET_KEY= RESEND_API_KEY= \
-  SITE_URL=http://localhost:4377 CORS_ORIGINS=http://localhost:4377 npm run dev
+  SITE_URL=http://localhost:4377 CORS_ORIGINS=http://localhost:4377,http://localhost:4000 npm run dev
 # 2. Site pointed at it (regenerate environment.ts afterwards with `node scripts/write-env.mjs`)
 cd frontend/real-estate
 API_URL=http://localhost:3100 TURNSTILE_SITE_KEY= node scripts/write-env.mjs && npx ng serve --port 4377
@@ -529,7 +531,7 @@ In `admin-layout.ts` and `pages/login/login.ts` add to the `@Component` metadata
 
 - [ ] **Step 7: Mark guest routes on the app root (`src/app/app.ts`)**
 
-Add to the `@Component` metadata: `host: { '[class.guest]': '!inAdmin()' }`.
+Add to the `@Component` metadata: `host: { class: 'block', '[class.guest]': '!inAdmin()' }` (app-root is inline by default; `block` lets `.guest { overflow-x: clip }` apply).
 
 - [ ] **Step 8: Update fonts and theme colour in `src/index.html`**
 
@@ -629,9 +631,29 @@ describe('animateTransition', () => {
 });
 ```
 
+`src/app/motion/motion-prefs.spec.ts`:
+
+```ts
+import { MOTION_QUERIES, matches } from './motion-prefs';
+
+describe('matches', () => {
+  it('asks the browser with the named query', () => {
+    const asked: string[] = [];
+    const win = { matchMedia: (q: string) => { asked.push(q); return { matches: q.includes('pointer: fine') } as MediaQueryList; } };
+    expect(matches('desktop', win)).toBe(true);
+    expect(matches('stackTour', win)).toBe(false);
+    expect(asked).toEqual([MOTION_QUERIES.desktop, MOTION_QUERIES.stackTour]);
+  });
+
+  it('never allows motion without no-preference', () => {
+    for (const query of Object.values(MOTION_QUERIES)) expect(query).toContain('(prefers-reduced-motion: no-preference)');
+  });
+});
+```
+
 - [ ] **Step 2: Run them to see them fail**
 
-Run: `npx ng test --watch=false` → Expected: FAIL, modules `./motion-routes` and `./view-transitions` not found.
+Run: `npx ng test --watch=false` → Expected: FAIL, modules `./motion-routes`, `./view-transitions` and `./motion-prefs` not found.
 
 - [ ] **Step 3: Implement the three modules**
 
@@ -732,7 +754,7 @@ Add to `src/styles.css` (outside layers):
   animation-duration: 300ms;
 }
 
-app-site-header {
+app-site-header > header {
   view-transition-name: site-header;
 }
 ```
@@ -742,13 +764,13 @@ app-site-header {
 ```ts
   constructor() {
     // After a navigation (not the first page), screen-reader and keyboard users start at the new page's h1.
-    let first = true;
-    this.router.events.pipe(filter((e) => e instanceof NavigationEnd)).subscribe(() => {
-      if (first) {
-        first = false;
-        return;
-      }
-      if (typeof document === 'undefined') return;
+    let previousPath: string | undefined;
+    this.router.events.pipe(filter((e) => e instanceof NavigationEnd)).subscribe((e) => {
+      const path = (e as NavigationEnd).urlAfterRedirects.split(/[?#]/)[0];
+      const changed = previousPath !== undefined && previousPath !== path;
+      previousPath = path;
+      // First page, or only the fragment/query changed (#chapter, ?apt): leave focus alone.
+      if (!changed || typeof document === 'undefined') return;
       requestAnimationFrame(() => {
         const heading = document.querySelector<HTMLElement>('main h1');
         if (!heading) return;
@@ -899,6 +921,8 @@ import { MOTION_QUERIES } from './motion-prefs';
 
 gsap.registerPlugin(ScrollTrigger, SplitText);
 gsap.ticker.lagSmoothing(0);
+// Lets browser checks tell whether this chunk was loaded (it must never be on a direct Tier 2 load).
+(globalThis as { __motionEngine?: boolean }).__motionEngine = true;
 
 export interface MotionEngine {
   readonly gsap: typeof gsap;
@@ -961,8 +985,8 @@ export function createEngine(win: Window = window): MotionEngine {
     refresh: () => ScrollTrigger.refresh(),
     teardown() {
       disableSmoothScroll();
+      // Component contexts revert their own tweens on destroy; kill any trigger left behind.
       ScrollTrigger.getAll().forEach((trigger) => trigger.kill());
-      gsap.globalTimeline.clear();
     },
   };
 }
@@ -1014,7 +1038,11 @@ export class MotionService {
         this.engineState.set(engine);
         return engine;
       })
-      .catch(() => undefined);
+      .catch(() => {
+        // No engine (offline, blocked chunk): fall back to the static layouts (e.g. the plain room tour).
+        document.documentElement.classList.remove('motion');
+        return undefined;
+      });
     return this.loading.then((engine) => {
       if (!this.storyState()) return undefined;
       engine?.enableSmoothScroll();
@@ -1092,8 +1120,8 @@ At the top of `src/styles.css`, after `@import 'tailwindcss';`: `@import 'lenis/
 - [ ] **Step 8: Write the bundle size check `scripts/check-motion-bundle.mjs`**
 
 ```js
-// Fails when the lazy motion chunk (gsap + ScrollTrigger + SplitText + lenis) exceeds 60 kB gzipped.
-// Usage: npx ng build --stats-json && node scripts/check-motion-bundle.mjs
+// Fails when the lazy motion chunk (gsap + ScrollTrigger + SplitText + lenis) exceeds 60 kB gzipped,
+// or when gsap/lenis leak into any other chunk. Usage: npm run check:motion (builds with --stats-json first).
 import { readFileSync, readdirSync } from 'node:fs';
 import { gzipSync } from 'node:zlib';
 
@@ -1107,18 +1135,19 @@ const engine = chunks.filter((f) => {
 if (engine.length !== 1) throw new Error(`Expected one motion chunk, found ${engine.length}: ${engine.join(', ')}`);
 const size = gzipSync(readFileSync(`${dir}/${engine[0]}`)).length;
 console.log(`motion chunk ${engine[0]}: ${(size / 1024).toFixed(1)} kB gz (limit 60 kB)`);
-const initial = JSON.parse(readFileSync('dist/real-estate/stats.json', 'utf8'));
-const leaked = Object.entries(initial.outputs ?? {}).filter(([file, out]) => out.entryPoint && file !== `${dir}/${engine[0]}` && Object.keys(out.inputs ?? {}).some((i) => i.includes('node_modules/gsap') || i.includes('node_modules/lenis')));
+// Angular 22 writes browser-stats.json; output keys are bare chunk file names.
+const stats = JSON.parse(readFileSync('dist/real-estate/browser-stats.json', 'utf8'));
+const leaked = Object.entries(stats.outputs ?? {}).filter(([file, out]) => file.endsWith('.js') && file.replace(/^.*\//, '') !== engine[0] && Object.keys(out.inputs ?? {}).some((i) => i.includes('node_modules/gsap') || i.includes('node_modules/lenis')));
 if (leaked.length) throw new Error(`gsap/lenis leaked into: ${leaked.map(([f]) => f).join(', ')}`);
 if (size > LIMIT) process.exit(1);
 ```
 
-Add to `package.json` scripts: `"check:motion": "node scripts/check-motion-bundle.mjs"`.
+Add to `package.json` scripts: `"check:motion": "ng build --stats-json && node scripts/check-motion-bundle.mjs"` (a plain `ng build` deletes the stats file, so the script always builds first).
 
 - [ ] **Step 9: Run tests, build and the size check**
 
 Run: `npx ng test --watch=false` → PASS.
-Run: `npx ng build --stats-json && npm run check:motion` → prints one chunk ≤ 60 kB gz (expected ≈ 53 kB).
+Run: `npm run check:motion` → builds, then prints one chunk ≤ 60 kB gz (expected ≈ 53 kB).
 
 - [ ] **Step 10: Commit**
 
@@ -1298,9 +1327,9 @@ import { onMotion } from './on-motion';
   host: { class: 'split', '[class.split-fill]': "mode() === 'fill'" },
   template: `
     <span class="sr-only">{{ readable() }}</span>
-    <span class="split-visual" aria-hidden="true" #visual>{{ text() }}@if (em()) { <em>{{ em() }}</em>}</span>
+    <span class="split-visual" aria-hidden="true" #visual>{{ text() }}@if (em()) {&ngsp;<em>{{ em() }}</em>}</span>
     @if (mode() === 'fill') {
-      <span class="split-visual split-top" aria-hidden="true" #top>{{ text() }}@if (em()) { <em>{{ em() }}</em>}</span>
+      <span class="split-visual split-top" aria-hidden="true" #top>{{ text() }}@if (em()) {&ngsp;<em>{{ em() }}</em>}</span>
     }
   `,
 })
@@ -1531,16 +1560,27 @@ export class DrawPathDirective {
 export default async function check({ browser, site, assert, lib }) {
   const page = await lib.openPage(browser);
   await page.goto(site + '/', { waitUntil: 'networkidle' });
-  const clipped = await page.evaluate(async () => {
-    const h = document.createElement('h2');
-    h.className = 'display';
-    h.innerHTML = '<span class="split-line" style="display:block">Ở ễ ộ ạ ủ Ừ</span>';
-    document.querySelector('main').prepend(h);
+  // Render the same string twice, once inside a clipping line and once unclipped; the pixels must match.
+  await page.evaluate(async () => {
+    const make = (clip) => {
+      const h = document.createElement('h2');
+      h.className = 'display';
+      h.style.cssText = 'position:fixed;left:0;top:0;z-index:9999;background:#f6f1e8;margin:0;padding:40px';
+      h.innerHTML = `<span class="${clip ? 'split-line' : ''}" style="display:block;${clip ? '' : 'overflow:visible'}">Ở ễ ộ ạ ủ Ừ</span>`;
+      h.dataset.diacritics = clip ? 'clip' : 'free';
+      return h;
+    };
+    document.body.append(make(true));
     await document.fonts.ready;
-    const line = h.firstElementChild;
-    return line.scrollHeight > line.clientHeight + 1;
   });
-  assert.equal(clipped, false, 'line box clips the marks');
+  const clipped = await page.locator('[data-diacritics="clip"]').screenshot();
+  await page.evaluate(() => {
+    const el = document.querySelector('[data-diacritics="clip"] span');
+    el.className = '';
+    el.style.overflow = 'visible';
+  });
+  const free = await page.locator('[data-diacritics="clip"]').screenshot();
+  assert.ok(clipped.equals(free), 'the line clip cuts off Vietnamese marks');
   await lib.shot(page, 'diacritics', false);
   await page.context().close();
 }
@@ -1550,7 +1590,7 @@ export default async function check({ browser, site, assert, lib }) {
 
 Run: `npx ng test --watch=false` → PASS.
 Run: `node e2e/run.mjs diacritics --site http://localhost:4377` → `✓ diacritics`.
-Run: `npx ng build && npm run check:motion` → success.
+Run: `npm run check:motion` → success.
 
 - [ ] **Step 9: Commit**
 
@@ -1605,7 +1645,8 @@ Run: `node e2e/run.mjs header --site http://localhost:4377` → `✗ header` (no
 Keep the existing links array, language switch and `routerLinkActive` logic; restructure into:
 
 ```html
-<a href="#main" class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:rounded-full focus:bg-card focus:px-4 focus:py-2">
+<!-- A raw href="#main" would resolve against <base href="/"> and load Home, so the link focuses <main> itself. -->
+<a href="#main" (click)="skipTo($event, 'main')" class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:rounded-full focus:bg-card focus:px-4 focus:py-2">
   {{ 'nav.skipToContent' | transloco }}
 </a>
 <header class="fixed inset-x-0 top-0 z-50 px-3 pt-3 md:px-6 md:pt-4">
@@ -1642,10 +1683,17 @@ Keep the existing links array, language switch and `routerLinkActive` logic; res
   <nav class="mt-12" [attr.aria-label]="'nav.main' | transloco">
     <ul class="menu-links space-y-5">
       @for (link of links; track link.path; let i = $index) {
-        <li [style.--i]="i"><a class="font-serif text-[2.5rem] font-light leading-tight" [routerLink]="link.path" (click)="closeMenu()">{{ link.label | transloco }}</a></li>
+        <li [style.--i]="i"><a class="font-serif text-[2.5rem] font-light leading-tight" [routerLink]="link.path" queryParamsHandling="preserve" (click)="closeMenu()">{{ link.label | transloco }}</a></li>
       }
+      <li [style.--i]="links.length"><a class="text-lg underline decoration-accent underline-offset-4" routerLink="/booking/manage" (click)="closeMenu()">{{ 'nav.lookup' | transloco }}</a></li>
     </ul>
   </nav>
+  <!-- The language switch lives here on phones (the header copy is hidden below sm): reuse the header's switch markup. -->
+  <div class="mt-10 flex gap-3">
+    @for (option of languages(); track option.lang) {
+      <a class="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border border-border px-4 uppercase" [href]="option.href" [attr.aria-current]="option.lang === lang ? 'true' : null">{{ option.lang }}</a>
+    }
+  </div>
 </dialog>
 ```
 
@@ -1663,6 +1711,15 @@ In `site-header.ts`: replace `menuOpen` signal usage with a `viewChild.required<
 
   protected closeMenu(): void {
     this.menu().nativeElement.close();
+  }
+
+  /** Skip links: focus the target in place (no navigation). */
+  protected skipTo(event: Event, id: string): void {
+    event.preventDefault();
+    const target = document.getElementById(id);
+    if (!target) return;
+    if (!target.hasAttribute('tabindex')) target.setAttribute('tabindex', '-1');
+    target.focus();
   }
 
   /** Runs for every close: the button, a link, Esc, or the Android back gesture. */
@@ -1694,10 +1751,11 @@ Add i18n keys `nav.skipToContent`: vi "Bỏ qua đến nội dung", en "Skip to 
 - [ ] **Step 5: Write `src/app/motion/custom-cursor.ts`**
 
 ```ts
-import { Component, ElementRef, inject, viewChild } from '@angular/core';
+import { Component, ElementRef, PLATFORM_ID, effect, inject, viewChild } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import { TranslocoPipe } from '@jsverse/transloco';
-import { MOTION_QUERIES } from './motion-prefs';
-import { onMotion } from './on-motion';
+import { matches } from './motion-prefs';
+import { MotionService } from './motion.service';
 
 /**
  * Desktop decoration: a navy dot that follows the pointer and grows into a gold "Xem" ring over
@@ -1713,8 +1771,12 @@ export class CustomCursor {
 
   constructor() {
     const host = inject(ElementRef<HTMLElement>).nativeElement as HTMLElement;
-    onMotion((engine) => {
-      if (!window.matchMedia(MOTION_QUERIES.desktop).matches) return;
+    const motion = inject(MotionService);
+    const browser = isPlatformBrowser(inject(PLATFORM_ID));
+    // Lives in the app shell, so it follows the route: on while a story page has the engine, off elsewhere.
+    effect((onCleanup) => {
+      const engine = motion.engine();
+      if (!browser || !engine || !motion.story() || !matches('desktop')) return;
       const el = this.cursor().nativeElement;
       const x = engine.gsap.quickTo(el, 'x', { duration: 0.25, ease: 'power3.out' });
       const y = engine.gsap.quickTo(el, 'y', { duration: 0.25, ease: 'power3.out' });
@@ -1727,10 +1789,10 @@ export class CustomCursor {
       };
       host.classList.add('is-active');
       window.addEventListener('pointermove', move, { passive: true });
-      return () => {
+      onCleanup(() => {
         window.removeEventListener('pointermove', move);
         host.classList.remove('is-active');
-      };
+      });
     });
   }
 }
@@ -1918,6 +1980,7 @@ Add these keys (vi / en), merging into existing sections where they exist:
     "windowsEyebrow": "Chiều buông" / "Dusk",
     "windowsTitle": "Năm khung cửa, năm góc nhỏ" / "Five windows, five corners",
     "promisesEyebrow": "Đặt trực tiếp" / "Book direct",
+    "promisesTitle": "Đêm Đà Lạt, đặt phòng thật nhẹ nhàng" / "Đà Lạt nights, booked without fuss",
     "promises": {
       "availability": { "title": "Lịch trống, thấy ngay" / "Free dates at a glance", "text": "Chọn ngày và đặt luôn, không cần nhắn hỏi trước." / "Pick your dates and book; no need to message first." },
       "prices": { "title": "Giá rõ từng đêm" / "Clear prices, night by night", "text": "Giá tính theo ngày, hiện đủ trước khi bạn thanh toán." / "Prices by date, shown in full before you pay." },
@@ -1935,7 +1998,7 @@ Add these keys (vi / en), merging into existing sections where they exist:
   "bathrooms": { "title": "Hai phòng tắm" / "Two bathrooms", "line": "Mỗi phòng tắm có nước nóng, không ai phải chờ." / "Hot water in both; nobody waits." },
   "bedroom1": { "title": "Phòng ngủ 1" / "Bedroom 1", "line": "Giường đôi lớn, đèn đọc sách, tủ quần áo." / "A large double bed, reading lamps and a wardrobe." },
   "bedroom2": { "title": "Phòng ngủ 2" / "Bedroom 2", "line": "Ban công hướng đường Nam Hồ, nắng chiều vàng." / "A balcony over Nam Hồ street and golden afternoon light." },
-  "photos": { "title": "Hình ảnh" / "Photos", "line": "" / "" },
+  "photos": { "title": "Hình ảnh" / "Photos", "line": "Ảnh thực tế của căn hộ." / "Real photos of the apartment." },
   "tourEyebrow": "Đi một vòng căn hộ" / "Walk through",
   "skipTour": "Bỏ qua phần tham quan" / "Skip the tour",
   "chapter": "Phần {{ n }}/{{ total }}" / "Part {{ n }}/{{ total }}",
@@ -2189,6 +2252,12 @@ export class Home {
 
   protected readonly promises = ['availability', 'prices', 'vietqr'].map((key) => `home.scenes.promises.${key}`);
 
+  /** Page transition: the clicked window's photo morphs into the apartment hero (named only now, never twice). */
+  protected morph(event: Event): void {
+    const img = (event.currentTarget as Element).querySelector('img');
+    if (img) img.style.viewTransitionName = 'apt-photo';
+  }
+
   constructor() {
     // Dusk: the five windows light up one after another (150 ms apart) when the row enters.
     onMotion((engine) => {
@@ -2246,7 +2315,7 @@ export class Home {
     </section>
 
     <!-- 3 · Daylight -->
-    <section class="bg-muted py-24 md:py-32">
+    <section id="can-ho" class="bg-muted py-24 md:py-32">
       <div class="container-editorial grid max-w-6xl items-center gap-12 md:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
         <div class="arch lights aspect-[3/4]" appReveal>
           <img [ngSrc]="h.detail.src" [alt]="h.detail.alt" fill sizes="(min-width: 768px) 40vw, 90vw" class="object-cover object-[60%_70%]" />
@@ -2280,7 +2349,7 @@ export class Home {
         <ul class="mt-14 grid grid-cols-2 gap-4 md:grid-cols-5 md:gap-5" data-windows>
           @for (w of windows(); track w.chapter.id) {
             <li data-window>
-              <a class="group focus-photo block rounded-t-[999px]" routerLink="/apartment" [fragment]="w.chapter.id" [queryParams]="{ apt: apt.slug }">
+              <a class="group focus-photo block rounded-t-[999px]" routerLink="/apartment" [fragment]="w.chapter.id" [queryParams]="{ apt: apt.slug }" (click)="morph($event)">
                 <div class="arch relative aspect-[3/5]">
                   <img [ngSrc]="w.photo.src" [alt]="w.photo.alt" fill sizes="(min-width: 768px) 18vw, 45vw" class="media-zoom object-cover" />
                   <span class="window-veil absolute inset-0 bg-background/60" aria-hidden="true" style="opacity: 0"></span>
@@ -2294,7 +2363,7 @@ export class Home {
     </section>
 
     <!-- 5 · Night -->
-    <app-navy-band [eyebrow]="'home.scenes.promisesEyebrow' | transloco" [title]="'home.scenes.closingTitle' | transloco"
+    <app-navy-band [eyebrow]="'home.scenes.promisesEyebrow' | transloco" [title]="'home.scenes.promisesTitle' | transloco"
                    [ctaLabel]="'rooms.seeDates' | transloco" ctaLink="/book" [ctaQuery]="{ apt: apt.slug }">
       <div class="mt-14 grid gap-10 md:grid-cols-3">
         @for (item of promises; track item; let i = $index) {
@@ -2330,7 +2399,8 @@ export class Home {
 ```
 
 Notes for the implementer:
-- The "promises" band title uses `closingTitle`; change it to a dedicated key if the reviewers prefer, adding it to both i18n files.
+- The "promises" band title uses its own key `home.scenes.promisesTitle` (Task 8), so Home never shows the same heading twice.
+- Keep `id="can-ho"` (About and the not-found component link to `/#can-ho`): put it on scene 3's `<section>`.
 - The window veils start at `opacity: 0` (visible photo) in server HTML; the engine sets them to 1 and fades them in sequence only when the row is out of view at load.
 - If `windows()` has fewer than five chapters (another apartment), the grid simply has fewer items; `[data-window]` count of 5 is checked only for Sun Garden.
 
@@ -2338,7 +2408,7 @@ Notes for the implementer:
 
 Run: `npx ng test --watch=false` → PASS
 Run: `node e2e/run.mjs home --site http://localhost:4377 && node e2e/run.mjs opening --site http://localhost:4377` → both ✓
-Run: `npx ng build && npm run check:motion` → success
+Run: `npm run check:motion` → success
 
 - [ ] **Step 9: Commit**
 
@@ -2392,7 +2462,7 @@ describe('scrollForChapter', () => {
 ```ts
 import { Component, ElementRef, computed, inject, input, viewChild } from '@angular/core';
 import { NgOptimizedImage } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink, Scroll } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { Apartment } from '../../models/apartment';
 import { roomChapters } from '../../data/sun-garden-rooms';
@@ -2419,7 +2489,14 @@ export function scrollForChapter(chapterLeft: number, maxShift: number, start: n
 })
 export class RoomTour {
   readonly apartment = input.required<Apartment>();
+
+  /** Skip link: focus the point after the tour (a raw #href would resolve against <base href="/">). */
+  protected skipTour(event: Event): void {
+    event.preventDefault();
+    document.getElementById('sau-tham-quan')?.focus();
+  }
   protected readonly chapters = computed(() => roomChapters(this.apartment()));
+  private readonly router = inject(Router);
   private readonly section = viewChild.required<ElementRef<HTMLElement>>('section');
   private readonly track = viewChild.required<ElementRef<HTMLElement>>('track');
 
@@ -2447,17 +2524,20 @@ export class RoomTour {
           if (!chapter || !st) return;
           engine.jumpTo(scrollForChapter(chapter.offsetLeft - track.offsetLeft, shift(), st.start, st.end));
         };
-        // Deep links (#phong-ngu-2) and keyboard focus land on the right chapter.
-        if (location.hash) requestAnimationFrame(() => goTo(location.hash.slice(1)));
-        const onHash = () => goTo(location.hash.slice(1));
+        // Deep links (#phong-ngu-2): after the router's own anchor scroll (which lands on chapter 1,
+        // the sticky box's position), correct to the chapter. Keyboard focus does the same.
+        const ids = new Set(this.chapters().map((c) => c.id));
+        if (ids.has(location.hash.slice(1))) requestAnimationFrame(() => goTo(location.hash.slice(1)));
+        const routerScroll = this.router.events.subscribe((event) => {
+          if (event instanceof Scroll && event.anchor && ids.has(event.anchor)) requestAnimationFrame(() => goTo(event.anchor!));
+        });
         const onFocus = (e: FocusEvent) => {
           const chapter = (e.target as Element).closest<HTMLElement>('[data-chapter]');
           if (chapter) goTo(chapter.id);
         };
-        window.addEventListener('hashchange', onHash);
         track.addEventListener('focusin', onFocus);
         return () => {
-          window.removeEventListener('hashchange', onHash);
+          routerScroll.unsubscribe();
           track.removeEventListener('focusin', onFocus);
         };
       });
@@ -2470,7 +2550,7 @@ export class RoomTour {
 - [ ] **Step 4: Write `room-tour.html`**
 
 ```html
-<a class="sr-only focus:not-sr-only focus:inline-block focus:px-4 focus:py-2" href="#sau-tham-quan">{{ 'rooms.skipTour' | transloco }}</a>
+<a class="sr-only focus:not-sr-only focus:inline-block focus:px-4 focus:py-2" href="#sau-tham-quan" (click)="skipTour($event)">{{ 'rooms.skipTour' | transloco }}</a>
 <section #section class="room-tour" [attr.aria-label]="'rooms.tourEyebrow' | transloco">
   <div class="room-tour__sticky">
     <div class="room-tour__head container-editorial max-w-7xl">
@@ -2482,7 +2562,7 @@ export class RoomTour {
         <li class="room-tour__chapter" [id]="chapter.id" data-chapter>
           <div class="room-tour__photos">
             @for (photo of chapter.photos.slice(0, 3); track photo.src; let first = $first) {
-              <div class="lights relative" [class.arch]="first" [class.room-tour__lead]="first" appReveal data-cursor="view">
+              <div class="lights relative" [class.arch]="first" [class.room-tour__lead]="first" appReveal>
                 <img [ngSrc]="photo.src" [alt]="photo.alt" fill sizes="(min-width: 1024px) 30vw, 90vw" class="object-cover" />
               </div>
             }
@@ -2501,7 +2581,7 @@ export class RoomTour {
     </ol>
   </div>
 </section>
-<span id="sau-tham-quan"></span>
+<span id="sau-tham-quan" tabindex="-1"></span>
 ```
 
 - [ ] **Step 5: Tour layout in `src/styles.css` (`@layer components`)**
@@ -2622,7 +2702,7 @@ Replace `<app-apartment-header>` + `<app-apartment-gallery>` with:
       </div>
       <div class="hero-image relative order-1 -mx-6 aspect-[3/4] overflow-clip lg:order-2 lg:mx-0 lg:-mr-[max(2rem,calc((100vw-80rem)/2))] lg:h-[86vh] lg:aspect-auto lg:rounded-tl-[999px]">
         @if (heroPhoto(); as photo) {
-          <img [ngSrc]="photo.src" [alt]="photo.alt" fill priority sizes="(max-width: 767px) 320px, (min-width: 1024px) 75vh, 100vw" class="object-cover" />
+          <img [ngSrc]="photo.src" [alt]="photo.alt" fill priority sizes="(max-width: 767px) 320px, (min-width: 1024px) 75vh, 100vw" class="object-cover" style="view-transition-name: apt-photo" />
         }
       </div>
     </div>
@@ -2683,7 +2763,7 @@ export default async function check({ browser, site, assert, lib }) {
 
 Run: `npx ng test --watch=false` → PASS
 Run: `node e2e/run.mjs apartment --site http://localhost:4377` → ✓
-Run: `npx ng build && npm run check:motion` → success
+Run: `npm run check:motion` → success
 
 - [ ] **Step 10: Commit**
 
@@ -2727,8 +2807,9 @@ describe('lightbox step', () => {
 - [ ] **Step 3: Write `lightbox.ts`**
 
 ```ts
-import { Component, ElementRef, inject, input, signal, viewChild } from '@angular/core';
+import { ApplicationRef, Component, ElementRef, inject, input, signal, viewChild } from '@angular/core';
 import { TranslocoPipe } from '@jsverse/transloco';
+import { imageLoader } from '../../image-loader';
 import { Photo } from '../../models/apartment';
 import { MotionService } from '../../motion/motion.service';
 import { matches } from '../../motion/motion-prefs';
@@ -2745,40 +2826,50 @@ export function step(index: number, delta: number, total: number): number {
   template: `
     <dialog #dialog class="lightbox" (close)="closed()" (keydown.arrowLeft)="go(-1)" (keydown.arrowRight)="go(1)" [attr.aria-label]="'gallery.lightbox.label' | transloco">
       @if (photos()[index()]; as photo) {
-        <img [src]="photo.src" [alt]="photo.alt" class="lightbox-img" (pointerdown)="swipeStart($event)" (pointerup)="swipeEnd($event)" />
+        <img #image [src]="large(photo.src)" [alt]="photo.alt" class="lightbox-img" (pointerdown)="swipeStart($event)" (pointerup)="swipeEnd($event)" />
       }
       <p class="lightbox-pos" aria-live="polite">{{ 'gallery.lightbox.position' | transloco: { n: index() + 1, total: photos().length } }}</p>
       <button type="button" class="lightbox-btn left-4" (click)="go(-1)" [attr.aria-label]="'gallery.lightbox.previous' | transloco">‹</button>
       <button type="button" class="lightbox-btn right-4" (click)="go(1)" [attr.aria-label]="'gallery.lightbox.next' | transloco">›</button>
-      <button type="button" class="lightbox-btn right-4 top-4 translate-y-0" (click)="dialog.close()" [attr.aria-label]="'gallery.lightbox.close' | transloco">×</button>
+      <button type="button" class="lightbox-close" (click)="dialog.close()" [attr.aria-label]="'gallery.lightbox.close' | transloco">×</button>
     </dialog>
   `,
 })
 export class Lightbox {
+  /** In the gallery's (chapter) order, so previous/next follow what the guest sees on the page. */
   readonly photos = input.required<Photo[]>();
   protected readonly index = signal(0);
   private readonly dialog = viewChild.required<ElementRef<HTMLDialogElement>>('dialog');
+  private readonly image = viewChild<ElementRef<HTMLImageElement>>('image');
   private readonly motion = inject(MotionService);
+  private readonly appRef = inject(ApplicationRef);
   private returnFocus?: HTMLElement;
   private startX = 0;
 
+  /** The 1600 px WebP the build makes for every photo, not the ~440 kB original JPEG. */
+  protected large(src: string): string {
+    return imageLoader({ src, width: 1600 });
+  }
+
   open(index: number, from?: HTMLElement): void {
     this.returnFocus = from;
-    const show = () => {
+    const show = async () => {
       this.index.set(index);
+      this.appRef.tick();
       this.dialog().nativeElement.showModal();
       document.documentElement.classList.add('has-dialog');
       this.motion.engine()?.pause();
+      await this.image()?.nativeElement.decode().catch(() => undefined);
     };
-    const doc = document as Document & { startViewTransition?: (cb: () => void) => unknown };
+    const doc = document as Document & { startViewTransition?: (cb: () => Promise<void>) => unknown };
     if (doc.startViewTransition && matches('allowed') && from) {
       from.style.viewTransitionName = 'lightbox-photo';
-      doc.startViewTransition(() => {
+      doc.startViewTransition(async () => {
         from.style.viewTransitionName = '';
-        show();
+        await show();
       });
     } else {
-      show();
+      void show();
     }
   }
 
@@ -2810,7 +2901,10 @@ Styles (`@layer components`):
   .lightbox::backdrop { background: transparent; }
   .lightbox-img { position: absolute; inset: 3.5rem 0 3rem; margin: auto; max-width: 100%; max-height: calc(100% - 6.5rem); object-fit: contain; view-transition-name: lightbox-photo; touch-action: pan-y; }
   .lightbox-pos { position: absolute; bottom: 1rem; inset-inline: 0; text-align: center; color: #f6f1e8; font-size: 0.875rem; }
-  .lightbox-btn { position: absolute; top: 50%; transform: translateY(-50%); display: grid; place-items: center; width: 2.75rem; height: 2.75rem; border-radius: 999px; background: rgb(246 241 232 / 0.92); color: #11305a; font-size: 1.5rem; }
+  .lightbox-btn,
+  .lightbox-close { position: absolute; display: grid; place-items: center; width: 2.75rem; height: 2.75rem; border-radius: 999px; background: rgb(246 241 232 / 0.92); color: #11305a; font-size: 1.5rem; }
+  .lightbox-btn { top: 50%; transform: translateY(-50%); }
+  .lightbox-close { top: 1rem; right: 1rem; }
 ```
 
 - [ ] **Step 4: Rewrite `gallery.html`** (keep `app-apartment-header` at the top)
@@ -2821,7 +2915,7 @@ Styles (`@layer components`):
   <nav class="container-editorial mt-10 max-w-7xl" [attr.aria-label]="'apartment.tabs.gallery' | transloco">
     <ul class="flex flex-wrap gap-2">
       @for (chapter of chapters(); track chapter.id) {
-        <li><a class="inline-flex min-h-11 items-center rounded-full border border-border bg-card px-4 text-sm" [href]="'#g-' + chapter.id">{{ 'rooms.' + chapter.key + '.title' | transloco }}</a></li>
+        <li><a class="inline-flex min-h-11 items-center rounded-full border border-border bg-card px-4 text-sm" [routerLink]="[]" [fragment]="'g-' + chapter.id" queryParamsHandling="preserve">{{ 'rooms.' + chapter.key + '.title' | transloco }}</a></li>
       }
     </ul>
   </nav>
@@ -2833,7 +2927,7 @@ Styles (`@layer components`):
           <li class="mb-3 break-inside-avoid md:mb-5" appFadeIn>
             <button type="button" class="focus-photo group block w-full" (click)="lightbox.open(indexOf(photo), $any($event.currentTarget).querySelector('img'))" data-cursor="view">
               <span class="relative block overflow-clip" [class.arch]="first" [class.aspect-[3/4]]="true">
-                <img [ngSrc]="photo.src" [alt]="photo.alt" fill sizes="(min-width: 768px) 30vw, 48vw" class="media-zoom object-cover" />
+                <img [ngSrc]="photo.src" [alt]="photo.alt" fill [priority]="photo === ordered()[0]" sizes="(min-width: 768px) 30vw, 48vw" class="media-zoom object-cover" />
               </span>
             </button>
           </li>
@@ -2841,11 +2935,27 @@ Styles (`@layer components`):
       </ul>
     </section>
   }
-  <app-lightbox #lightbox [photos]="apt.photos" />
+  <app-lightbox #lightbox [photos]="ordered()" />
+} @else {
+  <app-apartment-not-found />
 }
 ```
 
-In `gallery.ts`: import `Lightbox`, `FadeInDirective`, `NgOptimizedImage`, `TranslocoPipe`; add `chapters = computed(() => { const apt = this.apartment(); return apt ? roomChapters(apt) : []; })` and `indexOf(photo: Photo) { return this.apartment()!.photos.indexOf(photo); }`. Mark the route data unchanged (already Tier 1 from Task 3).
+In `gallery.ts`: import `Lightbox`, `FadeInDirective`, `NgOptimizedImage`, `RouterLink`, `TranslocoPipe`, `ApartmentNotFound` (keep whatever the page already imports); add
+
+```ts
+  protected readonly chapters = computed(() => {
+    const apt = this.apartment();
+    return apt ? roomChapters(apt) : [];
+  });
+  /** Photos in the order they appear on the page (chapter by chapter): the lightbox steps through these. */
+  protected readonly ordered = computed(() => this.chapters().flatMap((c) => c.photos));
+  protected indexOf(photo: Photo): number {
+    return this.ordered().indexOf(photo);
+  }
+```
+
+The route data is unchanged (already Tier 1 from Task 3). The first photo on the page is the page's one `priority` image.
 
 - [ ] **Step 5: Write `e2e/checks/gallery.mjs`**
 
@@ -2942,9 +3052,9 @@ git commit -m "Restyle Location with the route map and About as a story page"
 // Story → booking flow: smooth scroll, triggers and cursor are gone; a direct booking page never loads the engine.
 export default async function check({ browser, site, assert, lib }) {
   const page = await lib.openPage(browser);
-  const engineRequests = [];
-  page.on('request', (r) => { if (/gsap|lenis|ScrollTrigger/.test(r.url())) engineRequests.push(r.url()); });
   await page.goto(site + '/book', { waitUntil: 'networkidle' });
+  await page.waitForTimeout(1500);
+  assert.equal(await page.evaluate(() => globalThis.__motionEngine === true), false, 'engine loaded on a direct Tier 2 visit');
   assert.equal(await page.evaluate(() => document.documentElement.classList.contains('lenis')), false);
   await page.goto(site + '/', { waitUntil: 'networkidle' });
   await page.waitForTimeout(1500);
@@ -3000,7 +3110,7 @@ export default async function check({ browser, site, assert, lib }) {
 
 Run: `npx ng test --watch=false`
 Run: `node e2e/run.mjs teardown --site …` and `node e2e/run.mjs booking-flow --site …` → ✓ both
-Run: `npx ng build && npm run check:motion`
+Run: `npm run check:motion`
 
 - [ ] **Step 5: Commit**
 
@@ -3128,7 +3238,7 @@ If installation fails (network or disk), record that in the ledger and continue.
 
 - [ ] **Step 5: Final unit tests, build and size check**
 
-`npx ng test --watch=false && npx ng build && npm run check:motion` → all pass.
+`npx ng test --watch=false && npm run check:motion` → all pass.
 
 - [ ] **Step 6: Commit**
 
