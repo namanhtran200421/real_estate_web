@@ -1,5 +1,7 @@
 import { Routes } from '@angular/router';
 
+import { STORY } from './motion/motion-routes';
+
 // Booking pages are private per customer: keep them out of search results.
 const NOINDEX = { robots: 'noindex, nofollow' };
 
@@ -12,16 +14,19 @@ export const routes: Routes = [
     path: '',
     loadComponent: () => import('./pages/home/home').then((m) => m.Home),
     title: 'titles.home',
+    data: STORY,
   },
   {
     path: 'apartment',
     loadComponent: () => import('./pages/apartment-detail/apartment-detail').then((m) => m.ApartmentDetail),
     title: 'titles.apartment',
+    data: STORY,
   },
   {
     path: 'gallery',
     loadComponent: () => import('./pages/gallery/gallery').then((m) => m.Gallery),
     title: 'titles.gallery',
+    data: STORY,
   },
   {
     path: 'availability',
@@ -32,12 +37,13 @@ export const routes: Routes = [
     path: 'location',
     loadComponent: () => import('./pages/location/location').then((m) => m.LocationPage),
     title: 'titles.location',
+    data: STORY,
   },
   {
     path: 'about',
     loadComponent: () => import('./pages/about/about').then((m) => m.About),
     title: 'titles.about',
-    data: { description: 'meta.about' },
+    data: { ...STORY, description: 'meta.about' },
   },
   {
     path: 'contact',

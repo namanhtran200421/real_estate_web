@@ -23,4 +23,22 @@ export class App {
     ),
     { initialValue: false },
   );
+
+  constructor() {
+    // After a navigation (not the first page), screen-reader and keyboard users start at the new page's h1.
+    let previousPath: string | undefined;
+    this.router.events.pipe(filter((e) => e instanceof NavigationEnd)).subscribe((e) => {
+      const path = (e as NavigationEnd).urlAfterRedirects.split(/[?#]/)[0];
+      const changed = previousPath !== undefined && previousPath !== path;
+      previousPath = path;
+      // First page, or only the fragment/query changed (#chapter, ?apt): leave focus alone.
+      if (!changed || typeof document === 'undefined') return;
+      requestAnimationFrame(() => {
+        const heading = document.querySelector<HTMLElement>('main h1');
+        if (!heading) return;
+        if (!heading.hasAttribute('tabindex')) heading.setAttribute('tabindex', '-1');
+        heading.focus({ preventScroll: true });
+      });
+    });
+  }
 }

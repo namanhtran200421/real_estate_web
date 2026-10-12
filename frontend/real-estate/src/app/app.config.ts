@@ -18,6 +18,7 @@ import {
   withComponentInputBinding,
   withInMemoryScrolling,
   withPreloading,
+  withViewTransitions,
 } from '@angular/router';
 
 import { routes } from './app.routes';
@@ -27,6 +28,9 @@ import { GuestPagesPreloading } from './core/preloading';
 import { provideI18n } from './i18n/i18n';
 import { imageLoader } from './image-loader';
 import imageWidths from './image-widths.json';
+import { matches } from './motion/motion-prefs';
+import { isStoryRoute, pathOf } from './motion/motion-routes';
+import { animateTransition } from './motion/view-transitions';
 import { SeoTitleStrategy } from './services/seo-title.strategy';
 
 // Vietnamese number/date formats (e.g. 1.700.000 ₫); English uses Angular's built-in data.
@@ -41,6 +45,19 @@ export const appConfig: ApplicationConfig = {
       withInMemoryScrolling({ anchorScrolling: 'enabled', scrollPositionRestoration: 'enabled' }),
       // Page chunks are lazy; fetch the guest pages in the background once the first page is up.
       withPreloading(GuestPagesPreloading),
+      withViewTransitions({
+        skipInitialTransition: true,
+        onViewTransitionCreated: ({ transition, from, to }) => {
+          const animate = animateTransition({
+            fromPath: pathOf(from),
+            toPath: pathOf(to),
+            fromStory: isStoryRoute(from),
+            toStory: isStoryRoute(to),
+            reducedMotion: !matches('allowed'),
+          });
+          if (!animate) transition.skipTransition();
+        },
+      }),
     ),
     // Server HTML is reused instead of re-rendered; clicks before hydration are replayed.
     provideClientHydration(withEventReplay(), withIncrementalHydration()),

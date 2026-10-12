@@ -754,3 +754,13 @@
     color: var(--color-danger);
   }
 }
+
+/* Page transitions: a short crossfade; the header stays put. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 300ms;
+}
+
+app-site-header > header {
+  view-transition-name: site-header;
+}
