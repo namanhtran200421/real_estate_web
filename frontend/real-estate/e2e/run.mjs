@@ -5,9 +5,11 @@ import { chromium, firefox, webkit } from 'playwright-core';
 import * as lib from './lib.mjs';
 
 const args = process.argv.slice(2);
-const site = (args[args.indexOf('--site') + 1] ?? 'http://localhost:4200').replace(/\/$/, '');
+const siteFlag = args.indexOf('--site');
+const siteArg = siteFlag >= 0 ? args[siteFlag + 1] : undefined;
+const site = (siteArg ?? 'http://localhost:4200').replace(/\/$/, '');
 const engineName = args.includes('--firefox') ? 'firefox' : args.includes('--webkit') ? 'webkit' : 'chromium';
-const only = args.find((a) => !a.startsWith('--') && a !== site);
+const only = args.find((a, j) => !a.startsWith('--') && (siteFlag < 0 || j !== siteFlag + 1));
 
 const names = readdirSync(new URL('./checks/', import.meta.url)).filter((f) => f.endsWith('.mjs')).map((f) => f.replace('.mjs', ''));
 const selected = only ? names.filter((n) => n === only) : names;

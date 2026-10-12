@@ -2,6 +2,8 @@
 
 Run against a running site (the checks do not start servers).
 
+Once per machine, install the browser binary: `npx playwright-core install chromium` (already cached here).
+
 ```bash
 # 1. API on a disposable local database (never the Neon URL in backend/.env)
 cd backend

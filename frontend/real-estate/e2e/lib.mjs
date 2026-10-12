@@ -48,6 +48,7 @@ export async function scrollThrough(page, step = 500) {
       window.scrollTo(0, y);
       await new Promise((r) => setTimeout(r, 120));
     }
+    window.scrollTo(0, 0);
   }, step);
   await page.waitForTimeout(400);
 }
