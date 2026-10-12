@@ -1,9 +1,10 @@
-import { Component, inject } from '@angular/core';
+import { Component, afterNextRender, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { filter, map } from 'rxjs';
 import { SiteFooter } from './components/site-footer/site-footer';
 import { SiteHeader } from './components/site-header/site-header';
+import { MotionService } from './motion/motion.service';
 
 @Component({
   selector: 'app-root',
@@ -25,6 +26,9 @@ export class App {
   );
 
   constructor() {
+    const motion = inject(MotionService);
+    afterNextRender(() => motion.start());
+
     // After a navigation (not the first page), screen-reader and keyboard users start at the new page's h1.
     let previousPath: string | undefined;
     this.router.events.pipe(filter((e) => e instanceof NavigationEnd)).subscribe((e) => {

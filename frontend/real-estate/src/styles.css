@@ -5,6 +5,7 @@
  */
 
 @import 'tailwindcss';
+@import 'lenis/dist/lenis.css';
 
 @theme {
   /* Colour: the logo's navy and gold on warm ivory (guest site). The owner admin restores
