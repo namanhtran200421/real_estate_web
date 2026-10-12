@@ -30,7 +30,7 @@ brainstorming spec → council review of spec → writing-plans → council revi
 
 - [x] Branch created, baseline green (frontend 18 tests, backend 58 tests)
 - [x] Spec written (commit 12495ec)
-- [ ] Council: spec reviewed and revised
+- [x] Council: spec reviewed and revised (spec v2)
 - [ ] Plan written
 - [ ] Council: plan reviewed
 - [ ] Implementation (see plan task list)
@@ -42,6 +42,8 @@ brainstorming spec → council review of spec → writing-plans → council revi
 
 - 2026-10-13: owner asleep; autonomous mode started.
 - 2026-10-13 ~00:20: council round 1 launched on the spec. Creative director reported (findings below). Guest-UX and Angular/perf reviewers stopped on the session usage limit (reset 00:40); relaunched at 01:25.
+
+- 2026-10-13 ~02:00: all three round-1 reviews in; spec rewritten as v2 incorporating every blocking finding.
 
 ## Council round 1: creative director (received)
 
