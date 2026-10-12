@@ -93,6 +93,30 @@ export class BookingService {
     return response.data;
   }
 
+  /**
+   * "I have transferred": reports the transfer of `option` with the guest's screenshot, which
+   * holds the dates until the owner checks. Returns the updated booking.
+   */
+  async reportTransfer(reference: string, option: PaymentOption, screenshot: Blob): Promise<Booking> {
+    const response = await firstValueFrom(
+      this.http.post<ApiResponse<Booking>>(`${this.api}/bookings/${encodeURIComponent(reference)}/transfer`, screenshot, {
+        params: { option },
+        headers: this.tokenHeaders(reference).set('Content-Type', screenshot.type || 'application/octet-stream'),
+      }),
+    );
+    return response.data;
+  }
+
+  /** The screenshot the guest sent with the transfer the owner is checking. */
+  transferScreenshot(reference: string): Promise<Blob> {
+    return firstValueFrom(
+      this.http.get(`${this.api}/bookings/${encodeURIComponent(reference)}/transfer/screenshot`, {
+        headers: this.tokenHeaders(reference),
+        responseType: 'blob',
+      }),
+    );
+  }
+
   /** Whether this browser can open the booking without the lookup form. */
   hasAccess(reference: string): boolean {
     return this.tokens()[reference] !== undefined;

@@ -147,7 +147,7 @@ function change(current: number, previous: number): { text: string; up: boolean 
         <section class="card card-accent-top mt-8" aria-labelledby="transfers-heading">
           <h2 id="transfers-heading" class="text-2xl">Chuyển khoản cần kiểm tra ({{ s.transfersToCheck.length }})</h2>
           <p class="mt-2 text-sm text-muted-foreground">
-            Khách đã báo chuyển khoản. Tìm khoản tiền theo nội dung trong ứng dụng ngân hàng, rồi mở đặt phòng để xác nhận.
+            Khách đã gửi ảnh chuyển khoản. Tìm khoản tiền theo nội dung trong ứng dụng ngân hàng, rồi mở đặt phòng để xem ảnh và xác nhận.
           </p>
           <ul class="mt-6 divide-y divide-border border-y border-border">
             @for (t of s.transfersToCheck; track t.paymentId) {

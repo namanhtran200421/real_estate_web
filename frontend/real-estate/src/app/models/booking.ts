@@ -102,7 +102,7 @@ export interface Booking {
   /** An unpaid booking is released at this time. */
   holdExpiresAt: string | null;
   /** A transfer the guest reported that the owner is still checking. */
-  pendingTransfer: { amount: number; reportedAt: string } | null;
+  pendingTransfer: { amount: number; reportedAt: string; hasScreenshot: boolean } | null;
   createdAt: string; // ISO timestamp
   /** Money that has arrived. */
   payments: BookingPayment[];

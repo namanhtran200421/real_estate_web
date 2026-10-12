@@ -135,6 +135,31 @@
                   <span class="font-serif text-xl">{{ p.amount | number }} ₫</span>
                 </div>
 
+                @if (p.hasScreenshot) {
+                  <!-- The guest's screenshot: something to compare against, not proof of payment.
+                       A fixed frame, so the owner's buttons below never move while it loads. -->
+                  @let shot = screenshots()[p.id];
+                  @if (shot || p.state === 'pending') {
+                    <div class="mt-4 flex h-80 w-56 items-center justify-center overflow-hidden rounded-md border border-border bg-card">
+                      @if (shot?.state === 'shown') {
+                        <a [href]="shot.url" target="_blank" rel="noopener" class="block h-full w-full" title="Mở ảnh đầy đủ">
+                          <img [src]="shot.url" alt="Ảnh chuyển khoản khách gửi" class="h-full w-full object-contain" />
+                        </a>
+                      } @else if (shot?.state === 'failed') {
+                        <p class="px-4 text-center text-sm text-accent-deep">
+                          Chưa tải được ảnh.
+                          <button type="button" class="link" (click)="showScreenshot(p.id)">Thử lại</button>
+                        </p>
+                      } @else {
+                        <p class="text-sm text-muted-foreground" role="status">Đang tải ảnh…</p>
+                      }
+                    </div>
+                    <p class="mt-1 text-xs text-muted-foreground">Ảnh khách gửi · bấm để xem đầy đủ. Ảnh chỉ để đối chiếu: tiền phải có trong tài khoản.</p>
+                  } @else {
+                    <button type="button" class="link mt-3 text-sm" (click)="showScreenshot(p.id)">Xem ảnh khách gửi</button>
+                  }
+                }
+
                 @if (p.state === 'pending') {
                   <!-- Guest reported a transfer: the owner checks the bank app -->
                   <div class="mt-4 space-y-4 rounded-md border border-accent bg-accent-muted p-4">

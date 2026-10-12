@@ -22,6 +22,7 @@
  *   POST /bookings/:reference/payments     { method: cash|bank_transfer, amount, note? }
  *   POST /payments/:paymentId/verify       { amount? }  reported transfer arrived → booking confirmed
  *   POST /payments/:paymentId/reject       { reason }   reported transfer did not arrive
+ *   GET  /payments/:paymentId/screenshot               the guest's screenshot of a reported transfer
  *   POST /payments/:paymentId/refunds      { amount, reason }
  * Apartments, holidays, promo codes, contact messages: see their routers.
  */
@@ -63,6 +64,7 @@ adminRouter.post('/bookings/:reference/complete', bookingAdminController.complet
 adminRouter.post('/bookings/:reference/payments', bookingAdminController.recordPayment);
 adminRouter.post('/payments/:paymentId/verify', bookingAdminController.verifyTransfer);
 adminRouter.post('/payments/:paymentId/reject', bookingAdminController.rejectTransfer);
+adminRouter.get('/payments/:paymentId/screenshot', bookingAdminController.transferScreenshot);
 adminRouter.post('/payments/:paymentId/refunds', bookingAdminController.refund);
 
 adminRouter.use('/apartments', apartmentAdminRouter);

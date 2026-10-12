@@ -1,4 +1,4 @@
-import { Component, computed, inject, input, resource, signal } from '@angular/core';
+import { Component, DestroyRef, computed, effect, inject, input, resource, signal, untracked } from '@angular/core';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { StatusBadge } from '../../../components/status-badge/status-badge';
@@ -20,6 +20,9 @@ const EVENT_LABELS: Record<string, string> = {
   reactivated: 'Mở lại đặt phòng (tiền về sau khi hết hạn giữ chỗ)',
   refund_recorded: 'Ghi nhận hoàn tiền',
 };
+
+/** A guest's transfer screenshot on this page: being fetched, shown (as a local URL), or failed. */
+type ScreenshotView = { state: 'loading' } | { state: 'shown'; url: string } | { state: 'failed' };
 
 const PAYMENT_STATE_LABELS: Record<string, string> = {
   pending: 'Khách báo đã chuyển · chờ bạn kiểm tra',
@@ -67,6 +70,39 @@ export class AdminBookingDetailPage {
   protected readonly refundFor = signal<string | undefined>(undefined);
   protected readonly refundAmount = signal<number | undefined>(undefined);
   protected readonly refundReason = signal('');
+
+  /** The guests' transfer screenshots on this page, by payment id. */
+  protected readonly screenshots = signal<Record<string, ScreenshotView>>({});
+
+  constructor() {
+    // A transfer waiting to be checked shows its screenshot at once; older ones on request.
+    effect(() => {
+      for (const payment of this.b()?.payments ?? []) {
+        if (payment.state === 'pending' && payment.hasScreenshot) untracked(() => void this.showScreenshot(payment.id));
+      }
+    });
+    inject(DestroyRef).onDestroy(() => {
+      for (const view of Object.values(this.screenshots())) {
+        if (view.state === 'shown') URL.revokeObjectURL(view.url);
+      }
+    });
+  }
+
+  protected async showScreenshot(paymentId: string): Promise<void> {
+    const current = this.screenshots()[paymentId];
+    if (current && current.state !== 'failed') return;
+    this.setScreenshot(paymentId, { state: 'loading' });
+    try {
+      const url = URL.createObjectURL(await this.api.transferScreenshot(paymentId));
+      this.setScreenshot(paymentId, { state: 'shown', url });
+    } catch {
+      this.setScreenshot(paymentId, { state: 'failed' });
+    }
+  }
+
+  private setScreenshot(paymentId: string, view: ScreenshotView): void {
+    this.screenshots.update((views) => ({ ...views, [paymentId]: view }));
+  }
 
   protected eventLabel(type: string): string {
     return EVENT_LABELS[type] ?? type;

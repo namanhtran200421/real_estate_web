@@ -26,3 +26,10 @@ export function nightsBetween(checkIn: string, checkOut: string): number {
 export function shortDate(date: string): string {
   return `${date.slice(8, 10)}/${date.slice(5, 7)}`;
 }
+
+/** Time left on a booking's hold, as the payment page's countdown shows it: "2:59:41". */
+export function holdCountdown(msLeft: number): string {
+  const seconds = Math.max(0, Math.floor(msLeft / 1000));
+  const pad = (value: number) => String(value).padStart(2, '0');
+  return `${Math.floor(seconds / 3600)}:${pad(Math.floor(seconds / 60) % 60)}:${pad(seconds % 60)}`;
+}

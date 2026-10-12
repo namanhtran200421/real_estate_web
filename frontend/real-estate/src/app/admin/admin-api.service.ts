@@ -91,6 +91,11 @@ export class AdminApiService {
     return this.sendNoContent('POST', `/payments/${paymentId}/verify`, { amount });
   }
 
+  /** The guest's screenshot of a reported transfer. */
+  transferScreenshot(paymentId: string): Promise<Blob> {
+    return firstValueFrom(this.http.get(`${this.api}/payments/${paymentId}/screenshot`, { responseType: 'blob' }));
+  }
+
   /** The reported transfer never arrived. */
   rejectTransfer(paymentId: string, reason: string): Promise<void> {
     return this.sendNoContent('POST', `/payments/${paymentId}/reject`, { reason });

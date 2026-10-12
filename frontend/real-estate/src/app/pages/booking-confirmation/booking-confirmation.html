@@ -80,6 +80,33 @@
             </li>
           </ol>
 
+          @if (pending.hasScreenshot) {
+            <!-- A fixed frame: the page does not move when the image arrives. -->
+            <figure class="mx-auto mt-10 max-w-sm">
+              <figcaption class="small-caps text-muted-foreground">{{ 'confirmation.screenshotTitle' | transloco }}</figcaption>
+              <div class="mx-auto mt-3 flex h-72 w-52 items-center justify-center overflow-hidden rounded-md border border-border bg-card">
+                @if (screenshotUrl(); as url) {
+                  <a [href]="url" target="_blank" rel="noopener" class="block h-full w-full">
+                    <img
+                      [src]="url"
+                      class="h-full w-full object-contain"
+                      [alt]="'confirmation.screenshotAlt' | transloco: { amount: (pending.amount | number) }"
+                    />
+                  </a>
+                } @else if (screenshot.error()) {
+                  <p class="px-4 text-sm text-muted-foreground">{{ 'confirmation.screenshotFailed' | transloco }}</p>
+                } @else {
+                  <p class="text-sm text-muted-foreground" role="status">{{ 'common.loading' | transloco }}</p>
+                }
+              </div>
+              <p class="mt-2 h-5 text-sm">
+                @if (screenshotUrl(); as url) {
+                  <a [href]="url" target="_blank" rel="noopener" class="link">{{ 'confirmation.screenshotOpen' | transloco }}</a>
+                }
+              </p>
+            </figure>
+          }
+
           <p class="mt-10 text-sm text-muted-foreground">
             {{ 'confirmation.questions' | transloco }}
             @for (c of contact; track c.href; let last = $last) {
@@ -126,20 +153,34 @@
       </div>
 
       <div class="card card-accent-top card-elevated mt-12">
-        <div class="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <p class="small-caps text-muted-foreground">{{ 'common.reference' | transloco }}</p>
-            <p class="mt-1 font-mono text-2xl tracking-[0.1em]">{{ b.reference }}</p>
-          </div>
-          <div class="flex flex-wrap gap-2">
-            <app-status-badge [status]="b.status" />
-            <app-status-badge [status]="b.paymentStatus" />
-          </div>
-        </div>
+        <p class="small-caps text-muted-foreground">{{ 'common.reference' | transloco }}</p>
+        <p class="mt-1 font-mono text-2xl tracking-[0.1em]">{{ b.reference }}</p>
 
         <hr class="my-6" />
 
         <dl class="grid gap-x-8 gap-y-5 sm:grid-cols-2">
+          <div>
+            <dt class="small-caps text-muted-foreground">{{ 'common.fullName' | transloco }}</dt>
+            <dd class="mt-1">{{ b.customer.name }}</dd>
+          </div>
+          <div>
+            <dt class="small-caps text-muted-foreground">{{ 'common.phone' | transloco }}</dt>
+            <dd class="mt-1 font-mono">{{ b.customer.phone }}</dd>
+          </div>
+          <div>
+            <dt class="small-caps text-muted-foreground">{{ 'confirmation.statusRow' | transloco }}</dt>
+            <dd class="mt-1 font-medium text-accent-deep">
+              @if (b.pendingTransfer) {
+                {{ 'confirmation.awaitingOwner' | transloco }}
+              } @else {
+                {{ 'status.' + b.status | transloco }}
+              }
+            </dd>
+          </div>
+          <div>
+            <dt class="small-caps text-muted-foreground">{{ 'confirmation.paymentRow' | transloco }}</dt>
+            <dd class="mt-1">{{ 'status.' + b.paymentStatus | transloco }}</dd>
+          </div>
           @if (apartment(); as apt) {
             <div class="sm:col-span-2">
               <dt class="small-caps text-muted-foreground">{{ 'booking.apartment' | transloco }}</dt>

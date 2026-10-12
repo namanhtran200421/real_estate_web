@@ -30,6 +30,7 @@ The admin area is at http://localhost:4200/admin.
 | `npm run build`             | Compile to `dist/` (tests excluded)                                       |
 | `npm start`                 | Run the compiled server (production)                                      |
 | `npm test`                  | Unit tests (pricing, booking rules, payment signatures)                  |
+| `TEST_DATABASE_URL=… npm test` | Also the API tests against a disposable, migrated database (it is emptied) |
 | `npm run typecheck`         | Type-check everything, tests included                                     |
 | `npm run db:migrate`        | Apply pending migrations with the compiled code (production)             |
 | `npm run db:migrate:dev`    | Same, from TypeScript                                                     |
@@ -129,22 +130,34 @@ pending ──owner sees the money arrive──▶ confirmed ──check-out pas
 
 ### Payments: bank transfer, confirmed by the owner
 
-The site cannot see the bank account, so it does not ask the guest to report anything: the guest
-scans the QR code and pays, and the owner confirms when the money shows in the bank app.
+The guest pays by VietQR, then reports the transfer with a **screenshot** from their bank app
+(docs/adr/0001). The site cannot see the bank account, so the screenshot is evidence only: the
+owner confirms when the money shows in the bank app.
 
 ```
 Guest books ──▶ dates held 3 h · guest emailed bank details · owner emailed "watch for RE2611K7Q3M"
 Guest picks deposit / full ──GET /bookings/:ref/transfer──▶ account + VietQR (amount and note pre-filled)
-Guest transfers in their bank app. Done: the payment page polls and moves on once confirmed.
-Owner sees the transfer ──"Đã nhận cọc" / "Đã nhận đủ" (dashboard "Chờ tiền về" or booking page)
+Guest transfers, attaches the screenshot, presses "Tiếp tục thanh toán"
+      ──POST /bookings/:ref/transfer?option=…  (body: the image)──▶ payment `pending`, hold lifted,
+      dates held until the owner answers · owner emailed "check this transfer"
+Owner finds the money ──"Đã nhận" on the booking page (screenshot shown beside it)
+      ──POST /admin/payments/:id/verify──▶ payment `succeeded`, booking CONFIRMED, guest emailed
+   or ──"Chưa nhận được" ──POST /admin/payments/:id/reject──▶ guest emailed, fresh hold to pay or explain
+Money without a report (cash, a guest who never pressed the button)
       ──POST /admin/bookings/:ref/payments──▶ payment `succeeded`, booking CONFIRMED, guest emailed
-30 min before the hold runs out, still unpaid ──▶ owner reminded once (job `remind-owner`)
+30 min before an unreported hold runs out ──▶ owner reminded once (job `remind-owner`)
 Hold runs out ──▶ booking expired, dates released. Money seen later still confirms it while the
       dates are free; otherwise 409 DATES_TAKEN and the owner refunds from the bank app.
 ```
 
-The earlier flow, where the guest taps "Tôi đã chuyển khoản" (`POST /bookings/:ref/transfer`) and the
-owner verifies or rejects the report, still works for pages loaded before the website dropped it.
+**Transfer screenshots** (`payments/transfer-screenshot.ts`, table `transfer_screenshots`):
+- The website shrinks the image (JPEG, longest side 2,000 px) before upload; the API accepts
+  JPEG, PNG or WebP up to 5 MB, reads the type from the bytes (never the header), and stores it
+  in Postgres in the same transaction as the report (docs/adr/0002).
+- Only the guest (booking token) and the owner (admin sign-in) can fetch it; responses are
+  `no-store`. An upload is refused (404) before its body is read unless the token opens the booking.
+- Job `purge-screenshots` deletes each one 35 days after upload once the owner has verified or
+  rejected the report. The payment and its history stay.
 
 - **A booking is only confirmed once its money is confirmed by the owner.** Verifying a transfer,
   or recording money received in person, confirms it and queues one booking-confirmation email;
@@ -170,8 +183,8 @@ on restart. Without `RESEND_API_KEY` (development only), emails are written to t
 
 | Recipient | When                                                                  |
 | --------- | --------------------------------------------------------------------- |
-| Guest     | Dates held, with bank details · booking confirmed by owner · later payment received · booking cancelled · refund |
-| Owner     | New booking: watch for this transfer · hold about to run out, still unpaid · contact message |
+| Guest     | Dates held, with bank details · transfer screenshot received · transfer not received (fresh hold) · booking confirmed by owner · later payment received · booking cancelled · refund |
+| Owner     | New booking: watch for this transfer · screenshot sent: check this transfer · hold about to run out, nothing reported · contact message |
 
 ### Background jobs (`src/jobs`)
 
@@ -183,6 +196,7 @@ on restart. Without `RESEND_API_KEY` (development only), emails are written to t
 | complete-stays         | 15 min | Confirmed stays become completed after check-out     |
 | purge-admin-sessions   | 1 h    | Delete expired or idle admin sessions                |
 | purge-emails           | 6 h    | Delete sent emails after 90 days (guests' details)   |
+| purge-screenshots      | 6 h    | Delete answered transfer screenshots 35 days after upload |
 
 Each run takes a transaction-scoped Postgres advisory lock (safe behind Neon's pooler), so with
 several instances only one runs each job. Set `JOBS_ENABLED=false` on instances that should not
@@ -242,7 +256,7 @@ contact inbox. Full list: `src/modules/admin/admin.router.ts`.
 | Booking enumeration                  | CAPTCHA; random references, lookup needs email/phone, 20 lookups / 15 min per IP, 404 on bad token |
 | Fake "I have transferred" reports    | Nothing is confirmed until the owner sees the money; one open report per booking        |
 | Spoofed client IPs                   | `trust proxy` = exact proxy count (`TRUST_PROXY_HOPS`)                                   |
-| Large bodies / slow clients          | 100 kB JSON limit; 10 s headers, 30 s request timeouts                  |
+| Large bodies / slow clients          | 100 kB JSON limit (5 MB image on the transfer-screenshot route, read only after the booking token is checked); 10 s headers, 30 s request timeouts |
 | Slow queries piling up               | Postgres `statement_timeout`, bounded pool, fast fail when saturated; broken connections discarded |
 | SQL injection                        | Parameterised queries only; all input validated with zod; length checks in the database too |
 | Stored XSS via listing photos        | Photo addresses must be a site path or `https://` (no `javascript:` / `data:`); the website adds a nonce-based CSP |

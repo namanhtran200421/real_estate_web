@@ -229,14 +229,14 @@ export function refundIssuedEmail(booking: BookingEmailContext, amount: number):
   });
 }
 
-/** Right after booking: the dates are held, here is how to pay. Nothing to report afterwards. */
+/** Right after booking: the dates are held, here is how to pay and send the screenshot. */
 export function bookingHeldEmail(booking: BookingEmailContext, note: string): Content {
   return render({
     subject: `Đã giữ ngày cho bạn · ${booking.reference}`,
     heading: `Cảm ơn bạn, ${booking.customerName}`,
     paragraphs: [
       `Ngày của bạn được giữ đến ${holdDeadline(booking)}. Vui lòng chuyển khoản trước thời gian này, giữ đúng nội dung "${note}".`,
-      'Nếu đã chuyển, bạn không cần làm gì thêm: chủ nhà xác nhận ngay khi thấy tiền về và bạn sẽ nhận email xác nhận.',
+      'Chuyển khoản xong, hãy mở trang đặt phòng, tải ảnh chụp màn hình chuyển khoản thành công lên và bấm "Tiếp tục thanh toán". Chủ nhà xác nhận khi thấy tiền về và bạn sẽ nhận email.',
     ],
     rows: [
       ['Ngân hàng', env.bank.name],
@@ -255,7 +255,7 @@ export function transferReportedEmail(booking: BookingEmailContext, transfer: Tr
     subject: `Đã nhận thông báo chuyển khoản · ${booking.reference}`,
     heading: `Cảm ơn bạn, ${booking.customerName}`,
     paragraphs: [
-      `Chúng tôi đã nhận thông báo bạn chuyển ${formatVnd(transfer.amount)} cho đặt phòng ${booking.reference}.`,
+      `Chúng tôi đã nhận ảnh chuyển khoản ${formatVnd(transfer.amount)} của bạn cho đặt phòng ${booking.reference}.`,
       'Chủ nhà sẽ kiểm tra tài khoản và xác nhận đặt phòng sớm nhất. Ngày của bạn được giữ trong thời gian này.',
     ],
     rows: bookingRows(booking),
@@ -270,7 +270,7 @@ export function transferNotReceivedEmail(booking: BookingEmailContext, reason: s
     paragraphs: [
       `Chủ nhà chưa thấy khoản chuyển cho đặt phòng ${booking.reference}.`,
       `Ghi chú: ${reason}`,
-      `Nếu bạn đã chuyển, vui lòng liên hệ chủ nhà kèm ảnh biên lai. Nếu chưa, bạn có ${holdMinutes} phút để chuyển khoản trước khi ngày được mở lại cho khách khác.`,
+      `Nếu bạn đã chuyển, vui lòng liên hệ chủ nhà. Nếu chưa, bạn có ${holdMinutes} phút để chuyển khoản và gửi ảnh chuyển khoản trên trang đặt phòng trước khi ngày được mở lại cho khách khác.`,
     ],
     rows: bookingRows(booking),
     button: { label: 'Xem đặt phòng', url: lookupUrl(booking.reference) },
@@ -302,8 +302,8 @@ export function ownerTransferReportedEmail(booking: BookingEmailContext, transfe
     subject: `[${booking.reference}] Khách báo đã chuyển ${formatVnd(transfer.amount)} · cần kiểm tra`,
     heading: 'Kiểm tra chuyển khoản',
     paragraphs: [
-      `${booking.customerName} báo đã chuyển ${formatVnd(transfer.amount)} vào tài khoản ${transfer.bankName} ${transfer.accountNumber}, nội dung "${transfer.note}".`,
-      'Hãy kiểm tra tài khoản ngân hàng, rồi bấm "Đã nhận tiền" (đặt phòng được xác nhận) hoặc "Chưa nhận được" trong trang quản lý. Ngày của khách được giữ cho đến khi bạn xử lý.',
+      `${booking.customerName} báo đã chuyển ${formatVnd(transfer.amount)} vào tài khoản ${transfer.bankName} ${transfer.accountNumber}, nội dung "${transfer.note}", kèm ảnh chụp màn hình chuyển khoản.`,
+      'Ảnh chỉ để đối chiếu: hãy kiểm tra tài khoản ngân hàng, rồi bấm "Đã nhận" (đặt phòng được xác nhận) hoặc "Chưa nhận được" trong trang đặt phòng, nơi có ảnh khách gửi. Ngày của khách được giữ cho đến khi bạn xử lý.',
     ],
     rows,
     button: { label: 'Mở đặt phòng', url: adminBookingUrl(booking.reference) },
@@ -327,7 +327,7 @@ export function ownerNewBookingEmail(booking: BookingEmailContext, note: string)
     heading: 'Đặt phòng mới',
     paragraphs: [
       `${booking.customerName} vừa đặt ${booking.apartmentName}, ${booking.nights} đêm từ ${formatDate(booking.checkIn)}.`,
-      `Khi thấy tiền về với nội dung "${note}", mở đặt phòng và bấm "Đã nhận cọc" hoặc "Đã nhận đủ": đặt phòng được xác nhận và khách nhận email.`,
+      `Chuyển khoản xong, khách sẽ gửi ảnh chuyển khoản và bạn nhận email để kiểm tra. Nếu thấy tiền về với nội dung "${note}" trước đó, mở đặt phòng và bấm "Đã nhận cọc" hoặc "Đã nhận đủ": đặt phòng được xác nhận và khách nhận email.`,
       `Ngày được giữ đến ${holdDeadline(booking)}. Sau đó đặt phòng tự hết hạn; nếu tiền về muộn, bạn vẫn xác nhận được khi ngày còn trống.`,
     ],
     rows: [['Nội dung chuyển khoản', note], ...amountRows(booking), ...guestRows(booking), ...bookingRows(booking)],
@@ -341,7 +341,7 @@ export function ownerHoldEndingEmail(booking: BookingEmailContext, note: string)
     subject: `[${booking.reference}] Sắp hết hạn giữ chỗ · đã nhận tiền chưa?`,
     heading: 'Sắp hết hạn giữ chỗ',
     paragraphs: [
-      `Đặt phòng của ${booking.customerName} hết hạn giữ chỗ lúc ${holdDeadline(booking)}.`,
+      `Đặt phòng của ${booking.customerName} hết hạn giữ chỗ lúc ${holdDeadline(booking)} và khách chưa gửi ảnh chuyển khoản.`,
       `Nếu đã thấy tiền với nội dung "${note}", hãy bấm "Đã nhận cọc" hoặc "Đã nhận đủ" trong trang quản lý. Nếu không thấy, không cần làm gì: ngày sẽ tự mở lại cho khách khác.`,
     ],
     rows: [['Nội dung chuyển khoản', note], ...amountRows(booking), ...guestRows(booking)],

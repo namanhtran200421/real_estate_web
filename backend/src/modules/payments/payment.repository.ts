@@ -6,6 +6,7 @@
  */
 import { query, queryOne, type Db } from '../../db/pool.js';
 import type { PaymentProvider, PaymentState } from '../bookings/booking.types.js';
+import type { TransferScreenshot } from './transfer-screenshot.js';
 
 export interface PaymentRecord {
   id: string;
@@ -17,6 +18,8 @@ export interface PaymentRecord {
   note: string | null;
   /** Email of the admin who recorded or verified it. */
   recordedBy: string | null;
+  /** A reported transfer whose screenshot is still kept. */
+  hasScreenshot: boolean;
   paidAt: Date | null;
   createdAt: Date;
 }
@@ -34,6 +37,7 @@ export interface RefundRecord {
 const PAYMENT_COLUMNS = `
   p.id, p.booking_id AS "bookingId", p.provider, p.amount, p.state,
   p.failure_reason AS "failureReason", p.note, u.email AS "recordedBy",
+  EXISTS (SELECT 1 FROM transfer_screenshots s WHERE s.payment_id = p.id) AS "hasScreenshot",
   p.paid_at AS "paidAt", p.created_at AS "createdAt"
 `;
 
@@ -58,6 +62,38 @@ async function insertReported(bookingId: string, amount: number, note: string, d
     db,
   );
   return row!.id;
+}
+
+/** The screenshot the guest attached to the transfer they reported. */
+async function insertScreenshot(paymentId: string, screenshot: TransferScreenshot, db: Db): Promise<void> {
+  await query(`INSERT INTO transfer_screenshots (payment_id, content_type, data) VALUES ($1, $2, $3)`, [
+    paymentId,
+    screenshot.contentType,
+    screenshot.data,
+  ], db);
+}
+
+async function findScreenshot(paymentId: string): Promise<TransferScreenshot | undefined> {
+  return queryOne<TransferScreenshot>(
+    `SELECT content_type AS "contentType", data FROM transfer_screenshots WHERE payment_id = $1`,
+    [paymentId],
+  );
+}
+
+/**
+ * Deletes screenshots uploaded more than `days` before `now` whose transfer the owner has already
+ * verified or rejected. A screenshot still waiting for the owner is kept however old it is.
+ */
+async function deleteCheckedScreenshotsOlderThan(days: number, now: Date): Promise<number> {
+  const rows = await query(
+    `DELETE FROM transfer_screenshots s USING payments p
+     WHERE p.id = s.payment_id
+       AND p.state <> 'pending'
+       AND s.created_at < $2::timestamptz - make_interval(days => $1)
+     RETURNING s.payment_id`,
+    [days, now],
+  );
+  return rows.length;
 }
 
 /** Money the owner received and records directly (cash, or a transfer the guest did not report). */
@@ -162,6 +198,9 @@ async function listRefundsForBooking(bookingId: string): Promise<RefundRecord[]>
 
 export const paymentRepository = {
   insertReported,
+  insertScreenshot,
+  findScreenshot,
+  deleteCheckedScreenshotsOlderThan,
   insertManual,
   findById,
   listForBooking,

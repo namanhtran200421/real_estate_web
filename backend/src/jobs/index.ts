@@ -9,10 +9,12 @@
  * | complete-stays          | 15 min | Mark confirmed stays as completed once check-out has passed      |
  * | purge-admin-sessions    | 1 h    | Delete expired admin sessions                                    |
  * | purge-emails            | 6 h    | Delete sent emails after 90 days (they hold guests' details)     |
+ * | purge-screenshots       | 6 h    | Delete checked transfer screenshots 35 days after upload         |
  */
 import { adminAuthService } from '../modules/admin-auth/admin-auth.service.js';
 import { bookingService } from '../modules/bookings/booking.service.js';
 import { emailService } from '../modules/notifications/email.service.js';
+import { paymentService } from '../modules/payments/payment.service.js';
 import type { Job } from './scheduler.js';
 
 const SECOND = 1_000;
@@ -26,4 +28,5 @@ export const jobs: Job[] = [
   { name: 'complete-stays', intervalMs: 15 * MINUTE, run: bookingService.completeFinishedStays },
   { name: 'purge-admin-sessions', intervalMs: HOUR, run: adminAuthService.purgeExpiredSessions },
   { name: 'purge-emails', intervalMs: 6 * HOUR, run: emailService.purgeOldEmails },
+  { name: 'purge-screenshots', intervalMs: 6 * HOUR, run: () => paymentService.purgeOldTransferScreenshots() },
 ];

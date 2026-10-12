@@ -1,4 +1,4 @@
-import { Component, DestroyRef, afterNextRender, computed, effect, inject, input, resource, signal } from '@angular/core';
+import { Component, DestroyRef, afterNextRender, computed, effect, inject, input, resource, signal, untracked } from '@angular/core';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
@@ -8,14 +8,22 @@ import { ApiErrorMessages, toApiError } from '../../core/api';
 import { PaymentOption, Stay } from '../../models/booking';
 import { ApartmentService } from '../../services/apartment.service';
 import { BookingService } from '../../services/booking.service';
+import { holdCountdown } from '../../shared/dates';
+import { SCREENSHOT_TYPES, ScreenshotError, ScreenshotProblem, prepareScreenshot } from '../../shared/transfer-screenshot';
 
 /** While the guest is on the page, it checks this often whether the owner has confirmed. */
 const WATCH_INTERVAL_MS = 20_000;
 
+/** The screenshot the guest picked, ready to upload, with a local URL for its preview. */
+interface PickedScreenshot {
+  blob: Blob;
+  previewUrl: string;
+}
+
 /**
- * Step 3: choose deposit or full payment and transfer with the VietQR code. That is all the
- * guest does: the owner confirms when the money shows in the bank app, and the page moves on to
- * the confirmation if it is still open.
+ * Step 3: choose deposit or full payment, transfer with the VietQR code, then send the
+ * screenshot of the successful transfer. The report holds the dates until the owner finds the
+ * money in the bank app and confirms; the guest moves on to the status page.
  */
 @Component({
   selector: 'app-booking-payment',
@@ -85,27 +93,76 @@ export class BookingPayment {
   });
 
   private readonly now = signal(Date.now());
-  protected readonly minutesLeft = computed(() => {
+
+  /** Time left on the hold of an unpaid booking; undefined when nothing is counting down. */
+  private readonly msLeft = computed(() => {
     const booking = this.b();
-    if (!booking?.holdExpiresAt || booking.amountPaid > 0) return undefined;
-    return Math.max(0, Math.ceil((Date.parse(booking.holdExpiresAt) - this.now()) / 60_000));
+    if (!booking?.holdExpiresAt || booking.amountPaid > 0 || booking.pendingTransfer) return undefined;
+    return Date.parse(booking.holdExpiresAt) - this.now();
+  });
+
+  protected readonly countdown = computed(() => {
+    const ms = this.msLeft();
+    if (ms === undefined) return undefined;
+    return holdCountdown(ms);
+  });
+
+  /**
+   * The hold ran out. The server's clock decides, not this device's: an unpaid booking it no
+   * longer offers payment for has expired, even before the job releasing its dates has run.
+   */
+  protected readonly expired = computed(() => {
+    const booking = this.b();
+    if (!booking) return false;
+    if (booking.status === 'expired') return true;
+    return (
+      booking.status === 'pending' &&
+      booking.amountPaid === 0 &&
+      !booking.pendingTransfer &&
+      booking.paymentOptions.full === null
+    );
   });
 
   protected readonly copied = signal<string | undefined>(undefined);
 
-  constructor() {
-    const timer = setInterval(() => this.now.set(Date.now()), 15_000);
-    const destroyRef = inject(DestroyRef);
-    destroyRef.onDestroy(() => clearInterval(timer));
+  protected readonly acceptedTypes = SCREENSHOT_TYPES.join(',');
+  protected readonly screenshot = signal<PickedScreenshot | undefined>(undefined);
+  protected readonly preparing = signal(false);
+  protected readonly dragging = signal(false);
+  protected readonly screenshotProblem = signal<ScreenshotProblem | 'tooLarge' | undefined>(undefined);
+  protected readonly submitting = signal(false);
+  protected readonly submitError = signal<string | undefined>(undefined);
 
-    // Browser only: the server render never polls.
+  protected readonly canSubmit = computed(
+    () => this.t() !== undefined && this.screenshot() !== undefined && !this.preparing() && !this.submitting(),
+  );
+
+  constructor() {
+    const destroyRef = inject(DestroyRef);
+    destroyRef.onDestroy(() => this.releasePreview());
+
+    // Browser only: the countdown ticks and the page watches for the owner's confirmation.
     afterNextRender(() => {
+      const tick = setInterval(() => this.now.set(Date.now()), 1_000);
       const watch = setInterval(() => void this.checkForPayment(), WATCH_INTERVAL_MS);
-      destroyRef.onDestroy(() => clearInterval(watch));
+      destroyRef.onDestroy(() => {
+        clearInterval(tick);
+        clearInterval(watch);
+      });
     });
 
     effect(() => {
       if (this.b()?.paymentOptions.deposit === null) this.option.set('full');
+    });
+
+    // The countdown reached zero on this device: ask the server whether the hold is really over.
+    let checkedHold: string | undefined;
+    effect(() => {
+      const ms = this.msLeft();
+      const hold = this.b()?.holdExpiresAt ?? undefined;
+      if (ms === undefined || ms > 0 || hold === checkedHold) return;
+      checkedHold = hold;
+      untracked(() => this.booking.reload());
     });
   }
 
@@ -119,16 +176,97 @@ export class BookingPayment {
     }
   }
 
-  /** Moves on to the confirmation once the owner has recorded the money. */
+  protected picked(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    // Cleared so picking the same file again still fires `change`.
+    input.value = '';
+    if (file) void this.useFile(file);
+  }
+
+  protected dragOver(event: DragEvent): void {
+    event.preventDefault();
+    this.dragging.set(true);
+  }
+
+  protected dropped(event: DragEvent): void {
+    event.preventDefault();
+    this.dragging.set(false);
+    const file = event.dataTransfer?.files[0];
+    if (file) void this.useFile(file);
+  }
+
+  protected removeScreenshot(): void {
+    this.releasePreview();
+    this.screenshot.set(undefined);
+    this.screenshotProblem.set(undefined);
+  }
+
+  /** Sends the screenshot: the dates stay held until the owner checks, and the guest moves on. */
+  protected async submit(): Promise<void> {
+    const booking = this.b();
+    const option = this.effectiveOption();
+    const screenshot = this.screenshot();
+    if (!booking || !option || !screenshot || !this.canSubmit()) return;
+
+    this.submitting.set(true);
+    this.submitError.set(undefined);
+    try {
+      const updated = await this.bookings.reportTransfer(booking.reference, option, screenshot.blob);
+      void this.router.navigate(['/booking', updated.reference, 'confirmation']);
+    } catch (error) {
+      const apiError = toApiError(error);
+      if (apiError.code === 'PAYLOAD_TOO_LARGE') {
+        this.screenshotProblem.set('tooLarge');
+      } else {
+        this.submitError.set(this.errorMessages.message(apiError));
+      }
+      // Already reported, or no longer payable: show where the booking stands now.
+      if (apiError.code === 'TRANSFER_BEING_CHECKED' || apiError.code === 'BOOKING_NOT_PAYABLE') this.booking.reload();
+    } finally {
+      this.submitting.set(false);
+    }
+  }
+
+  private async useFile(file: File): Promise<void> {
+    this.screenshotProblem.set(undefined);
+    this.submitError.set(undefined);
+    this.preparing.set(true);
+    try {
+      const blob = await prepareScreenshot(file);
+      this.releasePreview();
+      this.screenshot.set({ blob, previewUrl: URL.createObjectURL(blob) });
+    } catch (error) {
+      this.screenshotProblem.set(error instanceof ScreenshotError ? error.problem : 'unreadable');
+    } finally {
+      this.preparing.set(false);
+    }
+  }
+
+  private releasePreview(): void {
+    const current = this.screenshot();
+    if (current) URL.revokeObjectURL(current.previewUrl);
+  }
+
+  /**
+   * Moves on to the confirmation once the owner has recorded the money, and keeps the page in step
+   * with changes made elsewhere: a report sent from another tab, or rejected by the owner (which
+   * brings a fresh hold and the upload box back).
+   */
   private async checkForPayment(): Promise<void> {
     const current = this.b();
-    if (!current || document.hidden) return;
+    if (!current || document.hidden || this.submitting()) return;
     try {
       const fresh = await this.bookings.get(current.reference);
       if (fresh.amountPaid > current.amountPaid) {
         void this.router.navigate(['/booking', fresh.reference, 'confirmation']);
-      } else if (fresh.status !== current.status) {
-        this.booking.reload();
+      } else if (
+        fresh.status !== current.status ||
+        fresh.holdExpiresAt !== current.holdExpiresAt ||
+        fresh.pendingTransfer?.reportedAt !== current.pendingTransfer?.reportedAt ||
+        fresh.paymentOptions.full !== current.paymentOptions.full
+      ) {
+        this.booking.set(fresh);
       }
     } catch {
       // A missed check is retried on the next tick.

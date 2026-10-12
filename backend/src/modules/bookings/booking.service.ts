@@ -8,9 +8,10 @@
  *      │      (money seen late, dates still free: back to pending and confirmed)
  *      └──(owner cancels)──▶ cancelled
  *
- * A new booking holds its dates for BOOKING_HOLD_MINUTES. The guest scans the VietQR code and
- * pays; nothing else. The owner is emailed at once, reminded shortly before the hold runs out,
- * and confirms when the transfer shows in the bank app (see payment.service.ts). Double bookings
+ * A new booking holds its dates for BOOKING_HOLD_MINUTES. The guest scans the VietQR code, pays,
+ * and reports the transfer with a screenshot, which holds the dates until the owner answers. The
+ * owner is emailed at once, reminded shortly before an unreported hold runs out, and confirms
+ * when the transfer shows in the bank app (see payment.service.ts). Double bookings
  * are prevented by the database (exclusion constraint), not by application checks alone, so
  * two guests racing for the same dates can never both succeed.
  */
@@ -162,7 +163,9 @@ function toGuestPayment(payment: PaymentRecord): GuestPayment {
 function toGuestBooking(booking: BookingRecord, payments: PaymentRecord[]): GuestBooking {
   const pending = payments.find((payment) => payment.state === 'pending');
   let pendingTransfer: GuestBooking['pendingTransfer'] = null;
-  if (pending) pendingTransfer = { amount: pending.amount, reportedAt: pending.createdAt.toISOString() };
+  if (pending) {
+    pendingTransfer = { amount: pending.amount, reportedAt: pending.createdAt.toISOString(), hasScreenshot: pending.hasScreenshot };
+  }
 
   return {
     reference: booking.reference,
@@ -308,6 +311,7 @@ function toAdminPayment(payment: PaymentRecord, refunds: RefundRecord[]): AdminP
     failureReason: payment.failureReason,
     note: payment.note,
     recordedBy: payment.recordedBy,
+    hasScreenshot: payment.hasScreenshot,
     refundable,
     refunds: own.map((refund) => ({
       id: refund.id,

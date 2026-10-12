@@ -5,6 +5,7 @@ import type { Request, Response } from 'express';
 import { z } from 'zod';
 import { isoDate, optionalText, pagination, parse, slug, text, vnd } from '../../lib/validation.js';
 import { paymentService } from '../payments/payment.service.js';
+import { sendScreenshot } from '../payments/transfer-screenshot.js';
 import { bookingService } from './booking.service.js';
 
 const listQuery = z.object({
@@ -95,6 +96,11 @@ async function rejectTransfer(req: Request<{ paymentId: string }>, res: Response
   res.status(204).end();
 }
 
+/** GET /admin/payments/:paymentId/screenshot → the guest's screenshot of a reported transfer */
+async function transferScreenshot(req: Request<{ paymentId: string }>, res: Response): Promise<void> {
+  sendScreenshot(res, await paymentService.transferScreenshot(parse(z.uuid(), req.params.paymentId)));
+}
+
 /** POST /admin/payments/:paymentId/refunds { amount, reason } — records money the owner gave back */
 async function refund(req: Request<{ paymentId: string }>, res: Response): Promise<void> {
   const paymentId = parse(z.uuid(), req.params.paymentId);
@@ -114,5 +120,6 @@ export const bookingAdminController = {
   recordPayment,
   verifyTransfer,
   rejectTransfer,
+  transferScreenshot,
   refund,
 };

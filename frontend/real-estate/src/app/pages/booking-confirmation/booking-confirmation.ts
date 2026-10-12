@@ -3,7 +3,6 @@ import { DatePipe, DecimalPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { BookingSteps } from '../../components/booking-steps/booking-steps';
-import { StatusBadge } from '../../components/status-badge/status-badge';
 import { ApiErrorMessages, toApiError } from '../../core/api';
 import { SITE } from '../../data/site';
 import { ApartmentService } from '../../services/apartment.service';
@@ -15,11 +14,12 @@ const REFRESH_WHILE_CHECKING_MS = 30_000;
 
 /**
  * Step 4: linked from the payment page and from emails. Tells the guest where the booking stands:
- * waiting for the owner to see the money, confirmed, or no longer active.
+ * waiting for the owner to check the transfer (with the screenshot the guest sent), confirmed, or
+ * no longer active.
  */
 @Component({
   selector: 'app-booking-confirmation',
-  imports: [DatePipe, DecimalPipe, RouterLink, TranslocoPipe, BookingSteps, StatusBadge],
+  imports: [DatePipe, DecimalPipe, RouterLink, TranslocoPipe, BookingSteps],
   templateUrl: './booking-confirmation.html',
 })
 export class BookingConfirmation {
@@ -59,6 +59,19 @@ export class BookingConfirmation {
     return this.apartments.bySlug(booking.apartmentSlug);
   });
 
+  /** The screenshot the guest sent with the transfer the owner is checking. */
+  protected readonly screenshot = resource({
+    params: () => {
+      const booking = this.b();
+      if (!booking?.pendingTransfer?.hasScreenshot) return undefined;
+      return booking.reference;
+    },
+    loader: ({ params }) => this.bookings.transferScreenshot(params),
+  });
+
+  /** A local URL for the screenshot, released when it is no longer shown. */
+  protected readonly screenshotUrl = signal<string | undefined>(undefined);
+
   protected readonly lookupContact = signal('');
   protected readonly lookupError = signal<string | undefined>(undefined);
   protected readonly lookingUp = signal(false);
@@ -71,6 +84,16 @@ export class BookingConfirmation {
       }
     }, REFRESH_WHILE_CHECKING_MS);
     inject(DestroyRef).onDestroy(() => clearInterval(timer));
+
+    effect((onCleanup) => {
+      if (!this.screenshot.hasValue()) return;
+      const url = URL.createObjectURL(this.screenshot.value());
+      this.screenshotUrl.set(url);
+      onCleanup(() => {
+        this.screenshotUrl.set(undefined);
+        URL.revokeObjectURL(url);
+      });
+    });
 
     // The booking flow is over: the next booking starts from a clean form.
     effect(() => {

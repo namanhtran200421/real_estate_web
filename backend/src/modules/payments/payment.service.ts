@@ -3,16 +3,17 @@
  *
  * Flow:
  *   1. The guest picks deposit or full payment; `transferInstructions` returns the account and a
- *      VietQR code with the amount and the booking reference (as transfer note) filled in. The
- *      guest pays and is done: the site cannot see the bank account, so it asks for no report.
- *   2. The owner, emailed when the booking was made, sees the transfer in the bank app and records
- *      it (`recordManualPayment`): the money counts and the booking is confirmed. Money seen after
- *      the hold ran out still confirms the booking while its dates are free.
- * A booking is only confirmed once its money has been confirmed by the owner.
+ *      VietQR code with the amount and the booking reference (as transfer note) filled in.
+ *   2. Having paid, the guest reports the transfer with a screenshot from their bank app
+ *      (`reportTransfer`). The report holds the dates and the owner is emailed.
+ *   3. The owner finds the money in the bank app and verifies the report (the money counts and
+ *      the booking is confirmed) or rejects it (the guest gets a fresh hold to pay or explain).
+ * The site cannot see the bank account: a screenshot is evidence, and a booking is only
+ * confirmed once its money has been confirmed by the owner (docs/adr/0001).
  *
- * The earlier flow, where the guest reports the transfer (`reportTransfer`) and the owner verifies
- * or rejects the report, stays for pages loaded before the website stopped offering it.
- * Cash is recorded the same way as transfers; refunds are made by the owner and recorded here.
+ * The owner can also record money that arrived without a report (`recordManualPayment`): cash,
+ * or a guest who never reported. Money seen after the hold ran out still confirms the booking
+ * while its dates are free. Refunds are made by the owner and recorded here.
  */
 import QRCode from 'qrcode';
 import { env } from '../../config/env.js';
@@ -25,9 +26,13 @@ import { derivePaymentStatus, isPayable, paymentOptions } from '../bookings/book
 import type { BookingRecord, PaymentProvider, TransferInstructions } from '../bookings/booking.types.js';
 import { emailService } from '../notifications/email.service.js';
 import { paymentRepository } from './payment.repository.js';
+import type { TransferScreenshot } from './transfer-screenshot.js';
 import { buildVietQrPayload } from './vietqr.js';
 
 export type PaymentOption = 'deposit' | 'full';
+
+/** Transfer screenshots are deleted this long after upload (docs/adr/0002). */
+const SCREENSHOT_RETENTION_DAYS = 35;
 
 /** "RE-2611-K7Q3M" → "RE2611K7Q3M": banks drop or mangle dashes in transfer notes. */
 export function transferNote(reference: string): string {
@@ -63,11 +68,16 @@ async function queueOwnerPaymentResult(booking: BookingRecord, amount: number, n
   }
 }
 
-async function lockedBookingForGuest(reference: string, token: string | undefined, db: Db): Promise<BookingRecord> {
-  const booking = await bookingRepository.findByReference(reference, db, true);
+/** The guest's own booking; 404 when it does not exist or the token belongs to another one. */
+async function bookingForGuest(reference: string, token: string | undefined, db?: Db, lock = false): Promise<BookingRecord> {
+  const booking = await bookingRepository.findByReference(reference, db, lock);
   if (!booking) throw HttpError.notFound('Không tìm thấy đặt phòng.');
   assertAccess(booking.id, token);
   return booking;
+}
+
+function screenshotNotFound(): HttpError {
+  return HttpError.notFound('Không tìm thấy ảnh chuyển khoản.');
 }
 
 /** Amount for the chosen option, or the reason it cannot be paid now. */
@@ -100,10 +110,7 @@ async function transferInstructions(
   token: string | undefined,
   option: PaymentOption,
 ): Promise<TransferInstructions> {
-  const booking = await bookingRepository.findByReference(reference);
-  if (!booking) throw HttpError.notFound('Không tìm thấy đặt phòng.');
-  assertAccess(booking.id, token);
-
+  const booking = await bookingForGuest(reference, token);
   const amount = await amountFor(booking, option);
   const note = transferNote(booking.reference);
   const payload = buildVietQrPayload({ bin: env.bank.bin, accountNumber: env.bank.accountNumber, amount, note });
@@ -120,16 +127,23 @@ async function transferInstructions(
 }
 
 /**
- * The guest says they have transferred. Holds the dates until the owner checks, and emails both.
- * Reporting again while a report is being checked is refused, so nothing is counted twice.
+ * The guest has transferred and sends the screenshot from their bank app. Holds the dates until
+ * the owner checks, and emails both. Reporting again while a report is being checked is refused,
+ * so nothing is counted twice and the screenshot the owner is looking at cannot change.
  */
-async function reportTransfer(reference: string, token: string | undefined, option: PaymentOption): Promise<void> {
+async function reportTransfer(
+  reference: string,
+  token: string | undefined,
+  option: PaymentOption,
+  screenshot: TransferScreenshot,
+): Promise<void> {
   await withTransaction(async (db) => {
-    const booking = await lockedBookingForGuest(reference, token, db);
+    const booking = await bookingForGuest(reference, token, db, true);
     const amount = await amountFor(booking, option, db);
     const note = transferNote(booking.reference);
 
     const paymentId = await paymentRepository.insertReported(booking.id, amount, note, db);
+    await paymentRepository.insertScreenshot(paymentId, screenshot, db);
     await bookingRepository.clearHold(booking.id, db);
     await bookingRepository.addEvent(booking.id, 'transfer_reported', 'guest', { amount, paymentId }, db);
 
@@ -140,6 +154,23 @@ async function reportTransfer(reference: string, token: string | undefined, opti
       db,
     );
   });
+}
+
+/**
+ * Lets a guest's upload be refused before its body is read: only someone who can open the
+ * booking may send a screenshot for it.
+ */
+async function assertGuestAccess(reference: string, token: string | undefined): Promise<void> {
+  await bookingForGuest(reference, token);
+}
+
+/** The screenshot attached to the reported transfer the owner is still checking. */
+async function reportedTransferScreenshot(reference: string, token: string | undefined): Promise<TransferScreenshot> {
+  const booking = await bookingForGuest(reference, token);
+  const reported = await paymentRepository.findPendingForBooking(booking.id);
+  const screenshot = reported && (await paymentRepository.findScreenshot(reported.id));
+  if (!screenshot) throw screenshotNotFound();
+  return screenshot;
 }
 
 // ---------------------------------------------------------------------------
@@ -237,6 +268,13 @@ async function recordManualPayment(
   });
 }
 
+/** The screenshot the guest attached to a reported transfer, while it is kept. */
+async function transferScreenshot(paymentId: string): Promise<TransferScreenshot> {
+  const screenshot = await paymentRepository.findScreenshot(paymentId);
+  if (!screenshot) throw screenshotNotFound();
+  return screenshot;
+}
+
 /** Records money the owner gave back (the owner makes the transfer from their bank app). */
 async function recordRefund(paymentId: string, request: { amount: number; reason: string }, admin: AdminIdentity): Promise<void> {
   await withTransaction(async (db) => {
@@ -257,11 +295,28 @@ async function recordRefund(paymentId: string, request: { amount: number; reason
   });
 }
 
+// ---------------------------------------------------------------------------
+// Background job
+// ---------------------------------------------------------------------------
+
+/**
+ * Deletes transfer screenshots 35 days after upload, once the owner has answered the report.
+ * The payment and its history stay; the bank statement is the lasting record of the money.
+ * @param now the job's clock (tests pass a later one)
+ */
+async function purgeOldTransferScreenshots(now = new Date()): Promise<number> {
+  return paymentRepository.deleteCheckedScreenshotsOlderThan(SCREENSHOT_RETENTION_DAYS, now);
+}
+
 export const paymentService = {
   transferInstructions,
+  assertGuestAccess,
   reportTransfer,
+  reportedTransferScreenshot,
+  transferScreenshot,
   verifyTransfer,
   rejectTransfer,
   recordManualPayment,
   recordRefund,
+  purgeOldTransferScreenshots,
 };

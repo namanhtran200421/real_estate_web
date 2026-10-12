@@ -206,8 +206,8 @@ export const env = Object.freeze({
 
   booking: Object.freeze({
     /**
-     * How long an unpaid booking holds its dates. Guests only scan the QR and pay; the owner
-     * confirms when the money shows in the bank app, so this must leave the owner time to look.
+     * How long an unpaid booking holds its dates while the guest transfers and sends the
+     * screenshot. Once reported, the dates stay held until the owner verifies or rejects.
      */
     holdMinutes: integer('BOOKING_HOLD_MINUTES', 180, 10, 24 * 60),
     /** Signs the per-booking access tokens guests use to view and pay their booking. */

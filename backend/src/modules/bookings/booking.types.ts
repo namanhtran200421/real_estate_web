@@ -95,7 +95,7 @@ export interface GuestBooking {
   /** Unpaid bookings are released at this time. */
   holdExpiresAt: string | null;
   /** A transfer the guest reported that the owner is still checking. */
-  pendingTransfer: { amount: number; reportedAt: string } | null;
+  pendingTransfer: { amount: number; reportedAt: string; hasScreenshot: boolean } | null;
   createdAt: string;
   payments: GuestPayment[];
 }
@@ -125,6 +125,8 @@ export interface AdminPayment extends GuestPayment {
   note: string | null;
   /** Admin who recorded or verified it. */
   recordedBy: string | null;
+  /** The guest's screenshot of a reported transfer; deleted 35 days after upload once answered. */
+  hasScreenshot: boolean;
   /** Amount still refundable (paid minus refunds). */
   refundable: number;
   refunds: AdminRefund[];
