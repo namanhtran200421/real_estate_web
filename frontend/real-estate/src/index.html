@@ -40,8 +40,8 @@
     .hero-mist { opacity: 0; pointer-events: none; }
     @media (prefers-reduced-motion: no-preference) and (hover: hover) and (pointer: fine) and (min-width: 1024px) {
       html.motion-opening .hero-mist { animation: hero-mist 900ms cubic-bezier(0.22, 1, 0.36, 1) both; }
-      html.motion-opening .hero-line > span { animation: hero-line 800ms cubic-bezier(0.22, 1, 0.36, 1) both; animation-delay: calc(var(--line, 0) * 90ms + 150ms); }
-      html.motion-opening .hero-image img { animation: hero-image 1200ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+      html.motion-opening .hero-line > span { animation: hero-line 600ms cubic-bezier(0.22, 1, 0.36, 1) both; animation-delay: calc(var(--line, 0) * 80ms + 100ms); }
+      html.motion-opening .hero-image img { animation: hero-image 900ms cubic-bezier(0.22, 1, 0.36, 1) both; }
     }
     @keyframes hero-mist { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-6%); } }
     @keyframes hero-line { from { transform: translateY(105%); } to { transform: none; } }
