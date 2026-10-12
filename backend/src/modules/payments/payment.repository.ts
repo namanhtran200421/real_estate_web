@@ -20,6 +20,8 @@ export interface PaymentRecord {
   recordedBy: string | null;
   /** A reported transfer whose screenshot is still kept. */
   hasScreenshot: boolean;
+  /** The screenshot check's result: null when not checked (or no screenshot). */
+  screenshotShowsTransfer: boolean | null;
   paidAt: Date | null;
   createdAt: Date;
 }
@@ -37,11 +39,13 @@ export interface RefundRecord {
 const PAYMENT_COLUMNS = `
   p.id, p.booking_id AS "bookingId", p.provider, p.amount, p.state,
   p.failure_reason AS "failureReason", p.note, u.email AS "recordedBy",
-  EXISTS (SELECT 1 FROM transfer_screenshots s WHERE s.payment_id = p.id) AS "hasScreenshot",
+  s.payment_id IS NOT NULL AS "hasScreenshot", s.shows_transfer AS "screenshotShowsTransfer",
   p.paid_at AS "paidAt", p.created_at AS "createdAt"
 `;
 
-const FROM_PAYMENTS = 'FROM payments p LEFT JOIN admin_users u ON u.id = p.recorded_by';
+const FROM_PAYMENTS = `FROM payments p
+  LEFT JOIN admin_users u ON u.id = p.recorded_by
+  LEFT JOIN transfer_screenshots s ON s.payment_id = p.id`;
 
 const REFUND_COLUMNS = `
   r.id, r.payment_id AS "paymentId", r.amount, r.reason, u.email AS "createdBy",
@@ -64,13 +68,21 @@ async function insertReported(bookingId: string, amount: number, note: string, d
   return row!.id;
 }
 
-/** The screenshot the guest attached to the transfer they reported. */
-async function insertScreenshot(paymentId: string, screenshot: TransferScreenshot, db: Db): Promise<void> {
-  await query(`INSERT INTO transfer_screenshots (payment_id, content_type, data) VALUES ($1, $2, $3)`, [
-    paymentId,
-    screenshot.contentType,
-    screenshot.data,
-  ], db);
+/**
+ * The screenshot the guest attached to the transfer they reported.
+ * @param showsTransfer the screenshot check's result; null when it could not be checked
+ */
+async function insertScreenshot(
+  paymentId: string,
+  screenshot: TransferScreenshot,
+  showsTransfer: boolean | null,
+  db: Db,
+): Promise<void> {
+  await query(
+    `INSERT INTO transfer_screenshots (payment_id, content_type, data, shows_transfer) VALUES ($1, $2, $3, $4)`,
+    [paymentId, screenshot.contentType, screenshot.data, showsTransfer],
+    db,
+  );
 }
 
 async function findScreenshot(paymentId: string): Promise<TransferScreenshot | undefined> {

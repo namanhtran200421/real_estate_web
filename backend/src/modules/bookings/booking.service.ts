@@ -312,6 +312,7 @@ function toAdminPayment(payment: PaymentRecord, refunds: RefundRecord[]): AdminP
     note: payment.note,
     recordedBy: payment.recordedBy,
     hasScreenshot: payment.hasScreenshot,
+    screenshotShowsTransfer: payment.screenshotShowsTransfer,
     refundable,
     refunds: own.map((refund) => ({
       id: refund.id,

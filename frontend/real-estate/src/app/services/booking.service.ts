@@ -96,11 +96,14 @@ export class BookingService {
   /**
    * "I have transferred": reports the transfer of `option` with the guest's screenshot, which
    * holds the dates until the owner checks. Returns the updated booking.
+   * @param sendAnyway the guest saw the "not a transfer screenshot" warning and sends it regardless
    */
-  async reportTransfer(reference: string, option: PaymentOption, screenshot: Blob): Promise<Booking> {
+  async reportTransfer(reference: string, option: PaymentOption, screenshot: Blob, sendAnyway = false): Promise<Booking> {
+    let params = new HttpParams().set('option', option);
+    if (sendAnyway) params = params.set('sendAnyway', 'true');
     const response = await firstValueFrom(
       this.http.post<ApiResponse<Booking>>(`${this.api}/bookings/${encodeURIComponent(reference)}/transfer`, screenshot, {
-        params: { option },
+        params,
         headers: this.tokenHeaders(reference).set('Content-Type', screenshot.type || 'application/octet-stream'),
       }),
     );

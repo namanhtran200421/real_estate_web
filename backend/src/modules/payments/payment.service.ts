@@ -19,6 +19,7 @@ import QRCode from 'qrcode';
 import { env } from '../../config/env.js';
 import { withTransaction, type Db } from '../../db/pool.js';
 import { HttpError } from '../../lib/http-error.js';
+import { readImageText } from '../../lib/image-text.js';
 import type { AdminIdentity } from '../admin-auth/admin-auth.types.js';
 import { assertAccess } from '../bookings/booking-access.js';
 import { bookingRepository } from '../bookings/booking.repository.js';
@@ -26,7 +27,7 @@ import { derivePaymentStatus, isPayable, paymentOptions } from '../bookings/book
 import type { BookingRecord, PaymentProvider, TransferInstructions } from '../bookings/booking.types.js';
 import { emailService } from '../notifications/email.service.js';
 import { paymentRepository } from './payment.repository.js';
-import type { TransferScreenshot } from './transfer-screenshot.js';
+import { showsTransfer, type ExpectedTransfer, type TransferScreenshot } from './transfer-screenshot.js';
 import { buildVietQrPayload } from './vietqr.js';
 
 export type PaymentOption = 'deposit' | 'full';
@@ -127,23 +128,47 @@ async function transferInstructions(
 }
 
 /**
+ * The screenshot check: whether the image shows a bank transfer, or null when it could not be read.
+ * Only tells an unrelated image from a transfer screenshot; the owner still checks the bank.
+ */
+async function checkScreenshot(screenshot: TransferScreenshot, expected: ExpectedTransfer): Promise<boolean | null> {
+  const text = await readImageText(screenshot.data);
+  if (text === undefined) return null;
+  return showsTransfer(text, expected);
+}
+
+/**
  * The guest has transferred and sends the screenshot from their bank app. Holds the dates until
  * the owner checks, and emails both. Reporting again while a report is being checked is refused,
  * so nothing is counted twice and the screenshot the owner is looking at cannot change.
+ * @param sendAnyway the guest saw the "not a transfer screenshot" warning and sends it regardless
+ * @throws 422 NOT_A_TRANSFER_SCREENSHOT when the image shows no transfer (unless `sendAnyway`)
  */
 async function reportTransfer(
   reference: string,
   token: string | undefined,
   option: PaymentOption,
   screenshot: TransferScreenshot,
+  sendAnyway: boolean,
 ): Promise<void> {
+  // Read the image before taking any lock: OCR takes a moment. The checks repeat under the lock.
+  const unlocked = await bookingForGuest(reference, token);
+  const expected = { note: transferNote(unlocked.reference), amount: await amountFor(unlocked, option) };
+  const shows = await checkScreenshot(screenshot, expected);
+  if (shows === false && !sendAnyway) {
+    throw HttpError.unprocessable(
+      'NOT_A_TRANSFER_SCREENSHOT',
+      'Ảnh này không giống ảnh chuyển khoản. Vui lòng chọn ảnh chụp màn hình giao dịch thành công trong ứng dụng ngân hàng.',
+    );
+  }
+
   await withTransaction(async (db) => {
     const booking = await bookingForGuest(reference, token, db, true);
     const amount = await amountFor(booking, option, db);
     const note = transferNote(booking.reference);
 
     const paymentId = await paymentRepository.insertReported(booking.id, amount, note, db);
-    await paymentRepository.insertScreenshot(paymentId, screenshot, db);
+    await paymentRepository.insertScreenshot(paymentId, screenshot, shows, db);
     await bookingRepository.clearHold(booking.id, db);
     await bookingRepository.addEvent(booking.id, 'transfer_reported', 'guest', { amount, paymentId }, db);
 

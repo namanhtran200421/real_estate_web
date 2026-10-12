@@ -13,6 +13,7 @@
  */
 import assert from 'node:assert/strict';
 import { randomBytes } from 'node:crypto';
+import { readFile } from 'node:fs/promises';
 import type { Server } from 'node:http';
 import { after, before, describe, it } from 'node:test';
 
@@ -39,7 +40,9 @@ const TEST_ENV = {
 };
 
 const APARTMENT = 'sun-garden-a04-12';
+// A PNG signature followed by bytes no decoder can read: passes the type check, defeats OCR.
 const PNG = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.alloc(64, 7)]);
+const fixture = (name: string) => readFile(new URL(`./fixtures/${name}`, import.meta.url));
 
 let server: Server;
 let api: string;
@@ -74,8 +77,10 @@ async function book(daysAhead: number): Promise<NewBooking> {
   return { reference: data.booking.reference, token: data.accessToken, deposit: data.booking.paymentOptions.deposit };
 }
 
-function report(booking: NewBooking, body: BodyInit, contentType = 'image/png'): Promise<Response> {
-  return call(`/bookings/${booking.reference}/transfer?option=deposit`, {
+function report(booking: NewBooking, body: BodyInit, contentType = 'image/png', sendAnyway = false): Promise<Response> {
+  let query = 'option=deposit';
+  if (sendAnyway) query += '&sendAnyway=true';
+  return call(`/bookings/${booking.reference}/transfer?${query}`, {
     method: 'POST',
     headers: { 'Content-Type': contentType, 'X-Booking-Token': booking.token },
     body,
@@ -98,6 +103,8 @@ describe('reporting a transfer with its screenshot', { skip: !databaseUrl && 'TE
 
   after(async () => {
     await new Promise((resolve) => server?.close(resolve));
+    const { stopImageTextReader } = await import('../../lib/image-text.js');
+    await stopImageTextReader();
     const { closePool } = await import('../../db/pool.js');
     await closePool();
   });
@@ -168,12 +175,46 @@ describe('reporting a transfer with its screenshot', { skip: !databaseUrl && 'TE
     const [payment] = detail.data.payments;
     assert.equal(payment.state, 'pending');
     assert.equal(payment.hasScreenshot, true);
+    assert.equal(payment.screenshotShowsTransfer, null, 'an image OCR cannot read is stored unchecked');
 
     const image = await call(`/admin/payments/${payment.id}/screenshot`, { headers: owner });
     assert.equal(image.status, 200);
     assert.equal(image.headers.get('content-type'), 'image/png');
     assert.deepEqual(Buffer.from(await image.arrayBuffer()), PNG);
     assert.equal((await call(`/admin/payments/${payment.id}/screenshot`)).status, 401, 'signed-in owners only');
+  });
+
+  it('warns the guest when the image shows no transfer, and stores nothing', async () => {
+    const booking = await book(100);
+
+    const response = await report(booking, await fixture('unrelated-photo.png'));
+
+    assert.equal(response.status, 422);
+    assert.equal((await response.json()).error.code, 'NOT_A_TRANSFER_SCREENSHOT');
+    const view = await call(`/bookings/${booking.reference}`, { headers: { 'X-Booking-Token': booking.token } });
+    assert.equal((await view.json()).data.pendingTransfer, null);
+  });
+
+  it('lets the guest send it anyway, flagged for the owner', async () => {
+    const booking = await book(110);
+
+    const response = await report(booking, await fixture('unrelated-photo.png'), 'image/png', true);
+
+    assert.equal(response.status, 200, await response.clone().text());
+    const owner = { Authorization: `Bearer ${await signInAsOwner()}` };
+    const [payment] = (await (await call(`/admin/bookings/${booking.reference}`, { headers: owner })).json()).data.payments;
+    assert.equal(payment.screenshotShowsTransfer, false);
+  });
+
+  it('takes a transfer screenshot without a second look', async () => {
+    const booking = await book(120);
+
+    const response = await report(booking, await fixture('transfer-screenshot.png'));
+
+    assert.equal(response.status, 200, await response.clone().text());
+    const owner = { Authorization: `Bearer ${await signInAsOwner()}` };
+    const [payment] = (await (await call(`/admin/bookings/${booking.reference}`, { headers: owner })).json()).data.payments;
+    assert.equal(payment.screenshotShowsTransfer, true);
   });
 
   it('deletes a checked screenshot 35 days after upload, but never one the owner has yet to check', async () => {

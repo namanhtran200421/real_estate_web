@@ -53,3 +53,39 @@ export function sendScreenshot(res: Response, screenshot: TransferScreenshot): v
   res.setHeader('Content-Disposition', 'inline');
   res.send(screenshot.data);
 }
+
+/** What a transfer screenshot for this booking should show. */
+export interface ExpectedTransfer {
+  /** Transfer note, e.g. "RE2610HVGCU". */
+  note: string;
+  amount: number;
+}
+
+/**
+ * The screenshot check's rule, applied to the text OCR read from the image: does it show a bank
+ * transfer? It only tells an unrelated image from a transfer screenshot; it proves nothing.
+ */
+export function showsTransfer(text: string, expected: ExpectedTransfer): boolean {
+  const plain = withoutAccents(text).toUpperCase();
+  if (lettersAndDigits(plain).includes(lettersAndDigits(expected.note))) return true;
+
+  // "1.033.000", "1,033,000" and "1 033 000" all read as 1033000.
+  const digits = plain.replace(/(?<=\d)[.,\s](?=\d)/g, '');
+  if (new RegExp(`(?<!\\d)${expected.amount}(?!\\d)`).test(digits)) return true;
+
+  const words = BANKING_WORDS.filter((word) => plain.includes(word));
+  return words.length >= 2;
+}
+
+/** Words on Vietnamese bank apps' transfer screens, without accents (OCR often loses them). */
+const BANKING_WORDS = ['CHUYEN TIEN', 'CHUYEN KHOAN', 'THANH CONG', 'GIAO DICH', 'SO TIEN', 'NGUOI NHAN', 'VND', 'SUCCESS', 'TRANSFER'];
+
+/** "Thành công" → "Thanh cong". */
+function withoutAccents(text: string): string {
+  return text.normalize('NFD').replace(/\p{M}/gu, '').replace(/đ/g, 'd').replace(/Đ/g, 'D');
+}
+
+/** Letters and digits only, with the characters OCR confuses made the same: O/0, I/L/1. */
+function lettersAndDigits(text: string): string {
+  return text.toUpperCase().replace(/[^A-Z0-9]/g, '').replace(/O/g, '0').replace(/[IL]/g, '1');
+}

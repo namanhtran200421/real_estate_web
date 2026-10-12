@@ -22,6 +22,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@tesseract.js-data/vie": "^1.0.0",
     "compression": "^1.8.2",
     "cors": "^2.8.6",
     "dotenv": "^18.0.3",
@@ -30,6 +31,7 @@
     "helmet": "^8.3.0",
     "pg": "8.23.0",
     "qrcode": "^1.5.4",
+    "tesseract.js": "^7.0.0",
     "zod": "^4.6.5"
   },
   "devDependencies": {

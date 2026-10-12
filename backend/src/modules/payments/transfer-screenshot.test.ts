@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { readTransferScreenshot } from './transfer-screenshot.js';
+import { readTransferScreenshot, showsTransfer } from './transfer-screenshot.js';
 
 // The first bytes of each format, as their specifications define them.
 const JPEG = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46]);
@@ -39,5 +39,34 @@ describe('readTransferScreenshot', () => {
     for (const body of [undefined, Buffer.alloc(0), { option: 'deposit' }]) {
       assert.throws(() => readTransferScreenshot(body), { status: 400, code: 'SCREENSHOT_REQUIRED' });
     }
+  });
+});
+
+describe('showsTransfer', () => {
+  const booking = { note: 'RE2610HVGCU', amount: 1_033_000 };
+
+  it('recognises a bank app’s success screen for this booking', () => {
+    // Text as OCR reads a Vietcombank success screen.
+    const text = 'Chuyển tiền thành công\n1.033.000 VND\nNgười nhận DO HOANG HAI\nNội dung RE2610HVGCU\n12/10/2026 15:42';
+    assert.equal(showsTransfer(text, booking), true);
+  });
+
+  it('still recognises it through the usual OCR misreadings', () => {
+    const misread = [
+      'Noi dung: RE 2610 HVGCU', // note split up
+      'ND: RE261OHVGCU', // 0 read as O
+      'So tien 1,033,000d', // only the amount, with other separators
+      'Chuyen tien thanh cong', // accents lost, no note or amount legible
+    ];
+    for (const text of misread) assert.equal(showsTransfer(text, booking), true, text);
+  });
+
+  it('does not take an unrelated image for a transfer', () => {
+    const unrelated = [
+      '', // a photo with no text
+      'Đà Lạt mùa hoa dã quỳ', // a caption
+      'Giá chỉ 500.000 VND / đêm', // one banking word and another amount
+    ];
+    for (const text of unrelated) assert.equal(showsTransfer(text, booking), false, text);
   });
 });

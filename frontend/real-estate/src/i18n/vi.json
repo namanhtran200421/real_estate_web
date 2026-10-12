@@ -412,6 +412,12 @@
       "change": "Đổi ảnh",
       "remove": "Xoá ảnh",
       "first": "Tải ảnh chuyển khoản lên để tiếp tục.",
+      "notTransfer": {
+        "title": "Ảnh này không giống ảnh chuyển khoản",
+        "text": "Chúng tôi không thấy thông tin chuyển khoản trong ảnh. Vui lòng chọn ảnh chụp màn hình giao dịch thành công trong ứng dụng ngân hàng. Nếu đây đúng là ảnh chuyển khoản, bạn vẫn có thể gửi.",
+        "chooseAnother": "Chọn ảnh khác",
+        "sendAnyway": "Vẫn gửi ảnh này"
+      },
       "problems": {
         "type": "Vui lòng chọn ảnh PNG, JPG hoặc WebP.",
         "size": "Ảnh quá lớn. Vui lòng chọn ảnh dưới 20 MB.",
@@ -532,6 +538,7 @@
     "OVERLOADED": "Hệ thống đang quá tải, vui lòng thử lại sau vài giây.",
     "SCREENSHOT_REQUIRED": "Vui lòng tải ảnh chuyển khoản thành công lên.",
     "SCREENSHOT_NOT_IMAGE": "Ảnh chuyển khoản phải là ảnh PNG, JPG hoặc WebP.",
+    "NOT_A_TRANSFER_SCREENSHOT": "Ảnh này không giống ảnh chuyển khoản. Vui lòng chọn ảnh chụp màn hình giao dịch thành công trong ứng dụng ngân hàng.",
     "bookedDates": "Ngày đã có người đặt: {{ dates }}.",
     "fields": {
       "name": "Nhập họ và tên.",

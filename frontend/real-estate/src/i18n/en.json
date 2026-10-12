@@ -412,6 +412,12 @@
       "change": "Change image",
       "remove": "Remove image",
       "first": "Upload your transfer screenshot to continue.",
+      "notTransfer": {
+        "title": "This doesn’t look like a transfer screenshot",
+        "text": "We couldn’t find any transfer details in this image. Please pick the screenshot of the successful transfer from your banking app. If this is the right one, you can still send it.",
+        "chooseAnother": "Choose another image",
+        "sendAnyway": "Send this image anyway"
+      },
       "problems": {
         "type": "Please pick a PNG, JPG or WebP image.",
         "size": "That image is too large. Please pick one under 20 MB.",
@@ -532,6 +538,7 @@
     "OVERLOADED": "The site is very busy right now. Please try again in a few seconds.",
     "SCREENSHOT_REQUIRED": "Please upload a screenshot of the successful transfer.",
     "SCREENSHOT_NOT_IMAGE": "The transfer screenshot must be a PNG, JPG or WebP image.",
+    "NOT_A_TRANSFER_SCREENSHOT": "This doesn’t look like a transfer screenshot. Please pick the screenshot of the successful transfer from your banking app.",
     "bookedDates": "Booked dates: {{ dates }}.",
     "fields": {
       "name": "Enter your full name.",

@@ -127,6 +127,11 @@ export interface AdminPayment extends GuestPayment {
   recordedBy: string | null;
   /** The guest's screenshot of a reported transfer; deleted 35 days after upload once answered. */
   hasScreenshot: boolean;
+  /**
+   * The screenshot check: true = it shows a transfer, false = it shows none (the guest sent it
+   * anyway), null = not checked.
+   */
+  screenshotShowsTransfer: boolean | null;
   /** Amount still refundable (paid minus refunds). */
   refundable: number;
   refunds: AdminRefund[];

@@ -158,6 +158,13 @@ Hold runs out ──▶ booking expired, dates released. Money seen later still 
   `no-store`. An upload is refused (404) before its body is read unless the token opens the booking.
 - Job `purge-screenshots` deletes each one 35 days after upload once the owner has verified or
   rejected the report. The payment and its history stay.
+- **Screenshot check** (`lib/image-text.ts`, `showsTransfer`): before the report is saved, OCR
+  (Tesseract, on this server, Vietnamese model from `@tesseract.js-data/vie`) reads the image and
+  looks for this booking's transfer note, its amount, or two banking words. An image showing none
+  gets `422 NOT_A_TRANSFER_SCREENSHOT`, and the website offers "Chọn ảnh khác" or "Vẫn gửi ảnh
+  này" (`?sendAnyway=true`), which the owner then sees flagged. It only filters unrelated images;
+  it proves nothing. If OCR fails or takes over 15 s, the report goes through unchecked. The OCR
+  worker thread (about 100 MB) starts on first use and stops after 10 idle minutes.
 
 - **A booking is only confirmed once its money is confirmed by the owner.** Verifying a transfer,
   or recording money received in person, confirms it and queues one booking-confirmation email;

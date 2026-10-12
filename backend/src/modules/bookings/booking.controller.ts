@@ -31,6 +31,11 @@ const lookupBody = z.object({ reference, contact: text(254) });
 
 const paymentOption = z.object({ option: z.enum(['deposit', 'full']) });
 
+const reportQuery = paymentOption.extend({
+  /** The guest saw the "not a transfer screenshot" warning and sends the image anyway. */
+  sendAnyway: z.enum(['true', 'false']).optional(),
+});
+
 function bookingToken(req: Request): string | undefined {
   return req.get('X-Booking-Token') ?? undefined;
 }
@@ -72,14 +77,15 @@ async function checkGuestAccess(req: Request<{ reference: string }>, _res: Respo
 }
 
 /**
- * POST /bookings/:reference/transfer?option=deposit|full, body: the transfer screenshot.
- * "I have transferred, here is my screenshot"; returns the updated booking.
+ * POST /bookings/:reference/transfer?option=deposit|full[&sendAnyway=true], body: the transfer
+ * screenshot. "I have transferred, here is my screenshot"; returns the updated booking.
+ * 422 NOT_A_TRANSFER_SCREENSHOT when the image shows no transfer and `sendAnyway` is not set.
  */
 async function reportTransfer(req: Request<{ reference: string }>, res: Response): Promise<void> {
-  const { option } = parse(paymentOption, req.query);
+  const { option, sendAnyway } = parse(reportQuery, req.query);
   const ref = parse(reference, req.params.reference);
   const screenshot = readTransferScreenshot(req.body);
-  await paymentService.reportTransfer(ref, bookingToken(req), option, screenshot);
+  await paymentService.reportTransfer(ref, bookingToken(req), option, screenshot, sendAnyway === 'true');
   res.json({ data: await bookingService.getForGuest(ref, bookingToken(req)) });
 }
 

@@ -36,6 +36,8 @@ export interface AdminPayment extends BookingPayment {
   recordedBy: string | null;
   /** The guest's screenshot of a reported transfer; deleted 35 days after upload once answered. */
   hasScreenshot: boolean;
+  /** The screenshot check: false = no transfer found and the guest sent it anyway; null = not checked. */
+  screenshotShowsTransfer: boolean | null;
   refundable: number;
   refunds: AdminRefund[];
 }

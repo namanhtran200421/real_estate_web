@@ -46,6 +46,10 @@ _Avoid_: Pending payment, unconfirmed payment
 The picture of a successful transfer, taken in the guest's bank app, that a guest must attach to a reported transfer.
 _Avoid_: Proof of payment, receipt, payment image, bill
 
+**Screenshot check**:
+The automatic reading of a transfer screenshot for signs of a bank transfer (the transfer note, the amount, banking words). It can flag an image that shows no transfer at all; it never confirms that money arrived.
+_Avoid_: Receipt validation, fraud detection, fake detection
+
 **Verify / Reject**:
 The owner's answer to a reported transfer: the money arrived (it counts, and the booking is confirmed), or it did not (the guest gets a new hold to pay or explain).
 _Avoid_: Approve, decline, accept

@@ -130,6 +130,8 @@ export class BookingPayment {
   protected readonly preparing = signal(false);
   protected readonly dragging = signal(false);
   protected readonly screenshotProblem = signal<ScreenshotProblem | 'tooLarge' | undefined>(undefined);
+  /** The screenshot check found no transfer in the picked image: choose another, or send it anyway. */
+  protected readonly notATransfer = signal(false);
   protected readonly submitting = signal(false);
   protected readonly submitError = signal<string | undefined>(undefined);
 
@@ -200,10 +202,14 @@ export class BookingPayment {
     this.releasePreview();
     this.screenshot.set(undefined);
     this.screenshotProblem.set(undefined);
+    this.notATransfer.set(false);
   }
 
-  /** Sends the screenshot: the dates stay held until the owner checks, and the guest moves on. */
-  protected async submit(): Promise<void> {
+  /**
+   * Sends the screenshot: the dates stay held until the owner checks, and the guest moves on.
+   * @param sendAnyway after the warning that the image shows no transfer
+   */
+  protected async submit(sendAnyway = false): Promise<void> {
     const booking = this.b();
     const option = this.effectiveOption();
     const screenshot = this.screenshot();
@@ -212,11 +218,13 @@ export class BookingPayment {
     this.submitting.set(true);
     this.submitError.set(undefined);
     try {
-      const updated = await this.bookings.reportTransfer(booking.reference, option, screenshot.blob);
+      const updated = await this.bookings.reportTransfer(booking.reference, option, screenshot.blob, sendAnyway);
       void this.router.navigate(['/booking', updated.reference, 'confirmation']);
     } catch (error) {
       const apiError = toApiError(error);
-      if (apiError.code === 'PAYLOAD_TOO_LARGE') {
+      if (apiError.code === 'NOT_A_TRANSFER_SCREENSHOT') {
+        this.notATransfer.set(true);
+      } else if (apiError.code === 'PAYLOAD_TOO_LARGE') {
         this.screenshotProblem.set('tooLarge');
       } else {
         this.submitError.set(this.errorMessages.message(apiError));
@@ -231,6 +239,7 @@ export class BookingPayment {
   private async useFile(file: File): Promise<void> {
     this.screenshotProblem.set(undefined);
     this.submitError.set(undefined);
+    this.notATransfer.set(false);
     this.preparing.set(true);
     try {
       const blob = await prepareScreenshot(file);
