@@ -20,22 +20,25 @@
       </p>
     </div>
 
-    <nav
-      [attr.aria-label]="'apartment.sections' | transloco"
-      class="mt-8 flex gap-8 overflow-x-auto border-b border-border [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-    >
-      @for (tab of tabs; track tab.path) {
-        <a
-          [routerLink]="tab.path"
-          [queryParams]="{ apt: apt.slug }"
-          routerLinkActive="is-active"
-          [routerLinkActiveOptions]="{ paths: 'exact', queryParams: 'ignored', matrixParams: 'ignored', fragment: 'ignored' }"
-          ariaCurrentWhenActive="page"
-          class="nav-link small-caps shrink-0 py-4 [--nav-underline-offset:0px]"
-        >
-          {{ tab.label | transloco }}
-        </a>
-      }
-    </nav>
+    <!-- The rule sits outside the scroller so it stays solid while the tabs fade out at the edge on phones. -->
+    <div class="mt-8 border-b border-border">
+      <nav
+        [attr.aria-label]="'apartment.sections' | transloco"
+        class="flex gap-8 overflow-x-auto pr-10 [mask-image:linear-gradient(to_right,black_calc(100%-3rem),transparent)] [scrollbar-width:none] sm:pr-0 sm:[mask-image:none] [&::-webkit-scrollbar]:hidden"
+      >
+        @for (tab of tabs; track tab.path) {
+          <a
+            [routerLink]="tab.path"
+            [queryParams]="{ apt: apt.slug }"
+            routerLinkActive="is-active"
+            [routerLinkActiveOptions]="{ paths: 'exact', queryParams: 'ignored', matrixParams: 'ignored', fragment: 'ignored' }"
+            ariaCurrentWhenActive="page"
+            class="nav-link small-caps shrink-0 py-4 [--nav-underline-offset:0px]"
+          >
+            {{ tab.label | transloco }}
+          </a>
+        }
+      </nav>
+    </div>
   </div>
 </div>

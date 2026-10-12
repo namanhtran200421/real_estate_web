@@ -11,12 +11,12 @@
       />
     </a>
 
-    <nav [attr.aria-label]="'nav.main' | transloco" class="ml-10 hidden items-center gap-8 lg:flex">
+    <nav [attr.aria-label]="'nav.main' | transloco" class="ml-10 hidden items-center gap-6 lg:flex xl:gap-8">
       @for (link of links; track link.path) {
         <a
           [routerLink]="link.path"
           routerLinkActive="is-active"
-          [routerLinkActiveOptions]="{ exact: true }"
+          [routerLinkActiveOptions]="activeOptions"
           ariaCurrentWhenActive="page"
           class="nav-link whitespace-nowrap py-1 text-sm font-medium tracking-[0.03em]"
         >
@@ -26,11 +26,6 @@
     </nav>
 
     <div class="ml-auto flex items-center gap-3">
-      <!-- Search (desktop) -->
-      <ng-container *ngTemplateOutlet="search; context: { id: 'site-search' }" />
-
-      <span class="hidden h-5 w-px bg-border lg:block" aria-hidden="true"></span>
-
       <div class="small-caps hidden items-center sm:flex" role="group" [attr.aria-label]="'nav.language' | transloco">
         <ng-container *ngTemplateOutlet="languageSwitch" />
       </div>
@@ -64,14 +59,13 @@
   @if (menuOpen()) {
     <nav id="mobile-menu" [attr.aria-label]="'nav.menu' | transloco" class="border-t border-border bg-background lg:hidden">
       <div class="container-editorial max-w-6xl py-4">
-        <ng-container *ngTemplateOutlet="search; context: { id: 'site-search-mobile', mobile: true }" />
-        <ul class="mt-2 divide-y divide-border">
+        <ul class="divide-y divide-border">
           @for (link of links; track link.path) {
             <li>
               <a
                 [routerLink]="link.path"
                 routerLinkActive="text-accent-deep!"
-                [routerLinkActiveOptions]="{ exact: true }"
+                [routerLinkActiveOptions]="activeOptions"
                 ariaCurrentWhenActive="page"
                 class="flex min-h-12 items-center font-serif text-lg transition-colors hover:text-accent-deep"
                 (click)="menuOpen.set(false)"
@@ -96,37 +90,6 @@
     </nav>
   }
 </header>
-
-<ng-template #search let-id="id" let-mobile="mobile">
-  <form
-    role="search"
-    class="relative"
-    [class]="mobile ? 'block w-full' : 'hidden w-56 lg:block xl:w-72'"
-    (submit)="$event.preventDefault()"
-  >
-    <label [for]="id" class="sr-only">{{ 'nav.search' | transloco }}</label>
-    <svg
-      viewBox="0 0 24 24"
-      class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
-      fill="none"
-      stroke="currentColor"
-      stroke-width="1.75"
-      aria-hidden="true"
-    >
-      <circle cx="11" cy="11" r="6.5" />
-      <path d="m20 20-4.2-4.2" stroke-linecap="round" />
-    </svg>
-    <input
-      [id]="id"
-      type="search"
-      enterkeyhint="search"
-      autocomplete="off"
-      [placeholder]="'nav.searchPlaceholder' | transloco"
-      class="input pl-9 text-sm"
-      [class]="mobile ? 'h-11 bg-card' : 'h-10 border-transparent bg-muted hover:border-border focus-visible:bg-card'"
-    />
-  </form>
-</ng-template>
 
 <!-- VI / EN: the current language, and a plain link (full page load) to this page in the other one. -->
 <ng-template #languageSwitch>

@@ -1,7 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { IsActiveMatchOptions, NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { filter, map } from 'rxjs';
 import { SITE } from '../../data/site';
@@ -22,9 +22,19 @@ export class SiteHeader {
   /** `label` is a translation key. */
   protected readonly links = [
     { label: 'nav.home', path: '/' },
+    { label: 'nav.apartment', path: '/apartment' },
+    { label: 'nav.availability', path: '/availability' },
     { label: 'nav.about', path: '/about' },
     { label: 'nav.contact', path: '/contact' },
   ];
+
+  /** A link stays active on its page whatever apartment (`?apt=`) is selected. */
+  protected readonly activeOptions: IsActiveMatchOptions = {
+    paths: 'exact',
+    queryParams: 'ignored',
+    matrixParams: 'ignored',
+    fragment: 'ignored',
+  };
 
   /** The current page in each language; switching is a full page load of the other URL. */
   protected readonly languages = toSignal(

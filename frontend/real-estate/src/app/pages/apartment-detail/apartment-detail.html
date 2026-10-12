@@ -7,69 +7,8 @@
     </div>
   </section>
 
-  <section id="danh-gia" class="py-14 md:py-20" aria-labelledby="apartment-reviews-title">
-    <div class="container-editorial grid max-w-6xl gap-8 md:grid-cols-[0.8fr_1.2fr] md:items-center md:gap-12">
-      <div>
-        <p class="small-caps text-accent-deep">{{ 'apartment.reviewsEyebrow' | transloco }}</p>
-        <h2 id="apartment-reviews-title" class="mt-3 text-3xl md:text-4xl">{{ 'apartment.reviewsTitle' | transloco }}</h2>
-        <span class="rule-accent mt-6"></span>
-      </div>
-      <div>
-        @if (reviewsLoading()) {
-          <p class="text-muted-foreground" role="status">{{ 'apartment.reviewsLoading' | transloco }}</p>
-        } @else if (reviewsFailed()) {
-          <p class="text-muted-foreground" role="status">{{ 'apartment.reviewsUnavailable' | transloco }}</p>
-        } @else if (reviews().length) {
-          <div class="grid gap-4">
-            @for (review of reviews(); track review.id) {
-              <article class="rounded-lg border border-border bg-card p-6 shadow-sm md:p-8">
-                <div class="flex flex-wrap items-center justify-between gap-3">
-                  <span class="text-xl tracking-wider" [attr.aria-label]="'apartment.reviewRating' | transloco: { rating: review.rating }">
-                    @for (star of [1, 2, 3, 4, 5]; track star) {
-                      <span aria-hidden="true" [class]="star <= review.rating ? 'text-accent-deep' : 'text-border'">★</span>
-                    }
-                  </span>
-                  <p class="small-caps text-muted-foreground">{{ 'apartment.verifiedGuest' | transloco }} · {{ review.stayedAt | date: 'MM/yyyy' }}</p>
-                </div>
-                <p class="mt-5 whitespace-pre-line text-foreground">{{ review.comment }}</p>
-              </article>
-            }
-          </div>
-        } @else {
-          <div class="flex min-h-44 items-center gap-5 rounded-lg border border-border bg-card p-7 shadow-sm md:p-9">
-            <svg viewBox="0 0 24 24" class="size-10 shrink-0 text-accent-deep" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H7l-4 2v-5.5a7.5 7.5 0 1 1 17-4Z" />
-              <path d="M8 11.5h.01M12 11.5h.01M16 11.5h.01" />
-            </svg>
-            <p class="text-base text-muted-foreground md:text-lg">{{ 'apartment.reviewsPending' | transloco }}</p>
-          </div>
-        }
-        <p class="mt-5 text-sm text-muted-foreground">{{ 'apartment.reviewsHow' | transloco }}</p>
-        <a routerLink="/booking/manage" class="btn btn-outline mt-4">{{ 'apartment.reviewsAction' | transloco }}</a>
-      </div>
-    </div>
-  </section>
-
-  <section class="border-t border-border bg-muted py-14 md:py-20" aria-labelledby="apartment-location-title">
-    <div class="container-editorial grid max-w-6xl gap-6 lg:grid-cols-[1.25fr_0.75fr]">
-      <div class="overflow-hidden rounded-lg border border-border bg-card shadow-sm">
-        @defer (on viewport) {
-          <iframe [title]="'location.mapTitle' | transloco: { name: apt.name }" [src]="mapUrl()" loading="lazy" referrerpolicy="no-referrer-when-downgrade" class="block h-80 w-full md:h-96"></iframe>
-        } @placeholder {
-          <div class="grid h-80 place-items-center md:h-96"><span class="small-caps text-muted-foreground">{{ 'location.loadingMap' | transloco }}</span></div>
-        }
-      </div>
-      <div class="flex flex-col rounded-lg border border-border bg-card p-7 md:p-9">
-        <p class="small-caps text-accent-deep">{{ 'apartment.locationEyebrow' | transloco }}</p>
-        <h2 id="apartment-location-title" class="mt-3 text-3xl">{{ 'apartment.locationTitle' | transloco }}</h2>
-        <p class="mt-4 text-muted-foreground">{{ apt.address }}</p>
-        <a [href]="mapsLink()" target="_blank" rel="noopener noreferrer" class="link mt-5 inline-flex items-center gap-2 self-start">{{ 'apartment.openMap' | transloco }} <span aria-hidden="true">↗</span></a>
-      </div>
-    </div>
-  </section>
-
   <!-- Details + booking card -->
-  <section class="pb-20 pt-12 md:pb-28 md:pt-16">
+  <section class="pb-16 pt-12 md:pb-24 md:pt-16">
     <div class="container-editorial grid max-w-6xl gap-14 lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-16">
       <div class="min-w-0">
         <!-- Summary -->
@@ -191,6 +130,69 @@
       <aside class="lg:sticky lg:top-28 lg:self-start">
         <app-booking-card [priceFrom]="apt.pricing.weekday" [slug]="apt.slug" />
       </aside>
+    </div>
+  </section>
+
+  <!-- Location -->
+  <section class="border-t border-border bg-muted py-14 md:py-20" aria-labelledby="apartment-location-title">
+    <div class="container-editorial grid max-w-6xl gap-6 lg:grid-cols-[1.25fr_0.75fr]">
+      <div class="overflow-hidden rounded-lg border border-border bg-card shadow-sm">
+        @defer (on viewport) {
+          <iframe [title]="'location.mapTitle' | transloco: { name: apt.name }" [src]="mapUrl()" loading="lazy" referrerpolicy="no-referrer-when-downgrade" class="block h-80 w-full md:h-96"></iframe>
+        } @placeholder {
+          <div class="grid h-80 place-items-center md:h-96"><span class="small-caps text-muted-foreground">{{ 'location.loadingMap' | transloco }}</span></div>
+        }
+      </div>
+      <div class="flex flex-col rounded-lg border border-border bg-card p-7 md:p-9">
+        <p class="small-caps text-accent-deep">{{ 'apartment.locationEyebrow' | transloco }}</p>
+        <h2 id="apartment-location-title" class="mt-3 text-3xl">{{ 'apartment.locationTitle' | transloco }}</h2>
+        <p class="mt-4 text-muted-foreground">{{ apt.address }}</p>
+        <a [href]="mapsLink()" target="_blank" rel="noopener noreferrer" class="link mt-5 inline-flex items-center gap-2 self-start">{{ 'apartment.openMap' | transloco }} <span aria-hidden="true">↗</span></a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Guest reviews -->
+  <section id="danh-gia" class="border-t border-border py-14 md:py-20" aria-labelledby="apartment-reviews-title">
+    <div class="container-editorial grid max-w-6xl gap-8 md:grid-cols-[0.8fr_1.2fr] md:items-center md:gap-12">
+      <div>
+        <p class="small-caps text-accent-deep">{{ 'apartment.reviewsEyebrow' | transloco }}</p>
+        <h2 id="apartment-reviews-title" class="mt-3 text-3xl md:text-4xl">{{ 'apartment.reviewsTitle' | transloco }}</h2>
+        <span class="rule-accent mt-6"></span>
+      </div>
+      <div>
+        @if (reviewsLoading()) {
+          <p class="text-muted-foreground" role="status">{{ 'apartment.reviewsLoading' | transloco }}</p>
+        } @else if (reviewsFailed()) {
+          <p class="text-muted-foreground" role="status">{{ 'apartment.reviewsUnavailable' | transloco }}</p>
+        } @else if (reviews().length) {
+          <div class="grid gap-4">
+            @for (review of reviews(); track review.id) {
+              <article class="rounded-lg border border-border bg-card p-6 shadow-sm md:p-8">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                  <span class="text-xl tracking-wider" [attr.aria-label]="'apartment.reviewRating' | transloco: { rating: review.rating }">
+                    @for (star of [1, 2, 3, 4, 5]; track star) {
+                      <span aria-hidden="true" [class]="star <= review.rating ? 'text-accent-deep' : 'text-border'">★</span>
+                    }
+                  </span>
+                  <p class="small-caps text-muted-foreground">{{ 'apartment.verifiedGuest' | transloco }} · {{ review.stayedAt | date: 'MM/yyyy' }}</p>
+                </div>
+                <p class="mt-5 whitespace-pre-line text-foreground">{{ review.comment }}</p>
+              </article>
+            }
+          </div>
+        } @else {
+          <div class="flex min-h-44 items-center gap-5 rounded-lg border border-border bg-card p-7 shadow-sm md:p-9">
+            <svg viewBox="0 0 24 24" class="size-10 shrink-0 text-accent-deep" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H7l-4 2v-5.5a7.5 7.5 0 1 1 17-4Z" />
+              <path d="M8 11.5h.01M12 11.5h.01M16 11.5h.01" />
+            </svg>
+            <p class="text-base text-muted-foreground md:text-lg">{{ 'apartment.reviewsPending' | transloco }}</p>
+          </div>
+        }
+        <p class="mt-5 text-sm text-muted-foreground">{{ 'apartment.reviewsHow' | transloco }}</p>
+        <a routerLink="/booking/manage" class="btn btn-outline mt-4">{{ 'apartment.reviewsAction' | transloco }}</a>
+      </div>
     </div>
   </section>
 

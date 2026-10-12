@@ -2,9 +2,9 @@
 
 <article
   class="group grid h-full overflow-hidden rounded-lg border border-border bg-card transition-[border-color,box-shadow] hover:border-border-hover"
-  [class]="featured() ? 'shadow-md hover:shadow-lg md:grid-cols-[1.3fr_0.7fr]' : 'grid-rows-[auto_1fr] shadow-sm hover:shadow-md'"
+  [class]="featured() ? 'shadow-md hover:shadow-lg lg:grid-cols-[minmax(0,1fr)_26rem]' : 'grid-rows-[auto_1fr] shadow-sm hover:shadow-md'"
 >
-  <div class="relative isolate aspect-[4/3] overflow-hidden bg-muted" [class]="featured() ? 'md:aspect-auto md:min-h-[26rem]' : ''">
+  <div class="relative isolate aspect-[4/3] overflow-hidden bg-muted" [class]="featured() ? 'md:aspect-[16/10] lg:aspect-auto lg:min-h-[28rem]' : ''">
     @if (slides()) {
       <!-- Embla moves the track inside this viewport: swipe, drag, buttons or arrow keys -->
       <div
@@ -32,7 +32,7 @@
                   fill
                   [priority]="i === 0"
                   [loading]="i === 0 ? undefined : 'eager'"
-                  sizes="(min-width: 768px) 60vw, 100vw"
+                  sizes="(min-width: 1024px) 60vw, 100vw"
                   class="select-none object-cover"
                   draggable="false"
                 />
@@ -54,7 +54,7 @@
         [alt]="photo.alt"
         fill
         [priority]="featured()"
-        [sizes]="featured() ? '(min-width: 768px) 60vw, 100vw' : '(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw'"
+        [sizes]="featured() ? '(min-width: 1024px) 60vw, 100vw' : '(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw'"
         class="object-cover"
       />
     }

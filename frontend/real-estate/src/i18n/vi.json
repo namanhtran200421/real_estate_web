@@ -40,9 +40,7 @@
     "menu": "Menu",
     "openMenu": "Mở menu",
     "closeMenu": "Đóng menu",
-    "language": "Ngôn ngữ",
-    "search": "Tìm căn hộ",
-    "searchPlaceholder": "Tìm căn hộ, khu vực…"
+    "language": "Ngôn ngữ"
   },
   "footer": {
     "links": "Liên kết chân trang",
@@ -247,7 +245,7 @@
   },
   "home": {
     "eyebrow": "Sun Garden · Đà Lạt",
-    "titleStart": "Một góc Đà Lạt",
+    "titleStart": "Một góc Đà\u00a0Lạt",
     "titleEm": "của riêng bạn",
     "intro": "Xem lịch trống, biết giá ngay và đặt phòng trực tuyến, tất cả trên điện thoại của bạn.",
     "otherApartments": "Căn hộ khác",
@@ -270,7 +268,7 @@
   "about": {
     "titleStart": "Một căn hộ",
     "titleEm": "ấm cúng",
-    "titleEnd": "ở Đà Lạt",
+    "titleEnd": "ở Đà\u00a0Lạt",
     "intro": "{{ site }} là căn hộ A04-12 tại Sun Garden, đường Nam Hồ, Đà Lạt.",
     "photoAlt": "Phòng khách và ban công của căn hộ Sun Garden A04-12",
     "apartment": "Căn hộ",
@@ -530,10 +528,10 @@
     "UPSTREAM_ERROR": "Dịch vụ liên kết chưa phản hồi. Vui lòng thử lại sau.",
     "CAPTCHA_REQUIRED": "Vui lòng xác nhận bạn không phải là robot.",
     "CAPTCHA_FAILED": "Xác minh chống robot không hợp lệ hoặc đã hết hạn, vui lòng thử lại.",
-    "SCREENSHOT_REQUIRED": "Vui lòng tải ảnh chuyển khoản thành công lên.",
-    "SCREENSHOT_NOT_IMAGE": "Ảnh chuyển khoản phải là ảnh PNG, JPG hoặc WebP.",
     "CAPTCHA_UNAVAILABLE": "Chưa kiểm tra được xác minh chống robot, vui lòng thử lại sau ít phút.",
     "OVERLOADED": "Hệ thống đang quá tải, vui lòng thử lại sau vài giây.",
+    "SCREENSHOT_REQUIRED": "Vui lòng tải ảnh chuyển khoản thành công lên.",
+    "SCREENSHOT_NOT_IMAGE": "Ảnh chuyển khoản phải là ảnh PNG, JPG hoặc WebP.",
     "bookedDates": "Ngày đã có người đặt: {{ dates }}.",
     "fields": {
       "name": "Nhập họ và tên.",
