@@ -32,7 +32,7 @@ brainstorming spec → council review of spec → writing-plans → council revi
 - [x] Spec written (commit 12495ec)
 - [x] Council: spec reviewed and revised (spec v2)
 - [x] Plan written (`docs/superpowers/plans/2026-10-13-light-cinematic-redesign.md`, 14 tasks)
-- [ ] Council: plan reviewed
+- [x] Council: plan reviewed (47 corrections applied, commit 748b075)
 - [ ] Implementation (see plan task list)
 - [ ] Visual verification
 - [ ] Council: built site reviewed, fixes done
@@ -45,6 +45,7 @@ brainstorming spec → council review of spec → writing-plans → council revi
 
 - 2026-10-13 ~02:00: all three round-1 reviews in; spec rewritten as v2 incorporating every blocking finding.
 - 2026-10-13 ~02:40: implementation plan written (14 tasks) and self-reviewed; council plan review launched.
+- 2026-10-13 ~03:20: plan review in (5 blocking, ~15 important); all applied. Execution via subagent-driven-development; SDD ledger at .superpowers/sdd/2026-10-13-light-cinematic-redesign/progress.md.
 
 ## Council round 1: creative director (received)
 
