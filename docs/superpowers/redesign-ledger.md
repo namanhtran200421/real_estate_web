@@ -29,7 +29,7 @@ brainstorming spec → council review of spec → writing-plans → council revi
 ## Status
 
 - [x] Branch created, baseline green (frontend 18 tests, backend 58 tests)
-- [ ] Spec written
+- [x] Spec written (commit 12495ec)
 - [ ] Council: spec reviewed and revised
 - [ ] Plan written
 - [ ] Council: plan reviewed
@@ -41,3 +41,10 @@ brainstorming spec → council review of spec → writing-plans → council revi
 ## Log
 
 - 2026-10-13: owner asleep; autonomous mode started.
+- 2026-10-13 ~00:20: council round 1 launched on the spec. Creative director reported (findings below). Guest-UX and Angular/perf reviewers stopped on the session usage limit (reset 00:40); relaunched at 01:25.
+
+## Council round 1: creative director (received)
+
+Blocking: (1) add a story concept "Một ngày ở A04-12" (dawn mist → daylight → warm lamps) to tie the motion together; opening = mist lifting, lights-on veil = ivory mist rgba(246,241,232,.55) not slate; **page stays light** (owner rejected dark), the day is told through motion and copy only. (2) Line masks clip Vietnamese stacked marks: display line-height ≥ 1.05, mask padding-block .15em / margin-block −.15em, screenshot test with Ở/ễ/ộ. (3) Home scene 4 must not reuse the sideways track: "Năm khung cửa" five arched windows lighting up 150 ms apart (phones 2 columns). (4) Deep links into the pinned track: scroll via Lenis to st.start + n/(N−1)·(st.end−st.start); shared-photo morph targets the chapter photo. (5) Drop the false "Kéo" cursor label. (6) Phones: full-screen sticky stacking chapters (position:sticky; top:0; height:100svh), pure CSS.
+Suggestions: photo casting (no repeats per page; never 01/11/12 as heroes; phone hero 05; desktop triptych 09·14·04 as one French window with taller arched centre pane); detail crops for small arches; drop count-up (static numbers + line reveal); word fill via opacity .4→1 in navy; lights-on only for photos ≥ 40vw (gallery thumbs 300 ms fade); tour ends on bedroom 2/light, bathrooms folded in, last card = "Xem lịch trống"; calmer promise copy (new home.scenes.promises.* keys), honest "no air-con" as story; page transitions 300 ms, header own view-transition-name, skip when a Tier 2 route is involved; hero image never at opacity 0 (LCP); About needs an owner host note (do not invent one).
+Keep: tokens + .guest scoping; Fraunces/Be Vietnam Pro/Plex Mono; arches, ridges, route map; Tier split, lazy chunk, SSR visible, line/word split; panels, phone sticky bar, once-per-session opening.
