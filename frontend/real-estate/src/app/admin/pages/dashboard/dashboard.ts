@@ -3,6 +3,7 @@ import { DatePipe, DecimalPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { StatusBadge } from '../../../components/status-badge/status-badge';
 import { toApiError } from '../../../core/api';
+import { PaymentPurpose } from '../../../models/booking';
 import { AdminApiService } from '../../admin-api.service';
 import { AwaitingPayment, BalanceDue, MonthStats } from '../../admin.types';
 import { ChartPoint, ColumnChart } from '../../components/column-chart';
@@ -106,14 +107,20 @@ function change(current: number, previous: number): { text: string; up: boolean 
                   </a>
                 </div>
                 <div class="mt-3 flex flex-wrap gap-3">
-                  @if (a.depositAmount > 0 && a.depositAmount < a.totalAmount) {
-                    <button type="button" class="btn btn-outline" [disabled]="busy()" (click)="received(a, a.depositAmount)">
+                  @if (a.depositFirst) {
+                    <button type="button" class="btn btn-outline" [disabled]="busy()" (click)="received(a, a.depositAmount, 'asset_security')">
                       Đã nhận cọc {{ a.depositAmount | number }} ₫
                     </button>
+                  } @else {
+                    @if (a.depositAmount > 0 && a.depositAmount < a.totalAmount) {
+                      <button type="button" class="btn btn-outline" [disabled]="busy()" (click)="received(a, a.depositAmount)">
+                        Đã nhận cọc {{ a.depositAmount | number }} ₫
+                      </button>
+                    }
+                    <button type="button" class="btn btn-outline" [disabled]="busy()" (click)="received(a, a.totalAmount)">
+                      Đã nhận đủ {{ a.totalAmount | number }} ₫
+                    </button>
                   }
-                  <button type="button" class="btn btn-outline" [disabled]="busy()" (click)="received(a, a.totalAmount)">
-                    Đã nhận đủ {{ a.totalAmount | number }} ₫
-                  </button>
                 </div>
               </li>
             }
@@ -133,8 +140,12 @@ function change(current: number, previous: number): { text: string; up: boolean 
                 <div class="flex flex-wrap items-baseline gap-x-6 gap-y-1">
                   <span class="w-24 shrink-0 font-medium">{{ d.checkIn | date: 'EEE dd/MM' }}</span>
                   <a [routerLink]="['/admin/bookings', d.reference]" class="min-w-0 flex-1 text-sm text-muted-foreground hover:underline">
-                    {{ d.customerName }} · <span class="font-mono text-accent-deep">{{ d.note }}</span> · đã trả
-                    {{ d.amountPaid | number }}/{{ d.totalAmount | number }} ₫
+                    {{ d.customerName }} · <span class="font-mono text-accent-deep">{{ d.note }}</span>
+                    @if (d.depositFirst) {
+                      · Tiền phòng (từ {{ d.checkIn | date: 'dd/MM' }})
+                    } @else {
+                      · đã trả {{ d.amountPaid | number }}/{{ d.totalAmount | number }} ₫
+                    }
                   </a>
                   <span class="text-right">
                     <span class="block font-serif text-xl">{{ d.balance | number }} ₫</span>
@@ -321,6 +332,7 @@ export class AdminDashboard {
   protected readonly pendingPayment = signal<{
     reference: string;
     method: 'bank_transfer' | 'cash';
+    purpose: PaymentPurpose;
     amount: number;
     note: string;
   } | undefined>(undefined);
@@ -377,14 +389,14 @@ export class AdminDashboard {
   });
 
   /** The transfer is in the bank account: records it, which confirms the booking and emails the guest. */
-  protected received(booking: AwaitingPayment, amount: number): void {
-    this.pendingPayment.set({ reference: booking.reference, method: 'bank_transfer', amount, note: `Chuyển khoản ${booking.note}` });
+  protected received(booking: AwaitingPayment, amount: number, purpose: PaymentPurpose = 'accommodation'): void {
+    this.pendingPayment.set({ reference: booking.reference, method: 'bank_transfer', purpose, amount, note: `Chuyển khoản ${booking.note}` });
   }
 
   /** The rest of the price arrived (usually at check-in): the booking becomes fully paid. */
   protected balanceReceived(booking: BalanceDue, method: 'bank_transfer' | 'cash'): void {
     const note = method === 'cash' ? 'Tiền mặt, phần còn lại' : `Chuyển khoản ${booking.note}, phần còn lại`;
-    this.pendingPayment.set({ reference: booking.reference, method, amount: booking.balance, note });
+    this.pendingPayment.set({ reference: booking.reference, method, purpose: 'accommodation', amount: booking.balance, note });
   }
 
   protected async confirmRecord(): Promise<void> {

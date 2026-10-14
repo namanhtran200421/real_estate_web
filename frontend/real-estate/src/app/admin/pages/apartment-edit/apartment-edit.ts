@@ -4,6 +4,7 @@ import { ApiError, toApiError } from '../../../core/api';
 import { ApartmentService } from '../../../services/apartment.service';
 import { AdminApiService } from '../../admin-api.service';
 import { AdminApartment, ApartmentInput } from '../../admin.types';
+import { formatChecklist, parseChecklist } from '../../inspection-checklist';
 
 /**
  * The editor's state. List fields are edited as text, one item per line
@@ -35,7 +36,7 @@ interface ApartmentForm {
   monthly: number;
   longStayDiscounts: string;
   depositPercent: number;
-  longStaySecurityAmount: number;
+  inspectionChecklist: string;
   isActive: boolean;
   sortOrder: number;
 }
@@ -66,7 +67,7 @@ const EMPTY: ApartmentForm = {
   monthly: 0,
   longStayDiscounts: '',
   depositPercent: 30,
-  longStaySecurityAmount: 0,
+  inspectionChecklist: '',
   isActive: false,
   sortOrder: 0,
 };
@@ -81,8 +82,10 @@ const lines = (text: string) =>
 const pairs = (text: string) => lines(text).map((line) => line.split('|').map((part) => part.trim()));
 
 function toForm(apartment: AdminApartment): ApartmentForm {
+  const checklist = apartment.inspectionChecklist.length ? apartment.inspectionChecklist : apartment.defaultInspectionChecklist;
   return {
     ...apartment,
+    inspectionChecklist: formatChecklist(checklist),
     description: apartment.description.join('\n\n'),
     photos: apartment.photos.map((p) => `${p.src} | ${p.alt}`).join('\n'),
     keyFacilities: apartment.keyFacilities.join('\n'),
@@ -94,7 +97,16 @@ function toForm(apartment: AdminApartment): ApartmentForm {
   };
 }
 
-function fromForm(form: ApartmentForm): ApartmentInput {
+/**
+ * The checklist to save. The editor shows the default while the apartment has none; leaving that
+ * text untouched keeps the apartment on the default (an empty list) instead of freezing a copy.
+ */
+function checklistToSave(text: string, shownDefault: string | undefined) {
+  if (shownDefault !== undefined && text.trim() === shownDefault.trim()) return [];
+  return parseChecklist(text);
+}
+
+function fromForm(form: ApartmentForm, shownDefault?: string): ApartmentInput {
   return {
     slug: form.slug.trim(),
     name: form.name.trim(),
@@ -129,7 +141,7 @@ function fromForm(form: ApartmentForm): ApartmentInput {
       })),
     },
     depositPercent: form.depositPercent,
-    longStaySecurityAmount: form.longStaySecurityAmount,
+    inspectionChecklist: checklistToSave(form.inspectionChecklist, shownDefault),
     isActive: form.isActive,
     sortOrder: form.sortOrder,
   };
@@ -153,6 +165,8 @@ export class AdminApartmentEdit {
   protected readonly saving = signal(false);
   protected readonly saved = signal(false);
   protected readonly error = signal<ApiError | undefined>(undefined);
+  /** The default checklist text, while the editor shows it because the apartment has no list of its own. */
+  private shownDefault: string | undefined;
 
   constructor() {
     effect(() => {
@@ -164,7 +178,9 @@ export class AdminApartmentEdit {
   private async load(slug: string): Promise<void> {
     this.loading.set(true);
     try {
-      this.form.set(toForm(await this.api.apartment(slug)));
+      const apartment = await this.api.apartment(slug);
+      this.shownDefault = apartment.inspectionChecklist.length ? undefined : formatChecklist(apartment.defaultInspectionChecklist);
+      this.form.set(toForm(apartment));
     } catch (error) {
       this.error.set(toApiError(error));
     } finally {
@@ -194,7 +210,7 @@ export class AdminApartmentEdit {
     this.saving.set(true);
     this.error.set(undefined);
     try {
-      const input = fromForm(this.form());
+      const input = fromForm(this.form(), this.shownDefault);
       const current = this.slug();
       let saved: AdminApartment;
       if (current) saved = await this.api.updateApartment(current, input);

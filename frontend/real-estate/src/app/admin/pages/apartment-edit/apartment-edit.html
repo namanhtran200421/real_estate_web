@@ -117,24 +117,25 @@
           <label class="label" for="apt-deposit">Đặt cọc (%)</label>
           <input id="apt-deposit" class="input" type="number" min="0" max="100" [value]="f.depositPercent" (input)="number('depositPercent', $event)" />
         </div>
-        <div>
-          <label class="label" for="apt-security">Bảo đảm tài sản cho kỳ ở ≥ 30 đêm</label>
-          <input
-            id="apt-security"
-            class="input"
-            type="number"
-            min="0"
-            step="1000"
-            [value]="f.longStaySecurityAmount"
-            (input)="number('longStaySecurityAmount', $event)"
-          />
-          <p class="mt-2 text-sm text-muted-foreground">Khoản hoàn lại, tách khỏi tiền phòng; dùng để cấn trừ hư hỏng/thất lạc đã ghi nhận.</p>
-        </div>
       </div>
       <div>
         <label class="label" for="apt-discounts">Giảm giá ở dài ngày: mỗi dòng "số đêm | % giảm"</label>
         <textarea id="apt-discounts" class="input resize-none font-mono" placeholder="3 | 5&#10;7 | 15" [value]="f.longStayDiscounts" (input)="text('longStayDiscounts', $event)"></textarea>
         <p class="mt-2 text-sm text-muted-foreground">Khách được mức cao nhất đủ điều kiện, không áp dụng cho đêm ngày lễ.</p>
+      </div>
+    </fieldset>
+
+    <fieldset class="card space-y-6">
+      <legend class="font-serif text-2xl">Kiểm tra trả phòng</legend>
+      <div>
+        <label class="label" for="apt-checklist">Danh sách kiểm tra trả phòng</label>
+        <textarea
+          id="apt-checklist"
+          class="input min-h-48 resize-none font-mono text-sm"
+          [value]="f.inspectionChecklist"
+          (input)="text('inspectionChecklist', $event)"
+        ></textarea>
+        <p class="mt-2 text-sm text-muted-foreground">Mỗi phòng một dòng, các vật dụng bắt đầu bằng dấu -</p>
       </div>
     </fieldset>
 

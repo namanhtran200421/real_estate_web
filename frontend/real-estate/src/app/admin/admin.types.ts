@@ -10,6 +10,7 @@ import {
   PaymentPurpose,
   PaymentStatus,
 } from '../models/booking';
+import { InspectionChecklist, InspectionResult } from './inspection-checklist';
 
 export interface AdminBookingListItem {
   reference: string;
@@ -84,6 +85,12 @@ export interface AdminBookingDetail extends Omit<Booking, 'payments' | 'incident
   };
   payments: AdminPayment[];
   events: BookingEvent[];
+  /** The saved check-out inspection, or null before the owner has done it. */
+  inspection: { results: InspectionResult[]; inspectedBy: string | null; inspectedAt: string } | null;
+  /** What to inspect: the apartment's checklist, or the default. */
+  checklist: InspectionChecklist;
+  /** The security deposit that can still be refunded. */
+  depositRefundable: number;
 }
 
 /** A transfer a guest reported that the owner has not checked yet. */
@@ -104,8 +111,10 @@ export interface AwaitingPayment {
   apartmentName: string;
   /** Transfer note to look for in the bank app. */
   note: string;
+  /** For deposit-first bookings: the security deposit (the note ends in TS). */
   depositAmount: number;
   totalAmount: number;
+  depositFirst: boolean;
   holdExpiresAt: string;
   createdAt: string;
 }
@@ -151,6 +160,8 @@ export interface BalanceDue {
   balance: number;
   /** Transfer note, if the guest transfers the rest. */
   note: string;
+  /** Deposit-first: the rent is what is due, from check-in day. */
+  depositFirst: boolean;
 }
 
 export interface AdminSummary {
@@ -187,9 +198,13 @@ export interface BookingFilters {
 export interface AdminApartment extends Omit<Apartment, 'unavailableDates'> {
   isActive: boolean;
   sortOrder: number;
+  /** The owner's check-out checklist; empty means the default is used. */
+  inspectionChecklist: InspectionChecklist;
+  /** Shown by the editor while `inspectionChecklist` is empty. */
+  defaultInspectionChecklist: InspectionChecklist;
 }
 
-export type ApartmentInput = Omit<AdminApartment, 'id'>;
+export type ApartmentInput = Omit<AdminApartment, 'id' | 'defaultInspectionChecklist'>;
 
 export interface BlockedDate {
   date: string;

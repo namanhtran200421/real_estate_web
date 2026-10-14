@@ -351,26 +351,50 @@
           <div class="mt-6 space-y-3 rounded-md border border-accent bg-accent-muted p-4">
             <p class="text-sm">
               Mở ứng dụng ngân hàng và tìm khoản chuyển với nội dung
-              <span class="font-mono font-medium text-accent-deep">{{ transferNote(b.reference) }}</span>.
+              <span class="font-mono font-medium text-accent-deep">{{ transferNote(b.reference, b.depositFirst ? 'asset_security' : 'accommodation') }}</span>.
               @if (b.status === 'expired') {
                 Đặt phòng đã hết hạn giữ chỗ; vẫn xác nhận được nếu ngày còn trống.
               }
             </p>
             <div class="flex flex-wrap gap-3">
-              @if (b.quote.deposit > 0 && b.quote.deposit < b.amountDue) {
-                <button type="button" class="btn btn-primary" [disabled]="busy()" (click)="received(b.quote.deposit)">
-                  Đã nhận cọc {{ b.quote.deposit | number }} ₫
+              @if (b.depositFirst) {
+                <button type="button" class="btn btn-primary" [disabled]="busy()" (click)="received(b.financials.assetSecurityRequired, 'bank_transfer', false, 'asset_security')">
+                  Đã nhận cọc {{ b.financials.assetSecurityRequired | number }} ₫
+                </button>
+              } @else {
+                @if (b.quote.deposit > 0 && b.quote.deposit < b.amountDue) {
+                  <button type="button" class="btn btn-primary" [disabled]="busy()" (click)="received(b.quote.deposit)">
+                    Đã nhận cọc {{ b.quote.deposit | number }} ₫
+                  </button>
+                }
+                <button type="button" class="btn btn-primary" [disabled]="busy()" (click)="received(b.amountDue)">
+                  Đã nhận đủ {{ b.amountDue | number }} ₫
                 </button>
               }
-              <button type="button" class="btn btn-primary" [disabled]="busy()" (click)="received(b.amountDue)">
-                Đã nhận đủ {{ b.amountDue | number }} ₫
-              </button>
             </div>
             <p class="text-xs text-muted-foreground">Số tiền khác? Dùng "Ghi nhận thanh toán" bên dưới.</p>
           </div>
         }
 
-        @if (b.amountPaid > 0 && b.amountDue > 0 && !b.pendingTransfer && (b.status === 'pending' || b.status === 'confirmed')) {
+        @if (b.depositFirst && b.status === 'confirmed' && b.amountDue > 0 && !b.pendingTransfer) {
+          <!-- Deposit-first: the rent is paid from check-in day -->
+          <div class="mt-6 space-y-3 rounded-md border border-border bg-muted p-4">
+            <p class="text-sm">
+              Tiền phòng (từ {{ b.rentDueFrom | date: 'dd/MM' }}): còn thiếu <span class="font-semibold">{{ b.amountDue | number }} ₫</span>, thu khi khách nhận phòng: tiền mặt, hoặc chuyển khoản với nội dung
+              <span class="font-mono font-medium text-accent-deep">{{ transferNote(b.reference) }}</span>.
+            </p>
+            <div class="flex flex-wrap gap-3">
+              <button type="button" class="btn btn-primary" [disabled]="busy()" (click)="received(b.amountDue, 'bank_transfer', true)">
+                Đã nhận chuyển khoản {{ b.amountDue | number }} ₫
+              </button>
+              <button type="button" class="btn btn-outline" [disabled]="busy()" (click)="received(b.amountDue, 'cash', true)">
+                Đã nhận tiền mặt
+              </button>
+            </div>
+          </div>
+        }
+
+        @if (!b.depositFirst && b.amountPaid > 0 && b.amountDue > 0 && !b.pendingTransfer && (b.status === 'pending' || b.status === 'confirmed')) {
           <!-- Deposit paid: the rest is usually collected at check-in -->
           <div class="mt-6 space-y-3 rounded-md border border-border bg-muted p-4">
             <p class="text-sm">
@@ -390,7 +414,7 @@
 
         @if (b.financials.assetSecurityDue > 0 && !b.pendingTransfer && (b.status === 'confirmed' || b.status === 'completed')) {
           <div class="mt-6 rounded-md border border-border bg-muted p-4">
-            <p class="text-sm">Còn thiếu <strong>{{ b.financials.assetSecurityDue | number }} ₫</strong> bảo đảm tài sản.</p>
+            <p class="text-sm">Còn thiếu <strong>{{ b.financials.assetSecurityDue | number }} ₫</strong> tiền đặt cọc.</p>
             <div class="mt-3 flex flex-wrap gap-3">
               <button type="button" class="btn btn-outline" [disabled]="busy()" (click)="received(b.financials.assetSecurityDue, 'bank_transfer', false, 'asset_security')">Đã nhận chuyển khoản</button>
               <button type="button" class="btn btn-ghost" [disabled]="busy()" (click)="received(b.financials.assetSecurityDue, 'cash', false, 'asset_security')">Đã nhận tiền mặt</button>
@@ -400,7 +424,7 @@
 
         @if (b.financials.incidentAmountDue > 0 && !b.pendingTransfer) {
           <div class="mt-6 rounded-md border border-accent bg-accent-muted p-4">
-            <p class="text-sm">Còn <strong>{{ b.financials.incidentAmountDue | number }} ₫</strong> bồi thường sau cấn trừ bảo đảm tài sản.</p>
+            <p class="text-sm">Còn <strong>{{ b.financials.incidentAmountDue | number }} ₫</strong> bồi thường sau cấn trừ tiền đặt cọc.</p>
             <button type="button" class="btn btn-outline mt-3" [disabled]="busy()" (click)="received(b.financials.incidentAmountDue, 'bank_transfer', false, 'incident')">Đã nhận bồi thường</button>
           </div>
         }
@@ -453,9 +477,80 @@
         }
       </div>
 
+      @if (canInspect()) {
+        <div class="card">
+          <h2 class="text-2xl">Kiểm tra trả phòng</h2>
+          <p class="mt-2 text-sm text-muted-foreground">Đi qua từng phòng khi khách trả phòng. Mặc định mọi vật dụng là OK; chọn "Có vấn đề" và ghi chú nếu có hư hỏng hoặc thất lạc.</p>
+
+          @for (room of inspectionRooms(); track room.room; let ri = $index) {
+            <h3 class="mt-6">{{ room.room }}</h3>
+            <ul class="mt-2 divide-y divide-border border-y border-border">
+              @for (row of room.rows; track row.item; let li = $index) {
+                <li class="py-3">
+                  <div class="flex flex-wrap items-center justify-between gap-3">
+                    <span class="text-sm">{{ row.item }}</span>
+                    <div class="flex gap-2" role="group" [attr.aria-label]="room.room + ': ' + row.item">
+                      <button type="button" [class]="row.ok ? 'btn btn-primary' : 'btn btn-outline'" [attr.aria-pressed]="row.ok" (click)="setRowOk(ri, li, true)">OK</button>
+                      <button type="button" [class]="row.ok ? 'btn btn-outline' : 'btn btn-primary'" [attr.aria-pressed]="!row.ok" (click)="setRowOk(ri, li, false)">Có vấn đề</button>
+                    </div>
+                  </div>
+                  @if (!row.ok) {
+                    <input
+                      class="input mt-2"
+                      type="text"
+                      maxlength="500"
+                      placeholder="Ghi chú: hư hỏng hoặc thất lạc thế nào"
+                      [attr.aria-label]="'Ghi chú: ' + row.item"
+                      [value]="row.note"
+                      (input)="setRowNote(ri, li, value($event))"
+                    />
+                  }
+                </li>
+              }
+            </ul>
+          }
+
+          @if (problemCount() > 0) {
+            <p class="mt-4 rounded-md border border-accent bg-accent-muted p-3 text-sm">
+              Có {{ problemCount() }} vật dụng có vấn đề. Lưu kết quả, rồi ghi nhận từng khoản ở phần "Tài sản, hư hỏng và thất lạc" bên dưới ("Ghi nhận hư hỏng / thất lạc").
+            </p>
+          }
+
+          <div class="mt-6 flex flex-wrap items-center gap-4">
+            <button type="button" class="btn btn-primary" [disabled]="busy() || !inspectionRooms().length" (click)="saveInspection()">Lưu kết quả kiểm tra</button>
+            @if (b.inspection; as inspection) {
+              <span class="text-sm text-muted-foreground">
+                Đã lưu lúc {{ inspection.inspectedAt | date: 'HH:mm dd/MM/yyyy' }}@if (inspection.inspectedBy) { bởi {{ inspection.inspectedBy }} }
+              </span>
+            } @else {
+              <span class="text-sm text-muted-foreground">Chưa lưu kết quả kiểm tra.</span>
+            }
+          </div>
+
+          @if (b.depositFirst) {
+            <div class="mt-6 border-t border-border pt-6">
+              @if (!confirmingDepositRefund()) {
+                <button type="button" class="btn btn-outline" [disabled]="busy() || !!depositRefundBlocker()" (click)="confirmingDepositRefund.set(true)">
+                  Hoàn cọc {{ b.depositRefundable | number }} ₫
+                </button>
+                @if (depositRefundBlocker(); as reason) {
+                  <p class="mt-2 text-sm text-muted-foreground">{{ reason }}</p>
+                }
+              } @else {
+                <p class="text-sm">Ghi nhận hoàn {{ b.depositRefundable | number }} ₫ tiền đặt cọc cho khách? Bạn tự chuyển khoản số tiền này cho khách.</p>
+                <div class="mt-3 flex gap-3">
+                  <button type="button" class="btn btn-primary" [disabled]="busy()" (click)="refundDeposit()">Xác nhận hoàn cọc</button>
+                  <button type="button" class="btn btn-ghost" [disabled]="busy()" (click)="confirmingDepositRefund.set(false)">Thôi</button>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      }
+
       <div class="card">
         <h2 class="text-2xl">Tài sản, hư hỏng và thất lạc</h2>
-        <p class="mt-2 text-sm text-muted-foreground">Mỗi khoản ghi rõ sự việc, giá trị và phần cấn trừ từ bảo đảm tài sản. Khoản đã miễn không còn tính vào số khách phải trả.</p>
+        <p class="mt-2 text-sm text-muted-foreground">Mỗi khoản ghi rõ sự việc, giá trị và phần cấn trừ từ tiền đặt cọc. Khoản đã miễn không còn tính vào số khách phải trả.</p>
 
         @if (b.incidents.length) {
           <ul class="mt-6 divide-y divide-border border-y border-border">
@@ -469,7 +564,7 @@
                       {{ incident.status === 'open' ? 'Đang xử lý' : incident.status === 'settled' ? 'Đã đóng' : 'Đã miễn' }}
                     </p>
                     @if (incident.securityApplied > 0) {
-                      <p class="mt-1 text-sm text-muted-foreground">Cấn trừ bảo đảm: {{ incident.securityApplied | number }} ₫</p>
+                      <p class="mt-1 text-sm text-muted-foreground">Cấn trừ tiền đặt cọc: {{ incident.securityApplied | number }} ₫</p>
                     }
                   </div>
                   <p class="font-serif text-xl">{{ incident.amount | number }} ₫</p>
@@ -478,7 +573,7 @@
                   @if (pendingIncidentResolution()?.id === incident.id) {
                     <div class="mt-4 rounded-md border border-accent bg-accent-muted p-4">
                       <p class="text-sm">
-                        {{ pendingIncidentResolution()?.status === 'waived' ? 'Miễn khoản này và bỏ toàn bộ phần cấn trừ bảo đảm?' : 'Đánh dấu khoản này đã xử lý?' }}
+                        {{ pendingIncidentResolution()?.status === 'waived' ? 'Miễn khoản này và bỏ toàn bộ phần cấn trừ tiền đặt cọc?' : 'Đánh dấu khoản này đã xử lý?' }}
                       </p>
                       <div class="mt-3 flex gap-3">
                         <button type="button" class="btn btn-primary" [disabled]="busy()" (click)="confirmIncidentResolution()">Xác nhận</button>
@@ -512,7 +607,7 @@
                 <input id="incident-amount" class="input" type="number" min="1" step="1000" [value]="incidentAmount() ?? ''" (input)="incidentAmount.set(amountValue($event))" />
               </div>
               <div>
-                <label class="label" for="incident-security">Cấn trừ bảo đảm (tối đa {{ b.financials.assetSecurityHeld | number }} ₫)</label>
+                <label class="label" for="incident-security">Cấn trừ tiền đặt cọc (tối đa {{ b.financials.assetSecurityHeld | number }} ₫)</label>
                 <input id="incident-security" class="input" type="number" min="0" [max]="b.financials.assetSecurityHeld" step="1000" [value]="incidentSecurityApplied()" (input)="incidentSecurityApplied.set(amountValue($event) ?? 0)" />
               </div>
             </div>
@@ -580,6 +675,50 @@
             <dt>Tổng</dt>
             <dd class="font-serif text-xl">{{ b.quote.total | number }} ₫</dd>
           </div>
+          @if (b.depositFirst) {
+            <div class="flex justify-between gap-4 pt-2">
+              <dt class="font-medium">Tiền đặt cọc</dt>
+              <dd></dd>
+            </div>
+            <div class="flex justify-between gap-4">
+              <dt class="text-muted-foreground">Đã nhận</dt>
+              <dd>{{ b.financials.assetSecurityReceived | number }} ₫</dd>
+            </div>
+            <div class="flex justify-between gap-4">
+              <dt class="text-muted-foreground">Đã cấn trừ</dt>
+              <dd>{{ b.financials.assetSecurityApplied | number }} ₫</dd>
+            </div>
+            <div class="flex justify-between gap-4">
+              <dt class="text-muted-foreground">Đã hoàn</dt>
+              <dd>{{ b.financials.assetSecurityRefunded | number }} ₫</dd>
+            </div>
+            <div class="flex justify-between gap-4">
+              <dt class="text-muted-foreground">Đang giữ</dt>
+              <dd class="text-accent-deep">{{ b.financials.assetSecurityHeld | number }} ₫</dd>
+            </div>
+            <div class="mt-4 flex justify-between gap-4 border-t border-border pt-4">
+              <dt class="font-medium">Tiền phòng</dt>
+              <dd></dd>
+            </div>
+            <div class="flex justify-between gap-4">
+              <dt class="text-muted-foreground">Đã trả</dt>
+              <dd class="text-accent-deep">{{ b.amountPaid | number }} ₫</dd>
+            </div>
+            <div class="flex justify-between gap-4">
+              <dt class="text-muted-foreground">Còn lại (từ {{ b.rentDueFrom | date: 'dd/MM' }})</dt>
+              <dd>{{ b.amountDue | number }} ₫</dd>
+            </div>
+            @if (b.financials.incidentCharges > 0) {
+              <div class="mt-4 flex justify-between gap-4 border-t border-border pt-4">
+                <dt class="font-medium">Hư hỏng</dt>
+                <dd>{{ b.financials.incidentCharges | number }} ₫</dd>
+              </div>
+              <div class="flex justify-between gap-4">
+                <dt class="text-muted-foreground">Khách còn phải trả</dt>
+                <dd>{{ b.financials.incidentAmountDue | number }} ₫</dd>
+              </div>
+            }
+          } @else {
           <div class="flex justify-between gap-4">
             <dt class="text-muted-foreground">Đã nhận (trừ hoàn)</dt>
             <dd class="text-accent-deep">{{ b.amountPaid | number }} ₫</dd>
@@ -590,7 +729,7 @@
           </div>
           @if (b.financials.assetSecurityRequired > 0) {
             <div class="mt-4 flex justify-between gap-4 border-t border-border pt-4">
-              <dt class="text-muted-foreground">Bảo đảm yêu cầu</dt>
+              <dt class="text-muted-foreground">Tiền đặt cọc yêu cầu</dt>
               <dd>{{ b.financials.assetSecurityRequired | number }} ₫</dd>
             </div>
             <div class="flex justify-between gap-4">
@@ -615,6 +754,7 @@
               <dt class="text-muted-foreground">Khách còn phải trả</dt>
               <dd>{{ b.financials.incidentAmountDue | number }} ₫</dd>
             </div>
+          }
           }
         </dl>
       </div>

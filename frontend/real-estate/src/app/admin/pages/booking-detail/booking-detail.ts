@@ -7,6 +7,7 @@ import { toApiError } from '../../../core/api';
 import { NIGHT_RATE_LABELS, PAYMENT_PROVIDER_LABELS, PaymentPurpose } from '../../../models/booking';
 import { AdminApiService } from '../../admin-api.service';
 import { AdminBookingDetail, AdminPayment, BookingEvent } from '../../admin.types';
+import { InspectionResult } from '../../inspection-checklist';
 
 const EVENT_LABELS: Record<string, string> = {
   created: 'Khách tạo đặt phòng',
@@ -37,9 +38,27 @@ const PAYMENT_STATE_LABELS: Record<string, string> = {
 
 const PAYMENT_PURPOSE_LABELS: Record<PaymentPurpose, string> = {
   accommodation: 'Tiền phòng',
-  asset_security: 'Bảo đảm tài sản',
+  asset_security: 'Tiền đặt cọc',
   incident: 'Bồi thường',
 };
+
+/** Today in the browser, "2026-10-14" (the owner works in Vietnam time). */
+function todayIso(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+}
+
+/** One line of the check-out inspection while the owner fills it in. */
+interface InspectionRow {
+  item: string;
+  ok: boolean;
+  note: string;
+}
+
+interface InspectionRoomRows {
+  room: string;
+  rows: InspectionRow[];
+}
 
 interface PendingReceipt {
   amount: number;
@@ -69,7 +88,7 @@ export class AdminBookingDetailPage {
   ];
   protected readonly paymentPurposeOptions: SelectOption[] = [
     { value: 'accommodation', label: 'Tiền phòng' },
-    { value: 'asset_security', label: 'Bảo đảm tài sản' },
+    { value: 'asset_security', label: 'Tiền đặt cọc' },
     { value: 'incident', label: 'Bồi thường' },
   ];
 
@@ -99,6 +118,8 @@ export class AdminBookingDetailPage {
   protected readonly refundFor = signal<string | undefined>(undefined);
   protected readonly refundAmount = signal<number | undefined>(undefined);
   protected readonly refundReason = signal('');
+  protected readonly inspectionRooms = signal<InspectionRoomRows[]>([]);
+  protected readonly confirmingDepositRefund = signal(false);
   protected readonly pendingReceipt = signal<PendingReceipt | undefined>(undefined);
   protected readonly incidentDescription = signal('');
   protected readonly incidentAmount = signal<number | undefined>(undefined);
@@ -112,10 +133,54 @@ export class AdminBookingDetailPage {
     return booking.amountDue || undefined;
   });
 
+  /** The inspection is done from check-in day on, while the stay is confirmed or after it. */
+  protected readonly canInspect = computed(() => {
+    const booking = this.b();
+    if (!booking) return false;
+    return (booking.status === 'confirmed' || booking.status === 'completed') && booking.checkIn <= todayIso();
+  });
+
+  protected readonly problemCount = computed(() =>
+    this.inspectionRooms().reduce((count, room) => count + room.rows.filter((row) => !row.ok).length, 0),
+  );
+
+  /** Why "Hoàn cọc" cannot be pressed yet; undefined when it can. */
+  protected readonly depositRefundBlocker = computed(() => {
+    const booking = this.b();
+    if (!booking) return undefined;
+    if (booking.status !== 'completed') return 'Ghi nhận khách đã trả phòng trước.';
+    if (!booking.inspection) return 'Lưu kết quả kiểm tra trả phòng trước.';
+    if (booking.incidents.some((incident) => incident.status === 'open')) return 'Còn khoản hư hỏng chưa đóng.';
+    if (booking.depositRefundable <= 0) return 'Không còn tiền cọc để hoàn.';
+    return undefined;
+  });
+
   /** The guests' transfer screenshots on this page, by payment id. */
   protected readonly screenshots = signal<Record<string, ScreenshotView>>({});
 
   constructor() {
+    // The inspection rows start from the saved results (all OK before the first save); an unrelated
+    // reload of the booking keeps what the owner is typing.
+    let rowsKey: string | undefined;
+    effect(() => {
+      const booking = this.b();
+      if (!booking) return;
+      const key = `${booking.reference}|${booking.status}|${booking.inspection?.inspectedAt ?? ''}|${JSON.stringify(booking.checklist)}`;
+      if (key === rowsKey) return;
+      rowsKey = key;
+      // A deposit-first booking waiting for money is paid with the deposit first.
+      this.manualPurpose.set(booking.depositFirst && (booking.status === 'pending' || booking.status === 'expired') ? 'asset_security' : 'accommodation');
+      const saved = booking.inspection?.results ?? [];
+      this.inspectionRooms.set(
+        booking.checklist.map((room) => ({
+          room: room.room,
+          rows: room.items.map((item) => {
+            const result = saved.find((r) => r.room === room.room && r.item === item);
+            return { item, ok: result?.ok ?? true, note: result?.note ?? '' };
+          }),
+        })),
+      );
+    });
     // A transfer waiting to be checked shows its screenshot at once; older ones on request.
     effect(() => {
       for (const payment of this.b()?.payments ?? []) {
@@ -202,9 +267,37 @@ export class AdminBookingDetailPage {
     if (done) this.cancelling.set(false);
   }
 
-  /** The transfer note the guest's banking app filled in: the reference without dashes. */
-  protected transferNote(reference: string): string {
-    return reference.replaceAll('-', '');
+  /** The transfer note the guest's banking app filled in: the reference without dashes ("TS" for a deposit). */
+  protected transferNote(reference: string, purpose: PaymentPurpose = 'accommodation'): string {
+    return `${reference.replaceAll('-', '')}${purpose === 'asset_security' ? 'TS' : ''}`;
+  }
+
+  protected setRowOk(roomIndex: number, rowIndex: number, ok: boolean): void {
+    this.updateRow(roomIndex, rowIndex, { ok });
+  }
+
+  protected setRowNote(roomIndex: number, rowIndex: number, note: string): void {
+    this.updateRow(roomIndex, rowIndex, { note });
+  }
+
+  private updateRow(roomIndex: number, rowIndex: number, change: Partial<InspectionRow>): void {
+    this.inspectionRooms.update((rooms) =>
+      rooms.map((room, i) =>
+        i !== roomIndex ? room : { ...room, rows: room.rows.map((row, j) => (j === rowIndex ? { ...row, ...change } : row)) },
+      ),
+    );
+  }
+
+  protected saveInspection(): void {
+    const results: InspectionResult[] = this.inspectionRooms().flatMap((room) =>
+      room.rows.map((row) => ({ room: room.room, item: row.item, ok: row.ok, note: row.ok ? null : row.note.trim() || null })),
+    );
+    void this.run(() => this.api.saveInspection(this.reference(), results));
+  }
+
+  protected async refundDeposit(): Promise<void> {
+    const done = await this.run(() => this.api.refundDeposit(this.reference()));
+    if (done) this.confirmingDepositRefund.set(false);
   }
 
   /**

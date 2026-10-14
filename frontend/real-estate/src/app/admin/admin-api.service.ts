@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, firstValueFrom, map } from 'rxjs';
+import { InspectionResult } from './inspection-checklist';
 import { API_URL, ApiResponse, Page } from '../core/api';
 import {
   AdminApartment,
@@ -92,6 +93,16 @@ export class AdminApiService {
 
   resolveIncident(reference: string, incidentId: string, status: Exclude<AssetIncidentStatus, 'open'>): Promise<AdminBookingDetail> {
     return this.send('PATCH', `/bookings/${encodeURIComponent(reference)}/incidents/${incidentId}`, { status });
+  }
+
+  /** Saves the check-out inspection (replaces the previous one). */
+  saveInspection(reference: string, results: InspectionResult[]): Promise<AdminBookingDetail> {
+    return this.send('PUT', `/bookings/${encodeURIComponent(reference)}/inspection`, { results });
+  }
+
+  /** Records the refund of what is left of the security deposit (the owner makes the transfer). */
+  refundDeposit(reference: string): Promise<AdminBookingDetail> {
+    return this.send('POST', `/bookings/${encodeURIComponent(reference)}/deposit-refund`, {});
   }
 
   recordPayment(
