@@ -34,6 +34,7 @@ import {
   isPayable,
   paymentOptions,
   POLICY_VERSION,
+  transferNote,
 } from '../bookings/booking.rules.js';
 import type { BookingRecord, PaymentProvider, PaymentPurpose, TransferInstructions } from '../bookings/booking.types.js';
 import { emailService } from '../notifications/email.service.js';
@@ -46,11 +47,7 @@ export type PaymentOption = 'deposit' | 'full' | 'asset_security' | 'incident';
 /** Transfer screenshots are deleted this long after upload (docs/adr/0002). */
 const SCREENSHOT_RETENTION_DAYS = 35;
 
-/** "RE-2611-K7Q3M" → "RE2611K7Q3M": banks drop or mangle dashes in transfer notes. */
-export function transferNote(reference: string, purpose: PaymentPurpose = 'accommodation'): string {
-  const suffix = purpose === 'asset_security' ? 'TS' : purpose === 'incident' ? 'BT' : '';
-  return `${reference.replaceAll('-', '')}${suffix}`;
-}
+export { transferNote };
 
 function purposeFor(option: PaymentOption): PaymentPurpose {
   if (option === 'asset_security') return 'asset_security';

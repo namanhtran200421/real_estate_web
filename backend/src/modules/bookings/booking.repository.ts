@@ -339,10 +339,10 @@ async function claimRentRequests(timezone: string, db: Db): Promise<string[]> {
      WHERE a.id = b.apartment_id AND b.status = 'confirmed' AND b.asset_security_amount > 0
        AND b.total_amount - b.amount_paid >= 1000
        AND NOT EXISTS (
-         SELECT 1 FROM payments p WHERE p.booking_id = b.id AND p.purpose = 'accommodation' AND p.state = 'pending')
+         SELECT 1 FROM payments p WHERE p.booking_id = b.id AND p.state = 'pending')
        AND b.rent_request_sent_at IS NULL
        AND ((b.check_in + time '08:00') AT TIME ZONE $1) <= now()
-       AND ((b.check_out + a.check_out_time) AT TIME ZONE current_setting('TIMEZONE')) > now()
+       AND ((b.check_out + a.check_out_time) AT TIME ZONE $1) > now()
      RETURNING b.id`,
     [timezone],
     db,
@@ -389,7 +389,7 @@ async function emailContext(bookingId: string, db?: Db): Promise<BookingEmailCon
             (SELECT coalesce(sum(p.amount), 0)::int FROM payments p
               WHERE p.booking_id = b.id AND p.purpose = 'asset_security' AND p.state = 'succeeded')
             - (SELECT coalesce(sum(rf.amount), 0)::int FROM refunds rf JOIN payments p ON p.id = rf.payment_id
-                WHERE p.booking_id = b.id AND p.purpose = 'asset_security' AND rf.state = 'succeeded') AS "assetSecurityHeld",
+                WHERE p.booking_id = b.id AND p.purpose = 'asset_security' AND rf.state = 'succeeded') AS "depositReceivedNet",
             b.amount_paid AS "amountPaid", b.hold_expires_at AS "holdExpiresAt", b.status::text AS status, b.message
      FROM bookings b JOIN apartments a ON a.id = b.apartment_id
      WHERE b.id = $1`,

@@ -38,6 +38,12 @@ export function isPayable(booking: Pick<BookingRecord, 'status' | 'amountPaid' |
   return booking.holdExpiresAt > now;
 }
 
+/** "RE-2611-K7Q3M" → "RE2611K7Q3M": banks drop or mangle dashes in transfer notes. */
+export function transferNote(reference: string, purpose: PaymentPurpose = 'accommodation'): string {
+  const suffix = purpose === 'asset_security' ? 'TS' : purpose === 'incident' ? 'BT' : '';
+  return `${reference.replaceAll('-', '')}${suffix}`;
+}
+
 /** Version of the house rules a guest agrees to when reporting a transfer (the /policy page). */
 export const POLICY_VERSION = '2026-10-14';
 

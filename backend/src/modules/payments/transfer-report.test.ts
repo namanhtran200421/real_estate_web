@@ -294,6 +294,14 @@ describe('reporting a transfer with its screenshot', { skip: !databaseUrl && 'TE
     const view = await call(`/bookings/${booking.reference}`, { headers: { 'X-Booking-Token': booking.token } });
     assert.equal((await view.json()).data.pendingTransfer, null);
     pendingDeposit = booking;
+
+    const explicit = await call(`/bookings/${booking.reference}/transfer?option=asset_security&acceptPolicy=false`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'image/png', 'X-Booking-Token': booking.token },
+      body: PNG,
+    });
+    assert.equal(explicit.status, 422);
+    assert.equal((await explicit.json()).error.code, 'POLICY_NOT_ACCEPTED');
   });
 
   it('confirms a deposit-first booking when the owner verifies the deposit, and not before', async () => {
@@ -312,6 +320,9 @@ describe('reporting a transfer with its screenshot', { skip: !databaseUrl && 'TE
     const detail = await (await call(`/admin/bookings/${booking.reference}`, { headers: owner })).json();
     const [payment] = detail.data.payments;
     assert.equal(payment.purpose, 'asset_security');
+    const accepted = detail.data.events.find((event: { type: string }) => event.type === 'policy_accepted');
+    assert.equal(accepted?.data.version, '2026-10-14');
+    assert.equal(accepted?.data.paymentId, payment.id);
 
     const tooMuch = await call(`/admin/payments/${payment.id}/verify`, {
       method: 'POST',
@@ -361,6 +372,53 @@ describe('reporting a transfer with its screenshot', { skip: !databaseUrl && 'TE
       `Thanh toán tiền phòng · ${booking.reference}`,
     ]);
     assert.equal(queued.rows[0].n, 1);
+  });
+  it('does not ask for rent from legacy bookings, bookings with a report pending, or finished stays', async () => {
+    const owner = { Authorization: `Bearer ${await signInAsOwner()}`, 'Content-Type': 'application/json' };
+    const { pool } = await import('../../db/pool.js');
+    const { bookingService } = await import('../bookings/booking.service.js');
+    const confirmed = async (daysAhead: number) => {
+      const booking = await book(daysAhead);
+      const recorded = await call(`/admin/bookings/${booking.reference}/payments`, {
+        method: 'POST',
+        headers: owner,
+        body: JSON.stringify({ method: 'cash', purpose: 'asset_security', amount: booking.deposit }),
+      });
+      assert.equal(recorded.status, 201, await recorded.clone().text());
+      return booking;
+    };
+    const move = (reference: string, from: number, to: number) =>
+      pool.query(
+        `UPDATE bookings
+         SET check_in = (now() AT TIME ZONE 'Asia/Ho_Chi_Minh')::date + $2::int,
+             check_out = (now() AT TIME ZONE 'Asia/Ho_Chi_Minh')::date + $3::int
+         WHERE reference = $1`,
+        [reference, from, to],
+      );
+
+    // Earlier cases left stays around today; free the calendar, and again after each case below.
+    const clear = () => pool.query(`UPDATE bookings SET status = 'cancelled' WHERE status IN ('pending', 'confirmed')`);
+    await clear();
+
+    const legacy = await confirmed(150);
+    await move(legacy.reference, -1, 1);
+    await pool.query('UPDATE bookings SET asset_security_amount = 0 WHERE reference = $1', [legacy.reference]);
+    assert.equal(await bookingService.sendRentRequests(), 0, 'legacy booking');
+    await clear();
+
+    const reported = await confirmed(160);
+    await move(reported.reference, -1, 1);
+    await pool.query(
+      `INSERT INTO payments (booking_id, provider, purpose, amount, state, note)
+       SELECT id, 'bank_transfer', 'accommodation', 1000000, 'pending', 'x' FROM bookings WHERE reference = $1`,
+      [reported.reference],
+    );
+    assert.equal(await bookingService.sendRentRequests(), 0, 'report pending');
+    await clear();
+
+    const finished = await confirmed(170);
+    await move(finished.reference, -3, -1);
+    assert.equal(await bookingService.sendRentRequests(), 0, 'check-out passed');
   });
 });
 
