@@ -46,6 +46,8 @@ brainstorming spec → council review of spec → writing-plans → council revi
 - 2026-10-13 ~02:00: all three round-1 reviews in; spec rewritten as v2 incorporating every blocking finding.
 - 2026-10-13 ~02:40: implementation plan written (14 tasks) and self-reviewed; council plan review launched.
 - 2026-10-13 ~03:20: plan review in (5 blocking, ~15 important); all applied. Execution via subagent-driven-development; SDD ledger at .superpowers/sdd/2026-10-13-light-cinematic-redesign/progress.md.
+- 2026-10-14: redesign Tasks 1–6 done (motion primitives last). Uncommitted work from another tool (guest identity, asset incidents, migration 014) found in the tree; the owner said it belongs to the redesign, committed as b926a3d.
+- 2026-10-14: the owner asked for deposit-first payments, a policy page and a check-out inspection (owner answers in docs/superpowers/specs/2026-10-14-deposit-first-payments-design.md). Built as its own plan (8 tasks, each reviewed; end-to-end 25/25), commits 2b0eccc..688e0c8. The redesign resumes at its Task 7 afterwards; Tier 2 restyle (Task 13) now also covers /policy and the new payment/lookup/admin-free guest states.
 
 ## Council round 1: creative director (received)
 
