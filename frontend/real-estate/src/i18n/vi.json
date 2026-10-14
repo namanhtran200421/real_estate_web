@@ -409,6 +409,7 @@
     "payFull": "Thanh toán toàn bộ",
     "nothingAtCheckIn": "Không cần thanh toán thêm khi nhận phòng",
     "assetSecurity": "Tiền đặt cọc ({{ percent }}%)",
+    "assetSecurityNoteLegacy": "Hoàn lại khi trả phòng, sau khi kiểm tra căn hộ.",
     "assetSecurityNote": "Giữ lịch cho bạn. Hoàn lại khi trả phòng, sau khi kiểm tra căn hộ.",
     "rent": "Tiền phòng",
     "rentNote": "Thanh toán đủ tiền phòng khi nhận phòng.",

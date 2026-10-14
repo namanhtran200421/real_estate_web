@@ -140,7 +140,7 @@ export class BookingPayment {
   /** Deposit-first and confirmed, with the rent not payable yet: nothing to pay today. */
   protected readonly rentLater = computed(() => {
     const booking = this.b();
-    if (!booking?.depositFirst || !booking.rentDueFrom) return false;
+    if (booking?.status !== 'confirmed' || !booking.depositFirst || !booking.rentDueFrom) return false;
     return booking.rentDueFrom > todayIso();
   });
 

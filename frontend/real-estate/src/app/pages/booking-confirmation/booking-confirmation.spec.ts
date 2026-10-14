@@ -85,7 +85,8 @@ async function render(booking: Booking): Promise<HTMLElement> {
 describe('BookingConfirmation (deposit-first)', () => {
   it('offers to pay the deposit while the booking is pending', async () => {
     const el = await render(makeBooking());
-    expect(el.textContent).toContain('Thanh toán tiền đặt cọc');
+    const links = [...el.querySelectorAll('a')].filter((a) => a.textContent?.includes('Thanh toán tiền đặt cọc'));
+    expect(links.length).toBe(1);
   });
 
   it('shows the confirmed header once the deposit is in, with the rent timeline', async () => {
@@ -101,5 +102,31 @@ describe('BookingConfirmation (deposit-first)', () => {
     expect(el.textContent).toContain('Đặt phòng đã được xác nhận');
     expect(el.textContent).toContain('Đã nhận');
     expect(el.textContent).toContain('Sau khi trả phòng và kiểm tra căn hộ');
+  });
+
+  it('keeps the old layout for a legacy booking', async () => {
+    const el = await render(
+      makeBooking({
+        depositFirst: false,
+        rentDueFrom: null,
+        paymentOptions: { deposit: 400_000, full: 2_000_000, assetSecurity: null, incident: null },
+      }),
+    );
+    expect(el.textContent).toContain('Thanh toán và gửi ảnh');
+    expect(el.textContent).not.toContain('Tiền đặt cọc, tiền phòng và hoàn cọc');
+  });
+
+  it('shows the old asset section for a legacy booking with a deposit', async () => {
+    const el = await render(
+      makeBooking({
+        depositFirst: false,
+        rentDueFrom: null,
+        status: 'confirmed',
+        amountPaid: 400_000,
+        paymentOptions: { deposit: null, full: null, assetSecurity: null, incident: null },
+      }),
+    );
+    expect(el.textContent).toContain('Tiền đặt cọc và bồi thường');
+    expect(el.textContent).not.toContain('Hoàn cọc');
   });
 });

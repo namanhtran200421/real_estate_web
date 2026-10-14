@@ -409,6 +409,7 @@
     "payFull": "Pay in full",
     "nothingAtCheckIn": "Nothing more to pay at check-in",
     "assetSecurity": "Deposit ({{ percent }}%)",
+    "assetSecurityNoteLegacy": "Refunded at check-out, after the apartment is checked.",
     "assetSecurityNote": "Holds your dates. Refunded at check-out, after the apartment is checked.",
     "rent": "Rent",
     "rentNote": "Pay the full rent at check-in.",

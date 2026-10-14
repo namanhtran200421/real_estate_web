@@ -143,9 +143,11 @@
           <p class="mx-auto mt-4 max-w-lg text-muted-foreground">
             {{ 'confirmation.unpaidText' | transloco: { time: (b.holdExpiresAt | date: 'HH:mm dd/MM') } }}
           </p>
-          <a routerLink="/book/payment" [queryParams]="{ ref: b.reference }" class="btn btn-primary mt-8">
-            {{ payLabel(b) | transloco }}
-          </a>
+          @if (!b.depositFirst) {
+            <a routerLink="/book/payment" [queryParams]="{ ref: b.reference }" class="btn btn-primary mt-8">
+              {{ payLabel(b) | transloco }}
+            </a>
+          }
         } @else {
           <p class="small-caps text-accent-deep">{{ 'common.yourBooking' | transloco }}</p>
           <h1 class="mt-3 text-4xl md:text-5xl">{{ 'confirmation.bookingRef' | transloco: { reference: b.reference } }}</h1>
@@ -290,9 +292,6 @@
               <li class="py-4">
                 <div class="flex justify-between gap-4">
                   <span class="font-medium">{{ 'confirmation.timeline.refund' | transloco }}</span>
-                  @if (b.financials.assetSecurityRefunded > 0) {
-                    <span>{{ b.financials.assetSecurityRefunded | number }} ₫</span>
-                  }
                 </div>
                 <p class="mt-1 text-muted-foreground">
                   @if (b.financials.assetSecurityRefunded > 0) {

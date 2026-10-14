@@ -137,4 +137,29 @@ describe('BookingPayment', () => {
     expect(el.textContent).toContain('Tiền phòng thanh toán từ ngày');
     expect(el.textContent).not.toContain('Vui lòng liên hệ chủ nhà');
   });
+
+  it('does not show the confirmed card for a cancelled deposit-first booking', async () => {
+    const { el } = await render(
+      makeBooking({
+        status: 'cancelled',
+        holdExpiresAt: null,
+        paymentOptions: { deposit: null, full: null, assetSecurity: null, incident: null },
+      }),
+    );
+    expect(el.textContent).not.toContain('Đặt phòng đã được xác nhận');
+  });
+
+  it('keeps the deposit and full cards for a legacy booking', async () => {
+    const { el } = await render(
+      makeBooking({
+        depositFirst: false,
+        rentDueFrom: null,
+        paymentOptions: { deposit: 400_000, full: 2_000_000, assetSecurity: null, incident: null },
+      }),
+    );
+    expect(el.querySelectorAll('input[name="amount"]').length).toBe(2);
+    expect(el.textContent).toContain('Đặt cọc 20%');
+    expect(el.textContent).toContain('Thanh toán toàn bộ');
+    expect(el.textContent).not.toContain('Tiền đặt cọc (20%)');
+  });
 });

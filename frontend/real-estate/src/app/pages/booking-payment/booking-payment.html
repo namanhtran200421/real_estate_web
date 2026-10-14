@@ -154,7 +154,7 @@
                         {{ 'payment.assetSecurity' | transloco: { percent: b.quote.depositPercent } }}
                       </span>
                       <span class="mt-2 block font-serif text-2xl">{{ options.assetSecurity | number }} ₫</span>
-                      <span class="mt-1 block text-sm text-muted-foreground">{{ 'payment.assetSecurityNote' | transloco }}</span>
+                      <span class="mt-1 block text-sm text-muted-foreground">{{ (b.depositFirst ? 'payment.assetSecurityNote' : 'payment.assetSecurityNoteLegacy') | transloco }}</span>
                       @if (b.depositFirst && b.rentDueFrom) {
                         <span class="mt-1 block text-sm text-muted-foreground">
                           {{

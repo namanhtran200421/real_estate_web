@@ -101,7 +101,8 @@ export class BookingService {
    */
   async reportTransfer(
     reference: string,
-    option: PaymentOption, screenshot: Blob,
+    option: PaymentOption,
+    screenshot: Blob,
     sendAnyway = false,
     acceptPolicy = false,
   ): Promise<Booking> {
