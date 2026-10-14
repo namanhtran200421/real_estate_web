@@ -95,7 +95,8 @@ The owner's dashboard quick actions ("Đã nhận cọc X ₫") record an `asset
   - Every item is listed per room, OK by default, with "Có vấn đề" and a note.
   - Saving stores `booking_inspections` (one row per booking, results jsonb, inspected_by, inspected_at; saving again replaces it) and records the event `inspection_saved`.
   - Any problem items are shown next to the existing incident form.
-- The **Hoàn cọc** button shows the held amount. It is enabled when the inspection is saved, no incident is open and held ≥ 1.000 ₫.
+- The **Hoàn cọc** button shows the held amount. It is enabled once the guest has checked out (booking completed), the rent is paid, the inspection is saved, no incident is open, and held ≥ 1.000 ₫.
+- The per-payment refund can never return more deposit than is held, so deposit already applied to damage stays applied.
 
 ## Data (migration 015)
 
@@ -103,6 +104,19 @@ The owner's dashboard quick actions ("Đã nhận cọc X ₫") record an `asset
 - `bookings.rent_request_sent_at timestamptz`
 - `booking_inspections` (booking_id PK → bookings ON DELETE CASCADE, results jsonb NOT NULL, inspected_by uuid → admin_users ON DELETE SET NULL, inspected_at timestamptz NOT NULL DEFAULT now())
 - `apartments.long_stay_security_amount` is dropped. It came from the earlier long-stay draft, and the owner chose 20% for every stay. Its admin field and logic go too.
+- Sun Garden's `deposit_percent` is set to 20, the owner's decision. It was seeded at 30, and the owner can still change it in admin.
+
+## Guards against double or wrong payments
+
+- A deposit-first booking that is pending or expired only accepts the deposit, whether reported by the guest or recorded by the owner. Recording rent first is refused (`DEPOSIT_REQUIRED_FIRST`), so the guest is never asked for the deposit again after paying rent.
+- A deposit amount above what is still due is refused (`AMOUNT_ABOVE_DEPOSIT`). The owner verifies the deposit and records any extra as rent.
+- Rent is payable from 00:00 on check-in day; the reminder email goes at 08:00. Nothing is payable while a reported transfer is being checked.
+
+## Notes for the owner
+
+- Policy item 3 promises up to 6 guests with a 200.000 ₫ surcharge, but the booking form still stops at the apartment's guest limit and adds no surcharge. Extra guests are arranged directly with the owner until the team decides the pricing.
+- Deposit kept for damage is not counted as revenue in the dashboard.
+- Before main is pushed: apply migrations 014 and 015 to Neon, and set `GUEST_IDENTITY_ENCRYPTION_KEY` and `GUEST_IDENTITY_RETENTION_DAYS` on Render.
 
 ## Out of scope
 
