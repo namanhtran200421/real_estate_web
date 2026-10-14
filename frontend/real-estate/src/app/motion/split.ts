@@ -1,4 +1,4 @@
-import { Component, ElementRef, computed, effect, input, viewChild } from '@angular/core';
+import { Component, ElementRef, Injector, afterNextRender, computed, effect, inject, input, untracked, viewChild } from '@angular/core';
 import type { MotionEngine } from './engine';
 import { MOTION_QUERIES } from './motion-prefs';
 import { inView } from './in-view';
@@ -14,9 +14,11 @@ import { onMotion } from './on-motion';
   host: { class: 'split', '[class.split-fill]': "mode() === 'fill'" },
   template: `
     <span class="sr-only">{{ readable() }}</span>
-    <span class="split-visual" aria-hidden="true" #visual>{{ text() }}@if (em()) {&ngsp;<em>{{ em() }}</em>}</span>
-    @if (mode() === 'fill') {
-      <span class="split-visual split-top" aria-hidden="true" #top>{{ text() }}@if (em()) {&ngsp;<em>{{ em() }}</em>}</span>
+    @for (key of keys(); track key) {
+      <span class="split-visual" aria-hidden="true" #visual>{{ text() }}@if (em()) {&ngsp;<em>{{ em() }}</em>}</span>
+      @if (mode() === 'fill') {
+        <span class="split-visual split-top" aria-hidden="true" #top>{{ text() }}@if (em()) {&ngsp;<em>{{ em() }}</em>}</span>
+      }
     }
   `,
 })
@@ -26,32 +28,50 @@ export class Split {
   readonly mode = input<'lines' | 'fill'>('lines');
 
   protected readonly readable = computed(() => [this.text(), this.em()].filter(Boolean).join(' '));
-  private readonly visual = viewChild.required<ElementRef<HTMLElement>>('visual');
+  /** Any change re-creates the visual copies (Angular owns their DOM; the split never hand-writes it). */
+  private readonly renderKey = computed(() => `${this.mode()}|${this.text()}|${this.em() ?? ''}`);
+  protected readonly keys = computed(() => [this.renderKey()]);
+  private readonly visual = viewChild<ElementRef<HTMLElement>>('visual');
   private readonly top = viewChild<ElementRef<HTMLElement>>('top');
 
   constructor() {
-    let rebuild: (() => void) | undefined;
-    // The split owns the visual copy's DOM after the first render; text changes rebuild it.
+    const injector = inject(Injector);
+    let engine: MotionEngine | undefined;
+    let undo: () => void = () => {};
+
+    const split = () => {
+      if (!engine) return;
+      const { visual, top, fill } = untracked(() => ({
+        visual: this.visual()?.nativeElement,
+        top: this.top()?.nativeElement,
+        fill: this.mode() === 'fill',
+      }));
+      if (!visual || inView(visual, 0.95)) return;
+      undo = fill ? this.fill(engine, top) : this.lines(engine, visual);
+    };
+
+    // Runs before the view refreshes: revert the split of the old copies, then split the new ones after render.
+    let first = true;
     effect(() => {
-      this.readable();
-      rebuild?.();
+      this.renderKey();
+      if (first) {
+        first = false;
+        return;
+      }
+      untracked(() => {
+        undo();
+        undo = () => {};
+        if (engine) afterNextRender(split, { injector });
+      });
     });
 
-    onMotion((engine) => {
-      const visual = this.visual().nativeElement;
-      if (inView(visual, 0.95)) return;
-      const run = () => (this.mode() === 'fill' ? this.fill(engine) : this.lines(engine, visual));
-      let undo = run();
-      rebuild = () => {
+    onMotion((e) => {
+      engine = e;
+      split();
+      return () => {
         undo();
-        for (const el of [visual, this.top()?.nativeElement]) {
-          if (!el) continue;
-          el.replaceChildren(document.createTextNode(this.text()));
-          if (this.em()) el.append(' ', Object.assign(document.createElement('em'), { textContent: this.em() }));
-        }
-        undo = run();
+        engine = undefined;
       };
-      return () => undo();
     });
   }
 
@@ -76,8 +96,7 @@ export class Split {
     return () => mm.revert();
   }
 
-  private fill(engine: MotionEngine): () => void {
-    const top = this.top()?.nativeElement;
+  private fill(engine: MotionEngine, top: HTMLElement | undefined): () => void {
     if (!top) return () => {};
     const mm = engine.gsap.matchMedia();
     mm.add(MOTION_QUERIES.allowed, () => {
