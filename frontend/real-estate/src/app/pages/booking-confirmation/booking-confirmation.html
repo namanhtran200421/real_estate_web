@@ -116,7 +116,7 @@
               }
             }
           </p>
-        } @else if (b.amountPaid > 0 && b.status === 'confirmed') {
+        } @else if (b.status === 'confirmed' && (b.amountPaid > 0 || b.depositFirst)) {
           <span class="mx-auto grid h-16 w-16 place-items-center rounded-full border border-accent bg-accent-muted text-accent-deep">
             <svg viewBox="0 0 20 20" class="h-7 w-7" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
               <path d="m4 10.5 4 4 8-9" stroke-linecap="round" stroke-linejoin="round" />
@@ -137,14 +137,14 @@
           <a routerLink="/book" [queryParams]="{ apt: b.apartmentSlug }" class="btn btn-primary mt-8">
             {{ 'payment.bookAgain' | transloco }}
           </a>
-        } @else if (b.paymentOptions.full !== null) {
+        } @else if (b.paymentOptions.full !== null || b.paymentOptions.assetSecurity !== null) {
           <p class="small-caps text-accent-deep" role="status">{{ 'confirmation.unpaid' | transloco }}</p>
           <h1 class="mt-3 text-4xl md:text-5xl">{{ 'confirmation.bookingRef' | transloco: { reference: b.reference } }}</h1>
           <p class="mx-auto mt-4 max-w-lg text-muted-foreground">
             {{ 'confirmation.unpaidText' | transloco: { time: (b.holdExpiresAt | date: 'HH:mm dd/MM') } }}
           </p>
           <a routerLink="/book/payment" [queryParams]="{ ref: b.reference }" class="btn btn-primary mt-8">
-            {{ 'confirmation.pay' | transloco }}
+            {{ payLabel(b) | transloco }}
           </a>
         } @else {
           <p class="small-caps text-accent-deep">{{ 'common.yourBooking' | transloco }}</p>
@@ -241,7 +241,92 @@
           </div>
         </div>
 
-        @if (b.financials.assetSecurityRequired > 0 || b.incidents.length) {
+        @if (b.depositFirst) {
+          <section class="mt-6 rounded-md border border-border bg-card p-5" aria-labelledby="money-timeline-heading">
+            <h2 id="money-timeline-heading" class="text-xl">{{ 'confirmation.timeline.title' | transloco }}</h2>
+            <ol class="mt-4 divide-y divide-border border-y border-border text-sm">
+              <li class="py-4">
+                <div class="flex justify-between gap-4">
+                  <span class="font-medium">{{ 'confirmation.timeline.deposit' | transloco }}</span>
+                  <span>{{ b.financials.assetSecurityRequired | number }} ₫</span>
+                </div>
+                <p class="mt-1 text-muted-foreground">
+                  @if (b.financials.assetSecurityReceived >= b.financials.assetSecurityRequired) {
+                    {{ 'confirmation.timeline.received' | transloco }}
+                  } @else if (b.pendingTransfer?.purpose === 'asset_security') {
+                    {{ 'confirmation.timeline.checking' | transloco }}
+                  } @else {
+                    {{ 'confirmation.timeline.notPaid' | transloco }}
+                  }
+                </p>
+                @if (
+                  b.paymentOptions.assetSecurity !== null &&
+                  b.financials.assetSecurityReceived < b.financials.assetSecurityRequired &&
+                  b.pendingTransfer?.purpose !== 'asset_security'
+                ) {
+                  <a routerLink="/book/payment" [queryParams]="{ ref: b.reference }" class="btn btn-primary mt-3">
+                    {{ 'confirmation.payDeposit' | transloco }}
+                  </a>
+                }
+              </li>
+              <li class="py-4">
+                <div class="flex justify-between gap-4">
+                  <span class="font-medium">{{ 'confirmation.timeline.rent' | transloco }}</span>
+                  <span>{{ b.quote.total | number }} ₫</span>
+                </div>
+                <p class="mt-1 text-muted-foreground">
+                  @if (b.amountDue === 0) {
+                    {{ 'confirmation.timeline.rentPaid' | transloco }}
+                  } @else {
+                    {{ 'confirmation.timeline.rentFrom' | transloco: { date: (b.rentDueFrom | date: 'dd/MM/yyyy') } }}
+                  }
+                </p>
+                @if (b.paymentOptions.full !== null) {
+                  <a routerLink="/book/payment" [queryParams]="{ ref: b.reference }" class="btn btn-primary mt-3">
+                    {{ 'confirmation.payRent' | transloco }}
+                  </a>
+                }
+              </li>
+              <li class="py-4">
+                <div class="flex justify-between gap-4">
+                  <span class="font-medium">{{ 'confirmation.timeline.refund' | transloco }}</span>
+                  @if (b.financials.assetSecurityRefunded > 0) {
+                    <span>{{ b.financials.assetSecurityRefunded | number }} ₫</span>
+                  }
+                </div>
+                <p class="mt-1 text-muted-foreground">
+                  @if (b.financials.assetSecurityRefunded > 0) {
+                    {{ 'confirmation.timeline.refunded' | transloco: { amount: (b.financials.assetSecurityRefunded | number) } }}
+                  } @else {
+                    {{ 'confirmation.timeline.refundLater' | transloco }}
+                  }
+                </p>
+                @if (b.incidents.length) {
+                  <ul class="mt-3 divide-y divide-border border-y border-border">
+                    @for (incident of b.incidents; track incident.id) {
+                      <li class="flex justify-between gap-4 py-3">
+                        <span>
+                          <span class="block">{{ incident.description }}</span>
+                          @if (incident.securityApplied > 0) {
+                            <span class="text-muted-foreground">{{
+                              'confirmation.securityApplied' | transloco: { amount: (incident.securityApplied | number) }
+                            }}</span>
+                          }
+                        </span>
+                        <span>{{ incident.amount | number }} ₫</span>
+                      </li>
+                    }
+                  </ul>
+                }
+                @if (b.paymentOptions.incident !== null) {
+                  <a routerLink="/book/payment" [queryParams]="{ ref: b.reference }" class="btn btn-outline mt-3">
+                    {{ 'confirmation.payAssets' | transloco }}
+                  </a>
+                }
+              </li>
+            </ol>
+          </section>
+        } @else if (b.financials.assetSecurityRequired > 0 || b.incidents.length) {
           <section class="mt-6 rounded-md border border-border p-5" aria-labelledby="asset-financials-heading">
             <h2 id="asset-financials-heading" class="text-xl">{{ 'confirmation.assetsTitle' | transloco }}</h2>
             @if (b.financials.assetSecurityRequired > 0) {

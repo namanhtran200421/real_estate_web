@@ -10,6 +10,7 @@ import { ApartmentService } from '../../services/apartment.service';
 import { BookingService } from '../../services/booking.service';
 import { GuestReview } from '../../models/guest-review';
 import { GuestReviewService } from '../../services/guest-review.service';
+import { payButtonKey } from '../../shared/pay-button';
 
 /** Find a booking by reference + email or phone (also the landing page of email links). */
 @Component({
@@ -25,6 +26,8 @@ export class BookingLookup {
 
   /** Bound from `?ref=`: prefilled from email links and the confirmation page. */
   readonly ref = input<string>();
+
+  protected readonly payLabel = payButtonKey;
 
   protected readonly reference = signal('');
   protected readonly contact = signal('');

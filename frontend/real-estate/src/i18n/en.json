@@ -198,7 +198,7 @@
     "chooseDate": "Choose date",
     "viewAvailability": "Check availability",
     "priceNote": "Prices are calculated automatically and shown before you pay.",
-    "depositOrFull": "Pay a deposit or in full",
+    "depositOrFull": "Deposit to hold your dates, rent at check-in",
     "emailConfirmation": "Booking confirmation by email"
   },
   "steps": {
@@ -262,7 +262,7 @@
       },
       "vietqr": {
         "title": "Pay by VietQR transfer",
-        "text": "Scan the code to transfer a deposit or the full amount. The owner confirms once the money arrives."
+        "text": "Scan the code to transfer the deposit when you book and the rent at check-in; the deposit is refunded at check-out. The owner confirms once the money arrives."
       }
     }
   },
@@ -381,7 +381,11 @@
     "promoNote": "Each code can only be used once.",
     "calculating": "Calculating price…",
     "holding": "Holding your dates…",
-    "continueToPayment": "Continue to payment"
+    "continueToPayment": "Continue to payment",
+    "payNow": "Pay now: deposit of {{ deposit }} ₫ ({{ percent }}%)",
+    "rentAtCheckIn": "Rent of {{ total }} ₫: payable at check-in",
+    "depositRefund": "The deposit is refunded at check-out",
+    "viewPolicy": "View house rules & policies"
   },
   "payment": {
     "title": "Payment",
@@ -404,10 +408,20 @@
     "payRemaining": "Pay the remaining balance",
     "payFull": "Pay in full",
     "nothingAtCheckIn": "Nothing more to pay at check-in",
-    "assetSecurity": "Refundable asset security",
-    "assetSecurityNote": "Refunded after check-out, less any documented loss or damage.",
+    "assetSecurity": "Deposit ({{ percent }}%)",
+    "assetSecurityNote": "Holds your dates. Refunded at check-out, after the apartment is checked.",
+    "rent": "Rent",
+    "rentNote": "Pay the full rent at check-in.",
+    "rentLine": "Rent of {{ amount }} ₫ is payable from check-in day, {{ date }}",
+    "confirmedTitle": "Your booking is confirmed",
+    "rentFromText": "The rent is payable from {{ date }}. We will email you a reminder on the morning of check-in.",
+    "policy": {
+      "agree": "I have read and agree to the",
+      "link": "house rules & policies",
+      "hint": "Please tick the box to agree to the house rules & policies to continue."
+    },
     "incidentCharge": "Loss / damage charge",
-    "incidentChargeNote": "Balance after any asset security has been applied.",
+    "incidentChargeNote": "Balance after the deposit has been applied.",
     "transfer": "Bank transfer",
     "qrAlt": "VietQR code to transfer {{ amount }} ₫ to {{ name }}",
     "saveQr": "Download QR code",
@@ -461,11 +475,26 @@
     "noBooking": "There’s no booking to pay for yet."
   },
   "confirmation": {
-    "assetsTitle": "Asset security and charges",
-    "securityRequired": "Security required",
+    "assetsTitle": "Deposit and charges",
+    "securityRequired": "Deposit required",
     "securityHeld": "Currently held",
-    "securityApplied": "{{ amount }} ₫ security applied",
+    "securityApplied": "{{ amount }} ₫ of the deposit applied",
     "payAssets": "Pay asset-related amount",
+    "payDeposit": "Pay the deposit",
+    "payRent": "Pay the rent",
+    "timeline": {
+      "title": "Deposit, rent and refund",
+      "deposit": "Deposit",
+      "rent": "Rent",
+      "refund": "Deposit refund",
+      "received": "Received",
+      "checking": "Being checked",
+      "notPaid": "Not paid yet",
+      "rentPaid": "Paid",
+      "rentFrom": "Payable from {{ date }}",
+      "refunded": "{{ amount }} ₫ refunded",
+      "refundLater": "After check-out and an inspection of the apartment"
+    },
     "enterContact": "Enter the email or phone number you used for booking",
     "notConfirmed": "Waiting for the owner to confirm",
     "reportedTitle": "Thank you, your dates are reserved",
@@ -573,6 +602,10 @@
     "SCREENSHOT_REQUIRED": "Please upload a screenshot of the successful transfer.",
     "SCREENSHOT_NOT_IMAGE": "The transfer screenshot must be a PNG, JPG or WebP image.",
     "NOT_A_TRANSFER_SCREENSHOT": "This doesn’t look like a transfer screenshot. Please pick the screenshot of the successful transfer from your banking app.",
+    "POLICY_NOT_ACCEPTED": "Please agree to the house rules & policies before reporting a transfer.",
+    "RENT_NOT_DUE_YET": "The rent is not payable yet. You can pay it from check-in day.",
+    "DEPOSIT_REQUIRED_FIRST": "Please pay the deposit first.",
+    "AMOUNT_ABOVE_DEPOSIT": "That amount is more than the deposit still due.",
     "bookedDates": "Booked dates: {{ dates }}.",
     "fields": {
       "name": "Enter your full name.",

@@ -8,6 +8,7 @@ import { SITE } from '../../data/site';
 import { ApartmentService } from '../../services/apartment.service';
 import { BookingDraftService } from '../../services/booking-draft.service';
 import { BookingService } from '../../services/booking.service';
+import { payButtonKey } from '../../shared/pay-button';
 
 /** While the owner has yet to confirm the money, the page refreshes itself this often. */
 const REFRESH_WHILE_CHECKING_MS = 30_000;
@@ -101,6 +102,8 @@ export class BookingConfirmation {
       if (booking && (booking.pendingTransfer || booking.amountPaid > 0)) this.drafts.clear();
     });
   }
+
+  protected readonly payLabel = payButtonKey;
 
   protected setContact(event: Event): void {
     this.lookupContact.set((event.target as HTMLInputElement).value);

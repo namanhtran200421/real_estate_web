@@ -198,7 +198,7 @@
     "chooseDate": "Chọn ngày",
     "viewAvailability": "Xem lịch trống",
     "priceNote": "Giá được tính tự động và hiển thị trước khi thanh toán.",
-    "depositOrFull": "Đặt cọc hoặc thanh toán toàn bộ",
+    "depositOrFull": "Đặt cọc để giữ phòng, thanh toán tiền phòng khi nhận phòng",
     "emailConfirmation": "Xác nhận đặt phòng qua email"
   },
   "steps": {
@@ -262,7 +262,7 @@
       },
       "vietqr": {
         "title": "Dễ chuyển khoản qua - Mã VietQR",
-        "text": "Quét mã để chuyển khoản đặt cọc hoặc thanh toán toàn bộ. Chủ căn hộ xác nhận khi nhận được tiền."
+        "text": "Quét mã để chuyển khoản tiền đặt cọc khi đặt phòng và tiền phòng khi nhận phòng; tiền cọc được hoàn lại khi trả phòng. Chủ căn hộ xác nhận khi nhận được tiền."
       }
     }
   },
@@ -381,7 +381,11 @@
     "promoNote": "Mỗi mã chỉ sử dụng được một lần.",
     "calculating": "Đang tính giá…",
     "holding": "Đang giữ chỗ…",
-    "continueToPayment": "Tiếp tục thanh toán"
+    "continueToPayment": "Tiếp tục thanh toán",
+    "payNow": "Thanh toán bây giờ: Tiền đặt cọc {{ deposit }} ₫ ({{ percent }}%)",
+    "rentAtCheckIn": "Tiền phòng {{ total }} ₫: thanh toán khi nhận phòng",
+    "depositRefund": "Tiền cọc được hoàn lại khi trả phòng",
+    "viewPolicy": "Xem chính sách lưu trú"
   },
   "payment": {
     "title": "Thanh toán",
@@ -404,10 +408,20 @@
     "payRemaining": "Thanh toán phần còn lại",
     "payFull": "Thanh toán toàn bộ",
     "nothingAtCheckIn": "Không cần thanh toán thêm khi nhận phòng",
-    "assetSecurity": "Bảo đảm tài sản",
-    "assetSecurityNote": "Khoản hoàn lại sau khi trả phòng, trừ phần hư hỏng hoặc thất lạc được ghi nhận.",
+    "assetSecurity": "Tiền đặt cọc ({{ percent }}%)",
+    "assetSecurityNote": "Giữ lịch cho bạn. Hoàn lại khi trả phòng, sau khi kiểm tra căn hộ.",
+    "rent": "Tiền phòng",
+    "rentNote": "Thanh toán đủ tiền phòng khi nhận phòng.",
+    "rentLine": "Tiền phòng {{ amount }} ₫ thanh toán từ ngày nhận phòng {{ date }}",
+    "confirmedTitle": "Đặt phòng đã được xác nhận",
+    "rentFromText": "Tiền phòng thanh toán từ ngày {{ date }}. Chúng tôi sẽ gửi email nhắc vào sáng ngày nhận phòng.",
+    "policy": {
+      "agree": "Tôi đã đọc và đồng ý với",
+      "link": "chính sách lưu trú",
+      "hint": "Vui lòng đánh dấu đồng ý với chính sách lưu trú để tiếp tục."
+    },
     "incidentCharge": "Bồi thường hư hỏng / thất lạc",
-    "incidentChargeNote": "Số còn lại sau khi cấn trừ tiền bảo đảm tài sản.",
+    "incidentChargeNote": "Số còn lại sau khi cấn trừ tiền đặt cọc.",
     "transfer": "Chuyển khoản",
     "qrAlt": "Mã VietQR chuyển {{ amount }} đồng tới {{ name }}",
     "saveQr": "Tải mã QR",
@@ -461,11 +475,26 @@
     "noBooking": "Chưa có đặt phòng để thanh toán."
   },
   "confirmation": {
-    "assetsTitle": "Bảo đảm tài sản và bồi thường",
-    "securityRequired": "Bảo đảm yêu cầu",
+    "assetsTitle": "Tiền đặt cọc và bồi thường",
+    "securityRequired": "Tiền đặt cọc yêu cầu",
     "securityHeld": "Đang được giữ",
-    "securityApplied": "Đã cấn trừ {{ amount }} ₫ bảo đảm",
+    "securityApplied": "Đã cấn trừ {{ amount }} ₫ tiền đặt cọc",
     "payAssets": "Thanh toán khoản tài sản",
+    "payDeposit": "Thanh toán tiền đặt cọc",
+    "payRent": "Thanh toán tiền phòng",
+    "timeline": {
+      "title": "Tiền đặt cọc, tiền phòng và hoàn cọc",
+      "deposit": "Tiền đặt cọc",
+      "rent": "Tiền phòng",
+      "refund": "Hoàn cọc",
+      "received": "Đã nhận",
+      "checking": "Đang kiểm tra",
+      "notPaid": "Chưa thanh toán",
+      "rentPaid": "Đã thanh toán",
+      "rentFrom": "Thanh toán từ ngày {{ date }}",
+      "refunded": "Đã hoàn {{ amount }} ₫",
+      "refundLater": "Sau khi trả phòng và kiểm tra căn hộ"
+    },
     "enterContact": "Nhập email hoặc số điện thoại đã dùng khi đặt phòng",
     "notConfirmed": "Đang chờ chủ nhà xác nhận",
     "reportedTitle": "Cảm ơn bạn, ngày đã được giữ",
@@ -573,6 +602,10 @@
     "SCREENSHOT_REQUIRED": "Vui lòng tải ảnh chuyển khoản thành công lên.",
     "SCREENSHOT_NOT_IMAGE": "Ảnh chuyển khoản phải là ảnh PNG, JPG hoặc WebP.",
     "NOT_A_TRANSFER_SCREENSHOT": "Ảnh này không giống ảnh chuyển khoản. Vui lòng chọn ảnh chụp màn hình giao dịch thành công trong ứng dụng ngân hàng.",
+    "POLICY_NOT_ACCEPTED": "Vui lòng đồng ý với chính sách lưu trú trước khi báo đã chuyển khoản.",
+    "RENT_NOT_DUE_YET": "Chưa đến ngày thanh toán tiền phòng. Bạn có thể thanh toán từ ngày nhận phòng.",
+    "DEPOSIT_REQUIRED_FIRST": "Vui lòng thanh toán tiền đặt cọc trước.",
+    "AMOUNT_ABOVE_DEPOSIT": "Số tiền vượt quá tiền đặt cọc còn thiếu.",
     "bookedDates": "Ngày đã có người đặt: {{ dates }}.",
     "fields": {
       "name": "Nhập họ và tên.",

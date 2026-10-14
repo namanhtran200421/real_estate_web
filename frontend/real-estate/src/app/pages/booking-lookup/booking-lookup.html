@@ -119,13 +119,14 @@
           }
 
           <div class="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-end">
-            @if (b.paymentOptions.full !== null) {
+            @if (
+              b.paymentOptions.deposit !== null ||
+              b.paymentOptions.full !== null ||
+              b.paymentOptions.assetSecurity !== null ||
+              b.paymentOptions.incident !== null
+            ) {
               <a routerLink="/book/payment" [queryParams]="{ ref: b.reference }" class="btn btn-primary">
-                @if (b.amountPaid > 0) {
-                  {{ 'payment.payRemaining' | transloco }}
-                } @else {
-                  {{ 'confirmation.pay' | transloco }}
-                }
+                {{ payLabel(b) | transloco }}
               </a>
             }
             <a routerLink="/contact" class="btn btn-outline">{{ 'lookup.contactOwner' | transloco }}</a>

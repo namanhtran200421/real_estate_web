@@ -8,7 +8,7 @@ import { ApiErrorMessages, toApiError } from '../../core/api';
 import { PaymentOption, Stay } from '../../models/booking';
 import { ApartmentService } from '../../services/apartment.service';
 import { BookingService } from '../../services/booking.service';
-import { holdCountdown } from '../../shared/dates';
+import { holdCountdown, todayIso } from '../../shared/dates';
 import { SCREENSHOT_TYPES, ScreenshotError, ScreenshotProblem, prepareScreenshot } from '../../shared/transfer-screenshot';
 
 /** While the guest is on the page, it checks this often whether the owner has confirmed. */
@@ -126,12 +126,22 @@ export class BookingPayment {
     const booking = this.b();
     if (!booking) return false;
     if (booking.status === 'expired') return true;
+    const options = booking.paymentOptions;
     return (
       booking.status === 'pending' &&
-      booking.amountPaid === 0 &&
       !booking.pendingTransfer &&
-      booking.paymentOptions.full === null
+      options.deposit === null &&
+      options.full === null &&
+      options.assetSecurity === null &&
+      options.incident === null
     );
+  });
+
+  /** Deposit-first and confirmed, with the rent not payable yet: nothing to pay today. */
+  protected readonly rentLater = computed(() => {
+    const booking = this.b();
+    if (!booking?.depositFirst || !booking.rentDueFrom) return false;
+    return booking.rentDueFrom > todayIso();
   });
 
   protected readonly copied = signal<string | undefined>(undefined);
@@ -146,8 +156,16 @@ export class BookingPayment {
   protected readonly submitting = signal(false);
   protected readonly submitError = signal<string | undefined>(undefined);
 
+  /** The guest ticked "I have read and agree to the house rules & policies". */
+  protected readonly acceptedPolicy = signal(false);
+
   protected readonly canSubmit = computed(
-    () => this.t() !== undefined && this.screenshot() !== undefined && !this.preparing() && !this.submitting(),
+    () =>
+      this.t() !== undefined &&
+      this.screenshot() !== undefined &&
+      this.acceptedPolicy() &&
+      !this.preparing() &&
+      !this.submitting(),
   );
 
   constructor() {
@@ -230,7 +248,7 @@ export class BookingPayment {
     this.submitting.set(true);
     this.submitError.set(undefined);
     try {
-      const updated = await this.bookings.reportTransfer(booking.reference, option, screenshot.blob, sendAnyway);
+      const updated = await this.bookings.reportTransfer(booking.reference, option, screenshot.blob, sendAnyway, true);
       void this.router.navigate(['/booking', updated.reference, 'confirmation']);
     } catch (error) {
       const apiError = toApiError(error);
@@ -279,7 +297,7 @@ export class BookingPayment {
     if (!current || document.hidden || this.submitting()) return;
     try {
       const fresh = await this.bookings.get(current.reference);
-      if (fresh.amountPaid > current.amountPaid) {
+      if (fresh.amountPaid > current.amountPaid || (current.status === 'pending' && fresh.status === 'confirmed')) {
         void this.router.navigate(['/booking', fresh.reference, 'confirmation']);
       } else if (
         fresh.status !== current.status ||

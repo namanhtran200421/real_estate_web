@@ -183,6 +183,18 @@
                 <span class="small-caps text-muted-foreground">{{ 'common.total' | transloco }}</span>
                 <span class="display-number">{{ q.total | number }} ₫</span>
               </div>
+
+              @if (q.deposit > 0) {
+                <!-- Deposit-first: what is paid now, what later, and what comes back -->
+                <div class="mt-6 space-y-2 rounded-md bg-muted p-5 text-sm">
+                  <p class="font-medium">
+                    {{ 'review.payNow' | transloco: { deposit: (q.deposit | number), percent: q.depositPercent } }}
+                  </p>
+                  <p class="text-muted-foreground">{{ 'review.rentAtCheckIn' | transloco: { total: (q.total | number) } }}</p>
+                  <p class="text-muted-foreground">{{ 'review.depositRefund' | transloco }}</p>
+                  <a routerLink="/policy" class="link inline-block">{{ 'review.viewPolicy' | transloco }}</a>
+                </div>
+              }
             } @else {
               <p class="mt-6 text-muted-foreground" role="status">{{ 'review.calculating' | transloco }}</p>
             }

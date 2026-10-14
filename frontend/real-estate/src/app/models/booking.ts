@@ -124,6 +124,10 @@ export interface Booking {
   amountPaid: number;
   amountDue: number;
   financials: BookingFinancials;
+  /** Deposit-first: a security deposit confirms the booking and the rent is paid from check-in day. */
+  depositFirst: boolean;
+  /** First day the rent can be paid (YYYY-MM-DD); null when not deposit-first. */
+  rentDueFrom: string | null;
   /** What can be paid now; null = not available. */
   paymentOptions: {
     deposit: number | null;
