@@ -18,6 +18,7 @@
 import QRCode from 'qrcode';
 import { env } from '../../config/env.js';
 import { withTransaction, type Db } from '../../db/pool.js';
+import { todayIn } from '../../lib/dates.js';
 import { HttpError } from '../../lib/http-error.js';
 import { readImageText } from '../../lib/image-text.js';
 import type { AdminIdentity } from '../admin-auth/admin-auth.types.js';
@@ -54,7 +55,7 @@ async function recalculate(booking: BookingRecord, db: Db): Promise<void> {
   await bookingRepository.setPaymentProgress(
     booking.id,
     received - refunded,
-    derivePaymentStatus(booking.totalAmount, received, refunded),
+    derivePaymentStatus({ total: booking.totalAmount, rentReceived: received, rentRefunded: refunded, depositReceived: 0, depositRefunded: 0 }),
     db,
   );
 }
@@ -95,29 +96,18 @@ async function amountFor(booking: BookingRecord, option: PaymentOption, db?: Db)
   if (pending) {
     throw HttpError.conflict('TRANSFER_BEING_CHECKED', 'Chủ nhà đang kiểm tra khoản chuyển bạn đã báo. Vui lòng chờ xác nhận.');
   }
-  const purpose = purposeFor(option);
-  if (purpose !== 'accommodation') {
-    if (booking.status !== 'confirmed' && booking.status !== 'completed') {
-      throw HttpError.conflict('BOOKING_NOT_PAYABLE', 'Chỉ thanh toán khoản này sau khi đặt phòng đã được xác nhận.');
-    }
-    const financials = await assetIncidentRepository.financials(booking.id, booking.assetSecurityAmount, db);
-    const amount = purpose === 'asset_security' ? financials.assetSecurityDue : financials.incidentAmountDue;
-    if (amount < 1_000) {
-      throw HttpError.unprocessable('PAYMENT_OPTION_UNAVAILABLE', 'Khoản này hiện không còn số tiền cần thanh toán.');
-    }
-    return amount;
-  }
-
   const now = new Date();
-  if (!isPayable(booking, now)) {
-    throw HttpError.conflict(
-      'BOOKING_NOT_PAYABLE',
-      'Đặt phòng này đã hết thời gian giữ chỗ hoặc không thể thanh toán. Vui lòng đặt lại.',
-    );
-  }
-  const accommodationOption = option as 'deposit' | 'full';
-  const amount = paymentOptions(booking, now, false)[accommodationOption];
+  const financials = await assetIncidentRepository.financials(booking.id, booking.assetSecurityAmount, db);
+  const options = paymentOptions(booking, financials, now, todayIn(env.timezone), false);
+  const key = option === 'asset_security' ? 'assetSecurity' : option;
+  const amount = options[key];
   if (amount === null) {
+    if (!isPayable(booking, now)) {
+      throw HttpError.conflict(
+        'BOOKING_NOT_PAYABLE',
+        'Đặt phòng này đã hết thời gian giữ chỗ hoặc không thể thanh toán. Vui lòng đặt lại.',
+      );
+    }
     throw HttpError.unprocessable('PAYMENT_OPTION_UNAVAILABLE', 'Lựa chọn thanh toán này không còn áp dụng cho đặt phòng.');
   }
   return amount;

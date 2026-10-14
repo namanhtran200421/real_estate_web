@@ -1,7 +1,16 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { HttpError } from '../../lib/http-error.js';
-import { assertValidStay, derivePaymentStatus, isPayable, paymentOptions } from './booking.rules.js';
+import {
+  assertValidStay,
+  confirmingPurpose,
+  derivePaymentStatus,
+  isDepositFirst,
+  isPayable,
+  paymentOptions,
+  POLICY_VERSION,
+  rentDueFrom,
+} from './booking.rules.js';
 
 const NOW = new Date('2026-10-01T05:00:00Z');
 const LATER = new Date('2026-10-01T05:30:00Z');
@@ -49,68 +58,102 @@ describe('isPayable', () => {
   });
 });
 
+const RULES_NOW = new Date('2026-11-01T03:00:00Z');
+const financials = (assetSecurityDue = 0, incidentAmountDue = 0) => ({ assetSecurityDue, incidentAmountDue });
+const legacy = {
+  status: 'pending',
+  amountPaid: 0,
+  holdExpiresAt: new Date('2026-11-01T05:00:00Z'),
+  totalAmount: 3_400_000,
+  depositAmount: 1_020_000,
+  assetSecurityAmount: 0,
+  checkIn: '2026-11-10',
+} as const;
+const depositFirst = { ...legacy, depositAmount: 0, assetSecurityAmount: 680_000 } as const;
+const none = { deposit: null, full: null, assetSecurity: null, incident: null };
+
 describe('paymentOptions', () => {
-  const booking = { status: 'pending' as const, amountPaid: 0, holdExpiresAt: LATER, totalAmount: 5_130_000, depositAmount: 1_539_000 };
-
-  it('offers the deposit or the full amount before anything is paid', () => {
-    assert.deepEqual(paymentOptions(booking, NOW, false), {
-      deposit: 1_539_000,
-      full: 5_130_000,
-      assetSecurity: null,
-      incident: null,
+  it('legacy: offers the deposit or the full amount before anything is paid', () => {
+    assert.deepEqual(paymentOptions(legacy, financials(), RULES_NOW, '2026-11-01', false), {
+      ...none, deposit: 1_020_000, full: 3_400_000,
     });
   });
 
-  it('offers only the balance once the deposit is paid', () => {
-    assert.deepEqual(paymentOptions({ ...booking, amountPaid: 1_539_000 }, NOW, false), {
-      deposit: null,
-      full: 3_591_000,
-      assetSecurity: null,
-      incident: null,
+  it('legacy: offers only the balance once the deposit is paid', () => {
+    assert.deepEqual(paymentOptions({ ...legacy, amountPaid: 1_020_000 }, financials(), RULES_NOW, '2026-11-01', false), {
+      ...none, full: 2_380_000,
     });
   });
 
-  it('offers nothing when fully paid or no longer payable', () => {
-    assert.deepEqual(paymentOptions({ ...booking, amountPaid: 5_130_000 }, NOW, false), {
-      deposit: null,
-      full: null,
-      assetSecurity: null,
-      incident: null,
-    });
-    assert.deepEqual(paymentOptions({ ...booking, status: 'cancelled' }, NOW, false), {
-      deposit: null,
-      full: null,
-      assetSecurity: null,
-      incident: null,
+  it('deposit-first, pending: only the deposit', () => {
+    assert.deepEqual(paymentOptions(depositFirst, financials(680_000), RULES_NOW, '2026-11-01', false), {
+      ...none, assetSecurity: 680_000,
     });
   });
 
-  it('offers nothing while a reported transfer is being checked', () => {
-    assert.deepEqual(paymentOptions(booking, NOW, true), {
-      deposit: null,
-      full: null,
-      assetSecurity: null,
-      incident: null,
+  it('deposit-first, pending, hold ran out: nothing', () => {
+    const b = { ...depositFirst, holdExpiresAt: new Date('2026-11-01T02:00:00Z') };
+    assert.deepEqual(paymentOptions(b, financials(680_000), RULES_NOW, '2026-11-01', false), none);
+  });
+
+  it('deposit-first, confirmed before check-in day: nothing', () => {
+    const b = { ...depositFirst, status: 'confirmed', holdExpiresAt: null } as const;
+    assert.deepEqual(paymentOptions(b, financials(0), RULES_NOW, '2026-11-09', false), none);
+  });
+
+  it('deposit-first, confirmed on check-in day: the full rent', () => {
+    const b = { ...depositFirst, status: 'confirmed', holdExpiresAt: null } as const;
+    assert.deepEqual(paymentOptions(b, financials(0), RULES_NOW, '2026-11-10', false), { ...none, full: 3_400_000 });
+  });
+
+  it('deposit-first, completed with rent paid and an incident due: only the incident', () => {
+    const b = { ...depositFirst, status: 'completed', amountPaid: 3_400_000, holdExpiresAt: null } as const;
+    assert.deepEqual(paymentOptions(b, financials(0, 500_000), RULES_NOW, '2026-11-12', false), {
+      ...none, incident: 500_000,
     });
   });
 
-  it('skips the deposit option when there is no deposit', () => {
-    assert.deepEqual(paymentOptions({ ...booking, depositAmount: 0 }, NOW, false), {
-      deposit: null,
-      full: 5_130_000,
-      assetSecurity: null,
-      incident: null,
-    });
+  it('offers nothing while a transfer is being checked, for both kinds', () => {
+    assert.deepEqual(paymentOptions(legacy, financials(), RULES_NOW, '2026-11-01', true), none);
+    assert.deepEqual(paymentOptions(depositFirst, financials(680_000), RULES_NOW, '2026-11-01', true), none);
+  });
+
+  it('never offers amounts below 1.000 VND', () => {
+    assert.equal(paymentOptions(depositFirst, financials(500), RULES_NOW, '2026-11-01', false).assetSecurity, null);
+  });
+});
+
+describe('rentDueFrom', () => {
+  it('is the check-in day while the rent is owed', () => {
+    assert.equal(rentDueFrom(depositFirst), '2026-11-10');
+  });
+  it('is null once paid, for legacy bookings and for dead bookings', () => {
+    assert.equal(rentDueFrom({ ...depositFirst, amountPaid: 3_400_000 }), null);
+    assert.equal(rentDueFrom(legacy), null);
+    assert.equal(rentDueFrom({ ...depositFirst, status: 'cancelled' }), null);
+    assert.equal(rentDueFrom({ ...depositFirst, status: 'expired' }), null);
   });
 });
 
 describe('derivePaymentStatus', () => {
+  const m = (total: number, rentReceived: number, rentRefunded: number, depositReceived: number, depositRefunded: number) => ({
+    total, rentReceived, rentRefunded, depositReceived, depositRefunded,
+  });
   it('follows the money', () => {
-    assert.equal(derivePaymentStatus(1_000_000, 0, 0), 'unpaid');
-    assert.equal(derivePaymentStatus(1_000_000, 300_000, 0), 'deposit_paid');
-    assert.equal(derivePaymentStatus(1_000_000, 1_000_000, 0), 'fully_paid');
-    assert.equal(derivePaymentStatus(1_000_000, 1_200_000, 0), 'fully_paid');
-    assert.equal(derivePaymentStatus(1_000_000, 1_000_000, 400_000), 'deposit_paid');
-    assert.equal(derivePaymentStatus(1_000_000, 300_000, 300_000), 'refunded');
+    assert.equal(derivePaymentStatus(m(100, 100, 0, 20, 20)), 'fully_paid');
+    assert.equal(derivePaymentStatus(m(100, 30, 0, 0, 0)), 'deposit_paid');
+    assert.equal(derivePaymentStatus(m(100, 0, 0, 20, 0)), 'deposit_paid');
+    assert.equal(derivePaymentStatus(m(100, 0, 0, 20, 20)), 'refunded');
+    assert.equal(derivePaymentStatus(m(100, 0, 0, 0, 0)), 'unpaid');
+  });
+});
+
+describe('deposit-first helpers', () => {
+  it('knows the kind and the confirming purpose', () => {
+    assert.equal(isDepositFirst(depositFirst), true);
+    assert.equal(isDepositFirst(legacy), false);
+    assert.equal(confirmingPurpose(legacy), 'accommodation');
+    assert.equal(confirmingPurpose(depositFirst), 'asset_security');
+    assert.equal(POLICY_VERSION, '2026-10-14');
   });
 });

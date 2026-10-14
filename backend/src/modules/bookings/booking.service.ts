@@ -196,17 +196,7 @@ function toGuestBooking(
     amountPaid: booking.amountPaid,
     amountDue: Math.max(booking.totalAmount - booking.amountPaid, 0),
     financials,
-    paymentOptions: {
-      ...paymentOptions(booking, new Date(), pending !== undefined),
-      assetSecurity:
-        !pending && (booking.status === 'confirmed' || booking.status === 'completed') && financials.assetSecurityDue >= 1_000
-          ? financials.assetSecurityDue
-          : null,
-      incident:
-        !pending && (booking.status === 'confirmed' || booking.status === 'completed') && financials.incidentAmountDue >= 1_000
-          ? financials.incidentAmountDue
-          : null,
-    },
+    paymentOptions: paymentOptions(booking, financials, new Date(), todayIn(env.timezone), pending !== undefined),
     holdExpiresAt: booking.holdExpiresAt?.toISOString() ?? null,
     pendingTransfer,
     createdAt: booking.createdAt.toISOString(),

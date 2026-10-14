@@ -4,7 +4,7 @@
  */
 import { daysBetween } from '../../lib/dates.js';
 import { HttpError } from '../../lib/http-error.js';
-import type { BookingRecord, PaymentOptions, PaymentStatus } from './booking.types.js';
+import type { BookingFinancials, BookingRecord, PaymentOptions, PaymentPurpose, PaymentStatus } from './booking.types.js';
 
 export const MAX_NIGHTS = 90;
 export const MAX_DAYS_AHEAD = 365;
@@ -38,32 +38,82 @@ export function isPayable(booking: Pick<BookingRecord, 'status' | 'amountPaid' |
   return booking.holdExpiresAt > now;
 }
 
-/**
- * What the guest may transfer now. Nothing while a reported transfer is still being checked,
- * so a guest never pays twice by accident.
- */
-export function paymentOptions(
-  booking: Pick<BookingRecord, 'status' | 'amountPaid' | 'holdExpiresAt' | 'totalAmount' | 'depositAmount'>,
-  now: Date,
-  transferPending: boolean,
-): PaymentOptions {
-  const due = booking.totalAmount - booking.amountPaid;
-  if (transferPending || !isPayable(booking, now) || due < MIN_TRANSFER) {
-    return { deposit: null, full: null, assetSecurity: null, incident: null };
-  }
+/** Version of the house rules a guest agrees to when reporting a transfer (the /policy page). */
+export const POLICY_VERSION = '2026-10-14';
 
-  let deposit: number | null = null;
-  const depositUseful = booking.depositAmount >= MIN_TRANSFER && booking.depositAmount < due;
-  if (booking.amountPaid === 0 && depositUseful) deposit = booking.depositAmount;
-
-  return { deposit, full: due, assetSecurity: null, incident: null };
+/** Deposit-first bookings pay a security deposit to confirm, then the rent from check-in day. */
+export function isDepositFirst(booking: Pick<BookingRecord, 'assetSecurityAmount'>): boolean {
+  return booking.assetSecurityAmount > 0;
 }
 
-/** Payment status from the money received and refunded (both in VND). */
-export function derivePaymentStatus(total: number, received: number, refunded: number): PaymentStatus {
-  const net = received - refunded;
-  if (net <= 0 && refunded > 0) return 'refunded';
-  if (net <= 0) return 'unpaid';
-  if (net >= total) return 'fully_paid';
-  return 'deposit_paid';
+/** The payment whose arrival confirms a pending booking (and whose report clears its hold). */
+export function confirmingPurpose(booking: Pick<BookingRecord, 'assetSecurityAmount'>): PaymentPurpose {
+  return isDepositFirst(booking) ? 'asset_security' : 'accommodation';
+}
+
+type PayableBooking = Pick<
+  BookingRecord,
+  'status' | 'amountPaid' | 'holdExpiresAt' | 'totalAmount' | 'depositAmount' | 'assetSecurityAmount' | 'checkIn'
+>;
+
+const NOTHING: PaymentOptions = { deposit: null, full: null, assetSecurity: null, incident: null };
+
+function worthTransferring(amount: number): number | null {
+  return amount >= MIN_TRANSFER ? amount : null;
+}
+
+/**
+ * What the guest may transfer now. Nothing while a reported transfer is still being checked, so
+ * a guest never pays twice by accident. Deposit-first: the deposit while the hold runs, then the
+ * full rent from check-in day. Legacy: part of the rent (the old deposit) or all of it.
+ * @param today the business date, YYYY-MM-DD
+ */
+export function paymentOptions(
+  booking: PayableBooking,
+  financials: Pick<BookingFinancials, 'assetSecurityDue' | 'incidentAmountDue'>,
+  now: Date,
+  today: string,
+  transferPending: boolean,
+): PaymentOptions {
+  if (transferPending) return { ...NOTHING };
+  const stayLive = booking.status === 'confirmed' || booking.status === 'completed';
+  const incident = stayLive ? worthTransferring(financials.incidentAmountDue) : null;
+  const rentDue = booking.totalAmount - booking.amountPaid;
+
+  if (isDepositFirst(booking)) {
+    if (booking.status === 'pending') {
+      return { ...NOTHING, assetSecurity: isPayable(booking, now) ? worthTransferring(financials.assetSecurityDue) : null };
+    }
+    const rentOpen = stayLive && today >= booking.checkIn;
+    return { ...NOTHING, full: rentOpen ? worthTransferring(rentDue) : null, incident };
+  }
+
+  if (!isPayable(booking, now) || rentDue < MIN_TRANSFER) return { ...NOTHING, incident };
+  const depositUseful = booking.depositAmount >= MIN_TRANSFER && booking.depositAmount < rentDue;
+  const deposit = booking.amountPaid === 0 && depositUseful ? booking.depositAmount : null;
+  return { deposit, full: rentDue, assetSecurity: null, incident };
+}
+
+/** The date the rent becomes payable (check-in day) while it is still owed; null otherwise. */
+export function rentDueFrom(
+  booking: Pick<BookingRecord, 'status' | 'amountPaid' | 'totalAmount' | 'assetSecurityAmount' | 'checkIn'>,
+): string | null {
+  if (!isDepositFirst(booking) || booking.status === 'cancelled' || booking.status === 'expired') return null;
+  return booking.totalAmount - booking.amountPaid >= MIN_TRANSFER ? booking.checkIn : null;
+}
+
+/** Payment status from the rent and the deposit received and refunded (all in VND). */
+export function derivePaymentStatus(money: {
+  total: number;
+  rentReceived: number;
+  rentRefunded: number;
+  depositReceived: number;
+  depositRefunded: number;
+}): PaymentStatus {
+  const rent = money.rentReceived - money.rentRefunded;
+  const deposit = money.depositReceived - money.depositRefunded;
+  if (rent >= money.total && rent > 0) return 'fully_paid';
+  if (rent > 0 || deposit > 0) return 'deposit_paid';
+  if (money.rentRefunded + money.depositRefunded > 0) return 'refunded';
+  return 'unpaid';
 }
