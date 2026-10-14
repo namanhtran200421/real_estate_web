@@ -94,20 +94,53 @@
             </div>
           }
 
-          <dl class="mt-6 grid grid-cols-3 gap-4 text-center">
-            <div>
-              <dt class="small-caps text-[0.625rem] text-muted-foreground">{{ 'common.totalPrice' | transloco }}</dt>
-              <dd class="mt-2 whitespace-nowrap font-serif text-lg sm:text-xl">{{ b.quote.total | number }} ₫</dd>
-            </div>
-            <div class="border-x border-border">
-              <dt class="small-caps text-[0.625rem] text-muted-foreground">{{ 'lookup.paid' | transloco }}</dt>
-              <dd class="mt-2 whitespace-nowrap font-serif text-lg text-accent-deep sm:text-xl">{{ b.amountPaid | number }} ₫</dd>
-            </div>
-            <div>
-              <dt class="small-caps text-[0.625rem] text-muted-foreground">{{ 'lookup.remaining' | transloco }}</dt>
-              <dd class="mt-2 whitespace-nowrap font-serif text-lg sm:text-xl">{{ b.amountDue | number }} ₫</dd>
-            </div>
-          </dl>
+          @if (b.depositFirst) {
+            <!-- Deposit-first: the deposit is held apart from the rent, so it is shown on its own. -->
+            @let money = b.financials;
+            <dl class="mt-6 grid grid-cols-3 gap-4 text-center">
+              <div>
+                <dt class="small-caps text-[0.625rem] text-muted-foreground">{{ 'lookup.deposit' | transloco }}</dt>
+                <dd class="mt-2 whitespace-nowrap font-serif text-lg text-accent-deep sm:text-xl">{{ money.assetSecurityRequired | number }} ₫</dd>
+                <dd class="mt-1 text-xs text-muted-foreground">
+                  @if (money.assetSecurityRefunded > 0) {
+                    {{ 'lookup.depositRefunded' | transloco: { amount: (money.assetSecurityRefunded | number) } }}
+                  } @else if (money.assetSecurityReceived >= money.assetSecurityRequired) {
+                    {{ 'lookup.depositReceived' | transloco }}
+                  } @else {
+                    {{ 'lookup.depositNotReceived' | transloco }}
+                  }
+                </dd>
+              </div>
+              <div class="border-x border-border">
+                <dt class="small-caps text-[0.625rem] text-muted-foreground">{{ 'lookup.rentPaid' | transloco }}</dt>
+                <dd class="mt-2 whitespace-nowrap font-serif text-lg sm:text-xl">{{ b.amountPaid | number }} ₫</dd>
+              </div>
+              <div>
+                <dt class="small-caps text-[0.625rem] text-muted-foreground">{{ 'lookup.rentDue' | transloco }}</dt>
+                <dd class="mt-2 whitespace-nowrap font-serif text-lg sm:text-xl">{{ b.amountDue | number }} ₫</dd>
+                @if (b.rentDueFrom) {
+                  <dd class="mt-1 text-xs text-muted-foreground">
+                    {{ 'lookup.rentFrom' | transloco: { date: (b.rentDueFrom | date: 'dd/MM/yyyy') } }}
+                  </dd>
+                }
+              </div>
+            </dl>
+          } @else {
+            <dl class="mt-6 grid grid-cols-3 gap-4 text-center">
+              <div>
+                <dt class="small-caps text-[0.625rem] text-muted-foreground">{{ 'common.totalPrice' | transloco }}</dt>
+                <dd class="mt-2 whitespace-nowrap font-serif text-lg sm:text-xl">{{ b.quote.total | number }} ₫</dd>
+              </div>
+              <div class="border-x border-border">
+                <dt class="small-caps text-[0.625rem] text-muted-foreground">{{ 'lookup.paid' | transloco }}</dt>
+                <dd class="mt-2 whitespace-nowrap font-serif text-lg text-accent-deep sm:text-xl">{{ b.amountPaid | number }} ₫</dd>
+              </div>
+              <div>
+                <dt class="small-caps text-[0.625rem] text-muted-foreground">{{ 'lookup.remaining' | transloco }}</dt>
+                <dd class="mt-2 whitespace-nowrap font-serif text-lg sm:text-xl">{{ b.amountDue | number }} ₫</dd>
+              </div>
+            </dl>
+          }
 
           @if (b.pendingTransfer; as pending) {
             <p class="mt-6 rounded-md border border-accent bg-accent-muted p-4 text-sm text-accent-deep" role="status">
@@ -127,6 +160,11 @@
             ) {
               <a routerLink="/book/payment" [queryParams]="{ ref: b.reference }" class="btn btn-primary">
                 {{ payLabel(b) | transloco }}
+              </a>
+            }
+            @if (b.depositFirst) {
+              <a [routerLink]="['/booking', b.reference, 'confirmation']" class="btn btn-outline">
+                {{ 'lookup.viewPayments' | transloco }}
               </a>
             }
             <a routerLink="/contact" class="btn btn-outline">{{ 'lookup.contactOwner' | transloco }}</a>
