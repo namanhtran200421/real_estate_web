@@ -485,7 +485,7 @@
           @for (room of inspectionRooms(); track room.room; let ri = $index) {
             <h3 class="mt-6">{{ room.room }}</h3>
             <ul class="mt-2 divide-y divide-border border-y border-border">
-              @for (row of room.rows; track row.item; let li = $index) {
+              @for (row of room.rows; track li; let li = $index) {
                 <li class="py-3">
                   <div class="flex flex-wrap items-center justify-between gap-3">
                     <span class="text-sm">{{ row.item }}</span>

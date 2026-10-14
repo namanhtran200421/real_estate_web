@@ -83,7 +83,7 @@ function change(current: number, previous: number): { text: string; up: boolean 
         <section class="card card-accent-top mt-8" aria-labelledby="dashboard-payment-confirm">
           <h2 id="dashboard-payment-confirm" class="text-xl">Xác nhận đã thực nhận tiền?</h2>
           <p class="mt-2 text-sm text-muted-foreground">
-            Ghi nhận {{ pending.amount | number }} ₫ · {{ pending.method === 'cash' ? 'tiền mặt' : 'chuyển khoản' }} cho {{ pending.reference }}.
+            Ghi nhận {{ purposeNames[pending.purpose] }} {{ pending.amount | number }} ₫ · {{ pending.method === 'cash' ? 'tiền mặt' : 'chuyển khoản' }} cho {{ pending.reference }}.
           </p>
           <div class="mt-4 flex gap-3">
             <button type="button" class="btn btn-primary" [disabled]="busy()" (click)="confirmRecord()">Xác nhận đã nhận</button>
@@ -337,6 +337,11 @@ export class AdminDashboard {
     note: string;
   } | undefined>(undefined);
   protected readonly hint = arrivalHint;
+  protected readonly purposeNames: Record<PaymentPurpose, string> = {
+    accommodation: 'tiền phòng',
+    asset_security: 'tiền đặt cọc',
+    incident: 'tiền bồi thường',
+  };
 
   /** This month and last, from the chart data. */
   protected readonly kpis = computed(() => {

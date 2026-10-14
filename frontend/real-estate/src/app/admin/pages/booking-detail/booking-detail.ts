@@ -151,7 +151,8 @@ export class AdminBookingDetailPage {
     if (booking.status !== 'completed') return 'Ghi nhận khách đã trả phòng trước.';
     if (!booking.inspection) return 'Lưu kết quả kiểm tra trả phòng trước.';
     if (booking.incidents.some((incident) => incident.status === 'open')) return 'Còn khoản hư hỏng chưa đóng.';
-    if (booking.depositRefundable <= 0) return 'Không còn tiền cọc để hoàn.';
+    if (booking.amountDue >= 1000) return 'Khách chưa thanh toán đủ tiền phòng.';
+    if (booking.depositRefundable < 1000) return 'Không còn tiền cọc để hoàn.';
     return undefined;
   });
 
@@ -162,23 +163,36 @@ export class AdminBookingDetailPage {
     // The inspection rows start from the saved results (all OK before the first save); an unrelated
     // reload of the booking keeps what the owner is typing.
     let rowsKey: string | undefined;
+    let purposeKey: string | undefined;
     effect(() => {
       const booking = this.b();
       if (!booking) return;
-      const key = `${booking.reference}|${booking.status}|${booking.inspection?.inspectedAt ?? ''}|${JSON.stringify(booking.checklist)}`;
+      // A deposit-first booking waiting for money is paid with the deposit first; set only when
+      // the booking or its status changes, so the owner's later choice is kept.
+      const nextPurposeKey = `${booking.reference}|${booking.status}`;
+      if (nextPurposeKey !== purposeKey) {
+        purposeKey = nextPurposeKey;
+        this.manualPurpose.set(booking.depositFirst && (booking.status === 'pending' || booking.status === 'expired') ? 'asset_security' : 'accommodation');
+      }
+      const key = `${booking.reference}|${booking.inspection?.inspectedAt ?? ''}|${JSON.stringify(booking.checklist)}`;
       if (key === rowsKey) return;
       rowsKey = key;
-      // A deposit-first booking waiting for money is paid with the deposit first.
-      this.manualPurpose.set(booking.depositFirst && (booking.status === 'pending' || booking.status === 'expired') ? 'asset_security' : 'accommodation');
       const saved = booking.inspection?.results ?? [];
       this.inspectionRooms.set(
-        booking.checklist.map((room) => ({
-          room: room.room,
-          rows: room.items.map((item) => {
-            const result = saved.find((r) => r.room === room.room && r.item === item);
-            return { item, ok: result?.ok ?? true, note: result?.note ?? '' };
-          }),
-        })),
+        booking.checklist.map((room) => {
+          // Duplicate item names match their saved results in order.
+          const results = saved.filter((r) => r.room === room.room);
+          const used = new Map<string, number>();
+          return {
+            room: room.room,
+            rows: room.items.map((item) => {
+              const n = used.get(item) ?? 0;
+              used.set(item, n + 1);
+              const result = results.filter((r) => r.item === item)[n];
+              return { item, ok: result?.ok ?? true, note: result?.note ?? '' };
+            }),
+          };
+        }),
       );
     });
     // A transfer waiting to be checked shows its screenshot at once; older ones on request.
@@ -317,7 +331,7 @@ export class AdminBookingDetailPage {
     const receipt = this.pendingReceipt();
     if (!receipt) return;
     const reference = this.reference();
-    let note = receipt.method === 'cash' ? 'Tiền mặt' : `Chuyển khoản ${this.transferNote(reference)}`;
+    let note = receipt.method === 'cash' ? 'Tiền mặt' : `Chuyển khoản ${this.transferNote(reference, receipt.purpose)}`;
     if (receipt.rest) note += ', phần còn lại';
     const done = await this.run(() =>
       this.api.recordPayment(reference, {
