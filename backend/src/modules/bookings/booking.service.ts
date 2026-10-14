@@ -34,6 +34,8 @@ import { accessTokenFor, assertAccess } from './booking-access.js';
 import { assetIncidentRepository } from './asset-incident.repository.js';
 import { bookingRepository } from './booking.repository.js';
 import { guestIdentityRepository } from './guest-identity.repository.js';
+import { checklistFor, type InspectionResult } from './inspection.js';
+import { inspectionRepository } from './inspection.repository.js';
 import {
   assertValidStay,
   confirmingPurpose,
@@ -372,7 +374,7 @@ async function adminDetail(reference: string): Promise<AdminBookingDetail> {
   const booking = await bookingRepository.findByReference(reference);
   if (!booking) throw notFound();
 
-  const [payments, refunds, events, identities, financials, incidents, nextArrivalReference] = await Promise.all([
+  const [payments, refunds, events, identities, financials, incidents, nextArrivalReference, inspection, apartment] = await Promise.all([
     paymentRepository.listForBooking(booking.id),
     paymentRepository.listRefundsForBooking(booking.id),
     bookingRepository.listEvents(booking.id),
@@ -380,6 +382,8 @@ async function adminDetail(reference: string): Promise<AdminBookingDetail> {
     assetIncidentRepository.financials(booking.id, booking.assetSecurityAmount),
     assetIncidentRepository.list(booking.id),
     bookingRepository.nextArrival(booking),
+    inspectionRepository.get(booking.id),
+    apartmentRepository.findBySlug(booking.apartmentSlug),
   ]);
 
   const { payments: _guestPayments, incidents: _guestIncidents, ...guest } = toGuestBooking(
@@ -415,6 +419,9 @@ async function adminDetail(reference: string): Promise<AdminBookingDetail> {
     },
     payments: payments.map((payment) => toAdminPayment(payment, refunds)),
     events,
+    inspection,
+    checklist: checklistFor(apartment ?? { inspectionChecklist: [] }),
+    depositRefundable: financials.assetSecurityHeld,
   };
 }
 
@@ -480,6 +487,28 @@ async function checkOut(reference: string, admin: AdminIdentity): Promise<AdminB
     if (booking.checkIn > todayIn(env.timezone)) throw invalidStatus('Khách chưa đến ngày nhận phòng.');
     await bookingRepository.markCompleted(booking.id, db);
     await bookingRepository.addEvent(booking.id, 'checked_out', admin.email, { actualAt: new Date().toISOString() }, db);
+  });
+}
+
+/** Saves what the owner found when the guest left. Allowed from check-in day on. */
+async function saveInspection(
+  reference: string,
+  results: InspectionResult[],
+  admin: AdminIdentity,
+): Promise<AdminBookingDetail> {
+  return adminChange(reference, async (booking, db) => {
+    if (booking.status !== 'confirmed' && booking.status !== 'completed') {
+      throw invalidStatus('Chỉ kiểm tra được đặt phòng đã xác nhận hoặc đã hoàn thành.');
+    }
+    if (booking.checkIn > todayIn(env.timezone)) throw invalidStatus('Khách chưa đến ngày nhận phòng.');
+    await inspectionRepository.upsert(booking.id, results, admin.id, db);
+    await bookingRepository.addEvent(
+      booking.id,
+      'inspection_saved',
+      admin.email,
+      { problems: results.filter((result) => !result.ok).length },
+      db,
+    );
   });
 }
 
@@ -601,6 +630,7 @@ export const bookingService = {
   confirm,
   cancel,
   checkOut,
+  saveInspection,
   addIncident,
   resolveIncident,
   summary,

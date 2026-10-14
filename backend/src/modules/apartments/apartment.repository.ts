@@ -13,6 +13,7 @@ import type {
   NearbyPlace,
   Photo,
 } from './apartment.types.js';
+import { DEFAULT_INSPECTION_CHECKLIST, type InspectionChecklist } from '../bookings/inspection.js';
 
 interface ApartmentRow {
   id: string;
@@ -43,6 +44,7 @@ interface ApartmentRow {
   deposit_percent: number;
   is_active: boolean;
   sort_order: number;
+  inspection_checklist: InspectionChecklist;
 }
 
 const APARTMENT_COLUMNS = `
@@ -51,7 +53,7 @@ const APARTMENT_COLUMNS = `
   to_char(check_in_time, 'HH24:MI')  AS check_in,
   to_char(check_out_time, 'HH24:MI') AS check_out,
   price_weekday, price_weekend, price_holiday, price_weekly, price_monthly,
-  long_stay_discounts, deposit_percent, is_active, sort_order
+  long_stay_discounts, deposit_percent, is_active, sort_order, inspection_checklist
 `;
 
 function toApartment(row: ApartmentRow): AdminApartment {
@@ -86,10 +88,12 @@ function toApartment(row: ApartmentRow): AdminApartment {
     nearby: row.nearby,
     isActive: row.is_active,
     sortOrder: row.sort_order,
+    inspectionChecklist: row.inspection_checklist,
+    defaultInspectionChecklist: DEFAULT_INSPECTION_CHECKLIST,
   };
 }
 
-/** Column values for INSERT/UPDATE, in the order used by both statements ($1 … $27). */
+/** Column values for INSERT/UPDATE, in the order used by both statements ($1 … $28). */
 function toParams(input: ApartmentInput): unknown[] {
   return [
     input.slug,
@@ -119,6 +123,7 @@ function toParams(input: ApartmentInput): unknown[] {
     input.depositPercent,
     input.isActive,
     input.sortOrder,
+    JSON.stringify(input.inspectionChecklist),
   ];
 }
 
@@ -149,9 +154,9 @@ async function create(input: ApartmentInput): Promise<AdminApartment> {
        guests, bedrooms, beds, bathrooms, key_facilities, facilities, rules, nearby,
        check_in_time, check_out_time,
        price_weekday, price_weekend, price_holiday, price_weekly, price_monthly, long_stay_discounts,
-       deposit_percent, is_active, sort_order
+       deposit_percent, is_active, sort_order, inspection_checklist
      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18,
-               $19, $20, $21, $22, $23, $24, $25, $26, $27)
+               $19, $20, $21, $22, $23, $24, $25, $26, $27, $28::jsonb)
      RETURNING slug`,
     toParams(input),
   );
@@ -167,8 +172,8 @@ async function update(currentSlug: string, input: ApartmentInput): Promise<Admin
        facilities = $14, rules = $15, nearby = $16, check_in_time = $17, check_out_time = $18,
        price_weekday = $19, price_weekend = $20, price_holiday = $21, price_weekly = $22,
        price_monthly = $23, long_stay_discounts = $24, deposit_percent = $25,
-       is_active = $26, sort_order = $27
-     WHERE slug = $28
+       is_active = $26, sort_order = $27, inspection_checklist = $28::jsonb
+     WHERE slug = $29
      RETURNING slug`,
     [...toParams(input), currentSlug],
   );

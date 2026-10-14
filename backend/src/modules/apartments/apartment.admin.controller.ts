@@ -44,6 +44,10 @@ const apartmentBody = z.object({
   nearby: z.array(z.object({ place: text(120), distance: text(60) })).max(30),
   isActive: z.boolean(),
   sortOrder: z.number().int().min(0).max(10_000),
+  inspectionChecklist: z
+    .array(z.object({ room: text(120), items: z.array(text(120)).min(1).max(60) }))
+    .max(20)
+    .default([]),
 });
 
 const dateRangeQuery = z.object({ from: isoDate, to: isoDate });

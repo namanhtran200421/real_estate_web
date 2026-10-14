@@ -5,6 +5,7 @@
  * matches `frontend/real-estate/src/app/models/booking.ts`. Admin shapes add internal details.
  */
 import type { PriceBreakdown } from '../pricing/pricing.js';
+import type { InspectionChecklist, InspectionResult } from './inspection.js';
 
 export type BookingStatus = 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'expired';
 export type PaymentStatus = 'unpaid' | 'deposit_paid' | 'fully_paid' | 'refunded';
@@ -234,6 +235,12 @@ export interface AdminBookingDetail extends Omit<GuestBooking, 'payments'> {
   lateCheckout: LateCheckoutState;
   payments: AdminPayment[];
   events: BookingEvent[];
+  /** The saved check-out inspection, or null before the owner has done it. */
+  inspection: { results: InspectionResult[]; inspectedBy: string | null; inspectedAt: string } | null;
+  /** What to inspect: the apartment's checklist, or the default. */
+  checklist: InspectionChecklist;
+  /** The security deposit that can still be refunded (received - refunded - applied to damage). */
+  depositRefundable: number;
 }
 
 export interface AdminBookingListItem {
@@ -296,6 +303,8 @@ export interface AwaitingPayment {
   totalAmount: number;
   holdExpiresAt: string;
   createdAt: string;
+  /** Deposit-first: `depositAmount` is the security deposit that confirms the booking. */
+  depositFirst: boolean;
 }
 
 /** One calendar month of the dashboard charts (business time zone). */
@@ -332,6 +341,8 @@ export interface BalanceDue {
   balance: number;
   /** Transfer note, if the guest transfers the rest. */
   note: string;
+  /** Deposit-first: the balance is the rent, due from `checkIn`. */
+  depositFirst: boolean;
 }
 
 export interface AdminSummary {

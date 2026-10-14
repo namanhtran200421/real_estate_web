@@ -107,7 +107,7 @@ async function setStatus(
 ): Promise<boolean> {
   const rows = await query(
     `UPDATE booking_asset_incidents
-     SET status = $3, security_applied = CASE WHEN $3 = 'waived' THEN 0 ELSE security_applied END,
+     SET status = $3::asset_incident_status, security_applied = CASE WHEN $3::text = 'waived' THEN 0 ELSE security_applied END,
          resolved_by = $4, resolved_at = now()
      WHERE id = $2 AND booking_id = $1 AND status = 'open'
      RETURNING id`,

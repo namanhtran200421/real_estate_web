@@ -24,7 +24,13 @@ const published = new TtlCache<Apartment[]>(30_000, 1);
 
 /** Drops admin-only fields. */
 function toPublic(apartment: AdminApartment, unavailableDates: string[]): Apartment {
-  const { isActive: _isActive, sortOrder: _sortOrder, ...publicFields } = apartment;
+  const {
+    isActive: _isActive,
+    sortOrder: _sortOrder,
+    inspectionChecklist: _inspectionChecklist,
+    defaultInspectionChecklist: _defaultInspectionChecklist,
+    ...publicFields
+  } = apartment;
   return { ...publicFields, unavailableDates };
 }
 

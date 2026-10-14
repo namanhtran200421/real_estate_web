@@ -420,6 +420,99 @@ describe('reporting a transfer with its screenshot', { skip: !databaseUrl && 'TE
     await move(finished.reference, -3, -1);
     assert.equal(await bookingService.sendRentRequests(), 0, 'check-out passed');
   });
+
+  it('refunds the deposit after check-out, the rent and an inspection, minus what damage took', async () => {
+    const owner = { Authorization: `Bearer ${await signInAsOwner()}`, 'Content-Type': 'application/json' };
+    const { pool } = await import('../../db/pool.js');
+    await pool.query(`UPDATE bookings SET status = 'cancelled' WHERE status IN ('pending', 'confirmed')`);
+
+    const booking = await book(180);
+    const admin = (path: string, method: string, body?: unknown) =>
+      call(`/admin/bookings/${booking.reference}${path}`, { method, headers: owner, body: body === undefined ? undefined : JSON.stringify(body) });
+    const errorCode = async (response: Response, status: number) => {
+      assert.equal(response.status, status);
+      return (await response.json()).error.code as string;
+    };
+
+    // 1. Deposit verified (recorded as received).
+    const deposit = await admin('/payments', 'POST', { method: 'bank_transfer', purpose: 'asset_security', amount: booking.deposit });
+    assert.equal(deposit.status, 201, await deposit.clone().text());
+    // 2. Check-in was yesterday, check-out is tomorrow.
+    await pool.query(
+      `UPDATE bookings
+       SET check_in = (now() AT TIME ZONE 'Asia/Ho_Chi_Minh')::date - 1,
+           check_out = (now() AT TIME ZONE 'Asia/Ho_Chi_Minh')::date + 1
+       WHERE reference = $1`,
+      [booking.reference],
+    );
+    const total = (await (await admin('', 'GET')).json()).data.quote.total;
+
+    // 3. Not checked out yet.
+    assert.equal(await errorCode(await admin('/deposit-refund', 'POST'), 409), 'INVALID_STATUS');
+    // 4. Rent recorded, 5. checked out.
+    assert.equal((await admin('/payments', 'POST', { method: 'cash', purpose: 'accommodation', amount: total })).status, 201);
+    const completed = await admin('/check-out', 'POST');
+    assert.equal(completed.status, 200, await completed.clone().text());
+    assert.equal((await completed.json()).data.status, 'completed');
+
+    // 6. No inspection yet.
+    assert.equal(await errorCode(await admin('/deposit-refund', 'POST'), 409), 'INSPECTION_REQUIRED');
+    // 7. Inspection saved.
+    const saved = await admin('/inspection', 'PUT', {
+      results: [
+        { room: 'Bếp', item: 'Tủ lạnh', ok: true, note: null },
+        { room: 'Phòng khách', item: 'Đèn', ok: false, note: 'Vỡ chao đèn' },
+      ],
+    });
+    assert.equal(saved.status, 200, await saved.clone().text());
+    const savedDetail = (await saved.json()).data;
+    assert.equal(savedDetail.inspection.results.length, 2);
+    assert.equal(savedDetail.inspection.inspectedBy, 'owner@example.com');
+    assert.ok(savedDetail.checklist.length > 0);
+    assert.equal(
+      savedDetail.events.find((event: { type: string }) => event.type === 'inspection_saved').data.problems,
+      1,
+    );
+
+    // 8. A 100.000 ₫ incident taken from the deposit, then settled; an open one blocks the refund.
+    const incident = await admin('/incidents', 'POST', { description: 'Vỡ chao đèn', amount: 100_000, securityApplied: 100_000 });
+    assert.equal(incident.status, 201, await incident.clone().text());
+    assert.equal(await errorCode(await admin('/deposit-refund', 'POST'), 409), 'INCIDENT_OPEN');
+    const [{ id: incidentId }] = (await (await admin('', 'GET')).json()).data.incidents;
+    assert.equal((await admin(`/incidents/${incidentId}`, 'PATCH', { status: 'settled' })).status, 200);
+
+    // 11 (early). The manual refund cannot give back the deposit applied to damage.
+    const paymentId = (await (await admin('', 'GET')).json()).data.payments.find(
+      (payment: { purpose: string }) => payment.purpose === 'asset_security',
+    ).id;
+    const tooMuch = await call(`/admin/payments/${paymentId}/refunds`, {
+      method: 'POST',
+      headers: owner,
+      body: JSON.stringify({ amount: booking.deposit, reason: 'Thử hoàn quá' }),
+    });
+    assert.equal(await errorCode(tooMuch, 422), 'REFUND_TOO_LARGE');
+
+    // 9. The refund equals the deposit minus the damage.
+    const refunded = await admin('/deposit-refund', 'POST');
+    assert.equal(refunded.status, 200, await refunded.clone().text());
+    const detail = (await refunded.json()).data;
+    const refundedTotal = detail.payments.flatMap((payment: { refunds: { amount: number }[] }) => payment.refunds)
+      .reduce((sum: number, refund: { amount: number }) => sum + refund.amount, 0);
+    assert.equal(refundedTotal, booking.deposit - 100_000);
+    assert.equal(detail.depositRefundable, 0);
+    const emails = await pool.query(`SELECT count(*)::int AS n FROM email_outbox WHERE subject LIKE $1`, [`Hoàn tiền %${booking.reference}`]);
+    assert.equal(emails.rows[0].n, 1, 'one refund email with the total');
+
+    // 10. A second click has nothing left to refund.
+    assert.equal(await errorCode(await admin('/deposit-refund', 'POST'), 409), 'NOTHING_TO_REFUND');
+    // 11. And so does a manual refund above what is held.
+    const again = await call(`/admin/payments/${paymentId}/refunds`, {
+      method: 'POST',
+      headers: owner,
+      body: JSON.stringify({ amount: 1_000, reason: 'Thử hoàn thêm' }),
+    });
+    assert.equal(await errorCode(again, 422), 'REFUND_TOO_LARGE');
+  });
 });
 
 let ownerToken: string | undefined;

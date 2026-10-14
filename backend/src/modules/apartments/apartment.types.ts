@@ -5,6 +5,8 @@
  * Angular app uses API data without changing any component. All amounts are whole VND.
  */
 
+import type { InspectionChecklist } from '../bookings/inspection.js';
+
 export interface Photo {
   src: string;
   alt: string;
@@ -71,11 +73,16 @@ export interface Apartment extends ApartmentRecord {
 export interface AdminApartment extends ApartmentRecord {
   isActive: boolean;
   sortOrder: number;
+  /** The owner's check-out checklist; empty means the default is used. */
+  inspectionChecklist: InspectionChecklist;
+  /** Shown by the editor while `inspectionChecklist` is empty. */
+  defaultInspectionChecklist: InspectionChecklist;
 }
 
 export interface ApartmentInput extends ApartmentContent {
   isActive: boolean;
   sortOrder: number;
+  inspectionChecklist: InspectionChecklist;
 }
 
 export interface BlockedDate {

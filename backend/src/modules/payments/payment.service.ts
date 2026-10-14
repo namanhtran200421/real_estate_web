@@ -38,6 +38,8 @@ import {
 } from '../bookings/booking.rules.js';
 import type { BookingRecord, PaymentProvider, PaymentPurpose, TransferInstructions } from '../bookings/booking.types.js';
 import { emailService } from '../notifications/email.service.js';
+import { depositRefundPlan } from '../bookings/inspection.js';
+import { inspectionRepository } from '../bookings/inspection.repository.js';
 import { paymentRepository } from './payment.repository.js';
 import { showsTransfer, type ExpectedTransfer, type TransferScreenshot } from './transfer-screenshot.js';
 import { buildVietQrPayload } from './vietqr.js';
@@ -387,10 +389,70 @@ async function recordRefund(paymentId: string, request: { amount: number; reason
     }
 
     const booking = (await bookingRepository.findById(payment.bookingId, db, true))!;
+    if (payment.purpose === 'asset_security') {
+      // Deposit applied to damage is no longer the guest's: a manual refund cannot give it back.
+      const { assetSecurityHeld } = await assetIncidentRepository.financials(booking.id, booking.assetSecurityAmount, db);
+      if (request.amount > assetSecurityHeld) {
+        throw HttpError.unprocessable(
+          'REFUND_TOO_LARGE',
+          `Chỉ còn hoàn được tối đa ${assetSecurityHeld.toLocaleString('vi-VN')} ₫ tiền đặt cọc.`,
+        );
+      }
+    }
     await paymentRepository.insertRefund({ paymentId, amount: request.amount, reason: request.reason, createdBy: admin.id }, db);
     await bookingRepository.addEvent(booking.id, 'refund_recorded', admin.email, { amount: request.amount, reason: request.reason }, db);
     await recalculate(booking, db);
     await emailService.queueRefundIssued(await bookingRepository.emailContext(booking.id, db), request.amount, db);
+  });
+}
+
+/**
+ * Gives back the security deposit still held, after the stay and its inspection. One click, one
+ * transaction: the booking and the deposit payments are locked first, so two clicks can never
+ * refund more than is held. The guest gets one email with the total.
+ * @throws 409 INVALID_STATUS, RENT_DUE, INSPECTION_REQUIRED, INCIDENT_OPEN, NOTHING_TO_REFUND
+ */
+async function refundDeposit(reference: string, admin: AdminIdentity): Promise<void> {
+  await withTransaction(async (db) => {
+    const booking = await bookingRepository.findByReference(reference, db, true);
+    if (!booking) throw HttpError.notFound('Không tìm thấy đặt phòng.');
+    if (booking.status !== 'completed') {
+      throw HttpError.conflict('INVALID_STATUS', 'Hãy ghi nhận khách trả phòng trước khi hoàn cọc.');
+    }
+    if (booking.totalAmount - booking.amountPaid >= 1000) {
+      throw HttpError.conflict('RENT_DUE', 'Khách chưa thanh toán đủ tiền phòng. Hãy ghi nhận tiền phòng trước khi hoàn cọc.');
+    }
+    if (!(await inspectionRepository.get(booking.id, db))) {
+      throw HttpError.conflict('INSPECTION_REQUIRED', 'Hãy lưu kết quả kiểm tra trả phòng trước khi hoàn cọc.');
+    }
+    const incidents = await assetIncidentRepository.list(booking.id, db);
+    if (incidents.some((incident) => incident.status === 'open')) {
+      throw HttpError.conflict('INCIDENT_OPEN', 'Còn khoản hư hỏng chưa xử lý.');
+    }
+
+    // Lock the deposit payments, then read what is held and refundable: two clicks queue here.
+    const deposits = (await paymentRepository.listForBooking(booking.id, db)).filter(
+      (payment) => payment.purpose === 'asset_security' && payment.state === 'succeeded',
+    );
+    const refundable: { id: string; refundable: number }[] = [];
+    for (const deposit of deposits) {
+      const locked = (await paymentRepository.findById(deposit.id, db, true))!;
+      refundable.push({ id: locked.id, refundable: locked.amount - (await paymentRepository.refundedTotal(locked.id, db)) });
+    }
+    const { assetSecurityHeld } = await assetIncidentRepository.financials(booking.id, booking.assetSecurityAmount, db);
+    if (assetSecurityHeld < 1000) throw HttpError.conflict('NOTHING_TO_REFUND', 'Không còn tiền cọc để hoàn.');
+
+    const plan = depositRefundPlan(refundable, assetSecurityHeld);
+    for (const { paymentId, amount } of plan) {
+      await paymentRepository.insertRefund(
+        { paymentId, amount, reason: 'Hoàn cọc sau kiểm tra trả phòng', createdBy: admin.id },
+        db,
+      );
+    }
+    const total = plan.reduce((sum, step) => sum + step.amount, 0);
+    await bookingRepository.addEvent(booking.id, 'deposit_refunded', admin.email, { amount: total }, db);
+    await recalculate(booking, db);
+    await emailService.queueRefundIssued(await bookingRepository.emailContext(booking.id, db), total, db);
   });
 }
 
@@ -417,5 +479,6 @@ export const paymentService = {
   rejectTransfer,
   recordManualPayment,
   recordRefund,
+  refundDeposit,
   purgeOldTransferScreenshots,
 };

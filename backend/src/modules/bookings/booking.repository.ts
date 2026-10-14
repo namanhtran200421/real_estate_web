@@ -4,6 +4,7 @@
 import { isPgError, PG_ERROR, query, queryOne, type Db } from '../../db/pool.js';
 import type { BookingEmailContext } from '../notifications/email.templates.js';
 import type { PriceBreakdown } from '../pricing/pricing.js';
+import { transferNote } from './booking.rules.js';
 import type {
   AdminBookingFilters,
   AdminBookingListItem,
@@ -549,9 +550,10 @@ async function summary(today: string, weekAhead: string): Promise<AdminSummary> 
     total_amount: number;
     hold_expires_at: Date;
     created_at: Date;
+    asset_security_amount: number;
   }>(
     `SELECT b.reference, b.customer_name, a.name AS apartment_name, b.deposit_amount, b.total_amount,
-            b.hold_expires_at, b.created_at
+            b.asset_security_amount, b.hold_expires_at, b.created_at
      FROM bookings b
      JOIN apartments a ON a.id = b.apartment_id
      WHERE b.status = 'pending' AND b.amount_paid = 0 AND b.hold_expires_at > now()
@@ -559,7 +561,7 @@ async function summary(today: string, weekAhead: string): Promise<AdminSummary> 
      LIMIT 50`,
   );
 
-  // Part paid, stay not over yet: the owner collects the rest, usually at check-in.
+  // Part paid (or deposit-first and confirmed), stay not over yet: the owner collects the rest, usually at check-in.
   const balanceQuery = query<{
     reference: string;
     customer_name: string;
@@ -568,11 +570,14 @@ async function summary(today: string, weekAhead: string): Promise<AdminSummary> 
     check_out: string;
     total_amount: number;
     amount_paid: number;
+    asset_security_amount: number;
   }>(
-    `SELECT b.reference, b.customer_name, a.name AS apartment_name, b.check_in, b.check_out, b.total_amount, b.amount_paid
+    `SELECT b.reference, b.customer_name, a.name AS apartment_name, b.check_in, b.check_out, b.total_amount, b.amount_paid,
+            b.asset_security_amount
      FROM bookings b
      JOIN apartments a ON a.id = b.apartment_id
-     WHERE b.status IN ('pending', 'confirmed') AND b.amount_paid > 0 AND b.amount_paid < b.total_amount
+     WHERE b.status IN ('pending', 'confirmed') AND b.amount_paid < b.total_amount
+       AND (b.amount_paid > 0 OR (b.asset_security_amount > 0 AND b.status = 'confirmed'))
        AND b.check_out > $1
      ORDER BY b.check_in
      LIMIT 50`,
@@ -600,6 +605,7 @@ async function summary(today: string, weekAhead: string): Promise<AdminSummary> 
         amountPaid: row.amount_paid,
         balance: row.total_amount - row.amount_paid,
         note: row.reference.replaceAll('-', ''),
+        depositFirst: row.asset_security_amount > 0,
       }),
     ),
     bookingsAwaitingPayment: awaiting.map(
@@ -607,8 +613,9 @@ async function summary(today: string, weekAhead: string): Promise<AdminSummary> 
         reference: row.reference,
         customerName: row.customer_name,
         apartmentName: row.apartment_name,
-        note: row.reference.replaceAll('-', ''),
-        depositAmount: row.deposit_amount,
+        note: transferNote(row.reference, row.asset_security_amount > 0 ? 'asset_security' : 'accommodation'),
+        depositFirst: row.asset_security_amount > 0,
+        depositAmount: row.asset_security_amount > 0 ? row.asset_security_amount : row.deposit_amount,
         totalAmount: row.total_amount,
         holdExpiresAt: row.hold_expires_at.toISOString(),
         createdAt: row.created_at.toISOString(),

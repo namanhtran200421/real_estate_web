@@ -33,6 +33,12 @@ const incidentBody = z.object({
   amount: vnd.min(1),
   securityApplied: vnd.default(0),
 });
+const inspectionBody = z.object({
+  results: z
+    .array(z.object({ room: text(120), item: text(120), ok: z.boolean(), note: z.union([text(500), z.null()]) }))
+    .min(1)
+    .max(200),
+});
 const incidentStatusBody = z.object({ status: z.enum(['settled', 'waived']) });
 
 /** GET /admin/summary */
@@ -85,6 +91,18 @@ async function complete(req: Request<{ reference: string }>, res: Response): Pro
 /** POST /admin/bookings/:reference/check-out — records the actual departure time. */
 async function checkOut(req: Request<{ reference: string }>, res: Response): Promise<void> {
   res.json({ data: await bookingService.checkOut(req.params.reference, res.locals.admin) });
+}
+
+/** PUT /admin/bookings/:reference/inspection { results } */
+async function saveInspection(req: Request<{ reference: string }>, res: Response): Promise<void> {
+  const { results } = parse(inspectionBody, req.body);
+  res.json({ data: await bookingService.saveInspection(req.params.reference, results, res.locals.admin) });
+}
+
+/** POST /admin/bookings/:reference/deposit-refund — gives back the deposit still held */
+async function refundDeposit(req: Request<{ reference: string }>, res: Response): Promise<void> {
+  await paymentService.refundDeposit(req.params.reference, res.locals.admin);
+  res.json({ data: await bookingService.adminDetail(req.params.reference) });
 }
 
 async function addIncident(req: Request<{ reference: string }>, res: Response): Promise<void> {
@@ -147,6 +165,8 @@ export const bookingAdminController = {
   cancel,
   complete,
   checkOut,
+  saveInspection,
+  refundDeposit,
   addIncident,
   resolveIncident,
   recordPayment,

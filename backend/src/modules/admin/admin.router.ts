@@ -19,6 +19,8 @@
  *   POST /bookings/:reference/confirm
  *   POST /bookings/:reference/cancel       { reason }
  *   POST /bookings/:reference/complete
+ *   PUT  /bookings/:reference/inspection   { results }  the check-out inspection
+ *   POST /bookings/:reference/deposit-refund            gives back the deposit still held
  *   POST /bookings/:reference/payments     { method: cash|bank_transfer, amount, note? }
  *   POST /payments/:paymentId/verify       { amount? }  reported transfer arrived → booking confirmed
  *   POST /payments/:paymentId/reject       { reason }   reported transfer did not arrive
@@ -62,6 +64,8 @@ adminRouter.post('/bookings/:reference/confirm', bookingAdminController.confirm)
 adminRouter.post('/bookings/:reference/cancel', bookingAdminController.cancel);
 adminRouter.post('/bookings/:reference/complete', bookingAdminController.complete);
 adminRouter.post('/bookings/:reference/check-out', bookingAdminController.checkOut);
+adminRouter.put('/bookings/:reference/inspection', bookingAdminController.saveInspection);
+adminRouter.post('/bookings/:reference/deposit-refund', bookingAdminController.refundDeposit);
 adminRouter.post('/bookings/:reference/incidents', bookingAdminController.addIncident);
 adminRouter.patch('/bookings/:reference/incidents/:incidentId', bookingAdminController.resolveIncident);
 adminRouter.post('/bookings/:reference/payments', bookingAdminController.recordPayment);
