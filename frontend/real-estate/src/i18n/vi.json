@@ -15,6 +15,7 @@
     "availability": "Lịch trống · {{ site }}",
     "location": "Vị trí · {{ site }}",
     "about": "Về chúng tôi · {{ site }}",
+    "policy": "Chính sách lưu trú · {{ site }}",
     "contact": "Liên hệ · {{ site }}",
     "book": "Đặt lịch · {{ site }}",
     "review": "Xem lại đặt phòng · {{ site }}",
@@ -24,6 +25,7 @@
   },
   "meta": {
     "about": "{{ site }}: căn hộ Sun Garden A04-12 tại Đà Lạt, 78 m², 2 phòng ngủ và 2 phòng tắm.",
+    "policy": "Nội quy và chính sách lưu trú của {{ site }}: nhận và trả phòng, đặt cọc và hoàn cọc, số khách, giờ yên tĩnh và quy trình trả phòng.",
     "contact": "Liên hệ {{ site }} qua điện thoại, Zalo hoặc email để được hỗ trợ đặt căn hộ.",
     "apartment": "{{ tagline }} {{ bedrooms }} phòng ngủ, tối đa {{ guests }} khách, từ {{ price }} ₫/đêm. {{ area }}."
   },
@@ -618,11 +620,9 @@
   },
   "policy": {
     "title": "Chính sách lưu trú",
-    "intro": "Vài điều giản dị để kỳ nghỉ của bạn và của những vị khách sau được trọn vẹn. Bạn sẽ được mời đồng ý với các điều khoản này trước khi thanh toán.",
+    "intro": "Những điều nhỏ giúp kỳ nghỉ của bạn, và của những vị khách đến sau, luôn trọn vẹn. Trước khi thanh toán, bạn sẽ đánh dấu đồng ý với các điều khoản này.",
     "updated": "Cập nhật 14/10/2026",
     "contents": "Mục lục",
-    "pageTitle": "Chính sách lưu trú · {{ site }}",
-    "metaDescription": "Nội quy và chính sách lưu trú của {{ site }}: nhận và trả phòng, đặt cọc và hoàn cọc, số khách, giờ yên tĩnh và quy trình trả phòng.",
     "footerLink": "Chính sách lưu trú",
     "viewAll": "Xem toàn bộ chính sách lưu trú →",
     "whyIdentity": "Vì sao cần thông tin này?",

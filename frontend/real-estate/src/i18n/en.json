@@ -15,6 +15,7 @@
     "availability": "Availability · {{ site }}",
     "location": "Location · {{ site }}",
     "about": "About us · {{ site }}",
+    "policy": "House rules & policies · {{ site }}",
     "contact": "Contact · {{ site }}",
     "book": "Book · {{ site }}",
     "review": "Review booking · {{ site }}",
@@ -24,6 +25,7 @@
   },
   "meta": {
     "about": "{{ site }}: Sun Garden apartment A04-12 in Da Lat, 78 m², 2 bedrooms and 2 bathrooms.",
+    "policy": "House rules and stay policies for {{ site }}: check-in and check-out, deposit and refund, guest numbers, quiet hours and the check-out procedure.",
     "contact": "Contact {{ site }} by phone, Zalo or email for help with your booking.",
     "apartment": "{{ tagline }} {{ bedrooms }} [[ plural({{ bedrooms }}, bedroom, bedrooms) ]], up to {{ guests }} [[ plural({{ guests }}, guest, guests) ]], from {{ price }} ₫/night. {{ area }}."
   },
@@ -618,11 +620,9 @@
   },
   "policy": {
     "title": "House rules & policies",
-    "intro": "A few simple things to keep your stay, and the stays of the guests after you, a pleasure. You will be asked to agree to these terms before paying.",
+    "intro": "A few simple things that keep your stay, and the stays of the guests after you, a pleasure. Before paying, you tick a box to agree to them.",
     "updated": "Updated 14/10/2026",
     "contents": "Contents",
-    "pageTitle": "House rules & policies · {{ site }}",
-    "metaDescription": "House rules and stay policies for {{ site }}: check-in and check-out, deposit and refund, guest numbers, quiet hours and the check-out procedure.",
     "footerLink": "House rules & policies",
     "viewAll": "Read the full house rules & policies →",
     "whyIdentity": "Why do we need this?",
@@ -636,16 +636,16 @@
       {
         "title": "Deposit, payment and refund policy",
         "body": [
-          "Item 1 - Deposit ({{ percent }}%): Once your booking is confirmed, please pay a deposit of {{ percent }}% of the total room price to secure the apartment for your registered dates. This amount is held separately to safeguard the use and care of the property throughout your stay.",
-          "Item 2 - Apartment rent (100%): At check-in, please pay 100% of the total apartment rent in full, separate from the initial deposit.",
+          "Clause 1 - Deposit ({{ percent }}%): Once your booking is confirmed, please pay a deposit of {{ percent }}% of the total room price to secure the apartment for your registered dates. This amount is held separately to safeguard the use and care of the property throughout your stay.",
+          "Clause 2 - Apartment rent (100%): At check-in, please pay 100% of the total apartment rent in full, separate from the initial deposit.",
           "Deposit refund: When check-out is complete, we will refund 100% of the initial deposit ({{ percent }}%) after inspecting the apartment and confirming that there is no damage, no lost property and no additional cost for which the guest is responsible. The refund is made promptly and transparently, to protect your rights and give you peace of mind."
         ]
       },
       {
         "title": "Number of guests and extra-guest surcharge",
         "body": [
-          "Item 1 - The apartment has 2 bedrooms and suits families and small groups. Please tell us the exact number of guests when you book. Additional guests need to be confirmed in advance so that everyone stays comfortably and safely.",
-          "Item 2 - Apartment A04-12 has a standard capacity of 04 guests, including the living room, which has a sofa that converts into a bed. If you need to host more people, the apartment can accommodate up to 02 additional guests (06 in total) for a surcharge of 200,000 VND per person per night. Please let us know in advance so that we can prepare and arrange the space with care, keeping every member of your party comfortable."
+          "Clause 1 - The apartment has 2 bedrooms and suits families and small groups. Please tell us the exact number of guests when you book. Additional guests need to be confirmed in advance so that everyone stays comfortably and safely.",
+          "Clause 2 - Apartment A04-12 has a standard capacity of 04 guests, including the living room, which has a sofa that converts into a bed. If you need to host more people, the apartment can accommodate up to 02 additional guests (06 in total) for a surcharge of 200,000 VND per person per night. Please let us know in advance so that we can prepare and arrange the space with care, keeping every member of your party comfortable."
         ]
       },
       {
@@ -741,7 +741,7 @@
       {
         "title": "Support during your stay",
         "body": [
-          "If you need help with the apartment or run into a technical problem, please contact us on the phone number provided. We will work with you to resolve it within a reasonable time, depending on the nature of the issue."
+          "If you need help with the apartment or run into a technical problem, please contact us at the phone number provided. We will work with you to resolve it within a reasonable time, depending on the nature of the issue."
         ]
       },
       {

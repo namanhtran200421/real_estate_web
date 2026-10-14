@@ -54,8 +54,8 @@ export const routes: Routes = [
   {
     path: 'policy',
     loadComponent: () => import('./pages/policy/policy').then((m) => m.Policy),
-    title: 'policy.pageTitle',
-    data: { description: 'policy.metaDescription' },
+    title: 'titles.policy',
+    data: { description: 'meta.policy' },
   },
   {
     path: 'book',

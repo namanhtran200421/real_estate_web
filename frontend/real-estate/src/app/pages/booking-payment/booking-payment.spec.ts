@@ -1,3 +1,4 @@
+import { ApplicationInitStatus } from '@angular/core';
 import { registerLocaleData } from '@angular/common';
 import localeVi from '@angular/common/locales/vi';
 import { TestBed } from '@angular/core/testing';
@@ -84,6 +85,8 @@ async function render(booking: Booking) {
       { provide: ApartmentService, useValue: { bySlug: () => undefined } },
     ],
   }).compileComponents();
+  // TestBed does not wait for async app initializers; the language file loads in one.
+  await TestBed.inject(ApplicationInitStatus).donePromise;
   const fixture = TestBed.createComponent(BookingPayment);
   fixture.componentRef.setInput('ref', booking.reference);
   for (let i = 0; i < 6; i++) {

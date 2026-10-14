@@ -28,7 +28,7 @@
 
     <div class="space-y-6">
       @for (item of items(); track $index) {
-        <article [id]="'item-' + ($index + 1)" class="panel">
+        <article [id]="'item-' + ($index + 1)" class="panel scroll-mt-28">
           <h2 class="text-2xl md:text-3xl">{{ $index + 1 }}. {{ item.title }}</h2>
           <div class="mt-4 space-y-3 text-muted-foreground">
             @for (paragraph of item.body; track $index) {

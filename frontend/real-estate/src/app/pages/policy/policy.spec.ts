@@ -1,3 +1,4 @@
+import { ApplicationInitStatus } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { TranslocoService } from '@jsverse/transloco';
 import { firstValueFrom } from 'rxjs';
@@ -15,6 +16,8 @@ async function render(percent?: number) {
       { provide: ApartmentService, useValue: { resolve: () => (percent === undefined ? undefined : { depositPercent: percent }) } },
     ],
   }).compileComponents();
+  // TestBed does not wait for async app initializers; the language file loads in one.
+  await TestBed.inject(ApplicationInitStatus).donePromise;
   // The app initializer does this before the first render in the real app.
   await firstValueFrom(TestBed.inject(TranslocoService).load('vi'));
   TestBed.inject(TranslocoService).setActiveLang('vi');

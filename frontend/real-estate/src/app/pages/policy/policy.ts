@@ -33,7 +33,7 @@ export class Policy {
     // translateObject leaves the strings inside arrays untouched, so the percent is filled in here.
     const items = this.raw();
     if (!Array.isArray(items)) return [];
-    const fill = (text: string) => text.replaceAll('{{ percent }}', String(percent));
+    const fill = (text: string) => text.replace(/\{\{\s*percent\s*\}\}/g, String(percent));
     return (items as PolicyItem[]).map((item) => ({ ...item, body: item.body.map(fill) }));
   });
 }
