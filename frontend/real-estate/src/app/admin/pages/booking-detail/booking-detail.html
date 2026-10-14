@@ -11,25 +11,59 @@
     <p class="mt-6 rounded-md border border-accent bg-accent-muted p-4 text-sm text-accent-deep" role="alert">{{ message }}</p>
   }
 
+  @if (b.lateCheckout.state === 'urgent' || b.lateCheckout.state === 'late' || b.lateCheckout.state === 'due') {
+    <div
+      class="mt-6 rounded-md border p-4"
+      [class]="b.lateCheckout.state === 'urgent' ? 'border-accent bg-accent-muted text-accent-deep' : 'border-border bg-muted'"
+      role="alert"
+    >
+      <p class="font-medium">
+        Khách chưa được ghi nhận trả phòng
+        @if (b.lateCheckout.minutesLate > 0) {
+          · trễ {{ b.lateCheckout.minutesLate }} phút
+        }
+      </p>
+      @if (b.lateCheckout.nextArrivalReference) {
+        <p class="mt-1 text-sm">Có khách {{ b.lateCheckout.nextArrivalReference }} nhận phòng cùng ngày. Liên hệ khách hiện tại và chuẩn bị dọn phòng ngay.</p>
+      } @else {
+        <p class="mt-1 text-sm text-muted-foreground">Liên hệ khách để xác nhận thời điểm rời căn hộ.</p>
+      }
+    </div>
+  }
+
   <!-- Actions -->
   <div class="mt-6 flex flex-wrap gap-3">
     @if (b.status === 'pending' && b.amountPaid > 0) {
       <button type="button" class="btn btn-primary" [disabled]="busy()" (click)="confirm()">Xác nhận và gửi email cho khách</button>
     }
     @if (b.status === 'confirmed') {
-      <button type="button" class="btn btn-primary" [disabled]="busy()" (click)="complete()">Đánh dấu hoàn thành</button>
+      <button type="button" class="btn btn-primary" [disabled]="busy()" (click)="checkOut()">Khách đã trả phòng · ghi nhận bây giờ</button>
     }
     @if ((b.status === 'pending' || b.status === 'confirmed') && !cancelling()) {
       <button type="button" class="btn btn-outline" [disabled]="busy()" (click)="cancelling.set(true)">Huỷ đặt phòng</button>
     }
   </div>
 
+  @if (pendingReceipt(); as receipt) {
+    <section class="card mt-6 max-w-2xl border-accent" aria-labelledby="receipt-confirm-heading">
+      <h2 id="receipt-confirm-heading" class="text-xl">Xác nhận đã thực nhận tiền?</h2>
+      <p class="mt-2 text-sm text-muted-foreground">
+        Ghi nhận {{ receipt.amount | number }} ₫ · {{ purposeLabels[receipt.purpose] }} ·
+        {{ receipt.method === 'cash' ? 'tiền mặt' : 'chuyển khoản' }} cho {{ b.reference }}.
+      </p>
+      <div class="mt-4 flex flex-wrap gap-3">
+        <button type="button" class="btn btn-primary" [disabled]="busy()" (click)="confirmReceipt()">Xác nhận đã nhận</button>
+        <button type="button" class="btn btn-ghost" [disabled]="busy()" (click)="pendingReceipt.set(undefined)">Thôi</button>
+      </div>
+    </section>
+  }
+
   @if (cancelling()) {
-    <form class="card mt-6 max-w-xl" (submit)="$event.preventDefault(); cancel()">
+    <form class="card mt-6 max-w-xl" novalidate (submit)="$event.preventDefault(); cancel()">
       <label class="label" for="cancel-reason">Lý do huỷ (gửi cho khách)</label>
       <textarea
         id="cancel-reason"
-        class="input"
+        class="input resize-none"
         maxlength="500"
         required
         [value]="cancelReason()"
@@ -81,6 +115,15 @@
               <dd class="mt-1">{{ b.cancellationReason }}</dd>
             </div>
           }
+          <div class="sm:col-span-2">
+            <dt class="small-caps text-muted-foreground">Giờ trả phòng</dt>
+            <dd class="mt-1">
+              Dự kiến {{ b.lateCheckout.scheduledAt | date: 'dd/MM/yyyy HH:mm' }}
+              @if (b.lateCheckout.actualAt) {
+                · thực tế {{ b.lateCheckout.actualAt | date: 'dd/MM/yyyy HH:mm' }}
+              }
+            </dd>
+          </div>
         </dl>
       </div>
 
@@ -108,6 +151,37 @@
         </dl>
       </div>
 
+      <div class="card">
+        <h2 class="text-2xl">Giấy tờ khai báo tạm trú</h2>
+        @if (b.identities.length) {
+          <p class="mt-2 text-sm text-muted-foreground">Dữ liệu nhạy cảm · chỉ dùng để khai báo tạm trú, không sao chép sang hệ thống khác nếu không cần thiết.</p>
+          <div class="mt-6 space-y-6">
+            @for (identity of b.identities; track $index; let i = $index) {
+              <section [attr.aria-labelledby]="'admin-identity-' + i">
+                <h3 [id]="'admin-identity-' + i" class="font-medium">Khách {{ i + 1 }} · {{ identity.fullName }}</h3>
+                <dl class="mt-3 grid gap-x-8 gap-y-3 text-sm sm:grid-cols-2">
+                  <div><dt class="text-muted-foreground">Quốc tịch</dt><dd>{{ identity.nationality === 'VN' ? 'Việt Nam' : identity.nationality }}</dd></div>
+                  <div><dt class="text-muted-foreground">Ngày sinh</dt><dd>{{ identity.dateOfBirth | date: 'dd/MM/yyyy' }}</dd></div>
+                  <div><dt class="text-muted-foreground">{{ identity.documentType === 'cccd' ? 'CCCD' : 'Passport ID' }}</dt><dd class="font-mono">{{ identity.documentNumber }}</dd></div>
+                  <div><dt class="text-muted-foreground">Ngày cấp · thời hạn</dt><dd>{{ identity.issueDate | date: 'dd/MM/yyyy' }} · {{ identity.expiryDate | date: 'dd/MM/yyyy' }}</dd></div>
+                  @if (identity.documentType === 'cccd') {
+                    <div class="sm:col-span-2"><dt class="text-muted-foreground">Địa chỉ trên CCCD</dt><dd>{{ identity.addressOnDocument }}</dd></div>
+                  } @else {
+                    <div><dt class="text-muted-foreground">Giới tính</dt><dd>{{ identity.gender }}</dd></div>
+                    <div><dt class="text-muted-foreground">Hạn tạm trú</dt><dd>{{ identity.temporaryStayExpiry | date: 'dd/MM/yyyy' }}</dd></div>
+                  }
+                  <div class="sm:col-span-2"><dt class="text-muted-foreground">Lý do lưu trú</dt><dd>{{ identity.stayReason }}</dd></div>
+                </dl>
+              </section>
+            }
+          </div>
+        } @else {
+          <p class="mt-4 text-muted-foreground">
+            {{ b.identitiesPurged ? 'Thông tin giấy tờ đã được xoá theo thời hạn lưu giữ.' : 'Không có thông tin giấy tờ.' }}
+          </p>
+        }
+      </div>
+
       <!-- Payments -->
       <div class="card">
         <h2 class="text-2xl">Thanh toán</h2>
@@ -117,7 +191,7 @@
               <li class="py-4">
                 <div class="flex flex-wrap items-baseline justify-between gap-3">
                   <span>
-                    <span class="font-medium">{{ providerLabels[p.provider] }}</span>
+                    <span class="font-medium">{{ purposeLabels[p.purpose] }} · {{ providerLabels[p.provider] }}</span>
                     <span class="text-muted-foreground"> · {{ stateLabels[p.state] }}</span>
                     <span class="block text-sm text-muted-foreground">
                       {{ p.paidAt ?? p.createdAt | date: 'dd/MM/yyyy HH:mm' }}
@@ -174,7 +248,7 @@
                       <span class="font-mono font-medium text-accent-deep">{{ p.note }}</span>.
                     </p>
                     @if (rejectingId() === p.id) {
-                      <form class="space-y-3" (submit)="$event.preventDefault(); reject(p)">
+                      <form class="space-y-3" novalidate (submit)="$event.preventDefault(); reject(p)">
                         <label class="label" [for]="'reject-reason-' + p.id">Ghi chú gửi khách</label>
                         <input
                           [id]="'reject-reason-' + p.id"
@@ -227,7 +301,7 @@
                 </div>
 
                 @if (refundFor() === p.id) {
-                  <form class="mt-4 space-y-4 rounded-md bg-muted p-4" (submit)="$event.preventDefault(); refund(p)">
+                  <form class="mt-4 space-y-4 rounded-md bg-muted p-4" novalidate (submit)="$event.preventDefault(); refund(p)">
                     <div class="grid gap-4 sm:grid-cols-2">
                       <div>
                         <label class="label" [for]="'refund-amount-' + p.id">Số tiền hoàn (tối đa {{ p.refundable | number }} ₫)</label>
@@ -314,17 +388,45 @@
           </div>
         }
 
+        @if (b.financials.assetSecurityDue > 0 && !b.pendingTransfer && (b.status === 'confirmed' || b.status === 'completed')) {
+          <div class="mt-6 rounded-md border border-border bg-muted p-4">
+            <p class="text-sm">Còn thiếu <strong>{{ b.financials.assetSecurityDue | number }} ₫</strong> bảo đảm tài sản.</p>
+            <div class="mt-3 flex flex-wrap gap-3">
+              <button type="button" class="btn btn-outline" [disabled]="busy()" (click)="received(b.financials.assetSecurityDue, 'bank_transfer', false, 'asset_security')">Đã nhận chuyển khoản</button>
+              <button type="button" class="btn btn-ghost" [disabled]="busy()" (click)="received(b.financials.assetSecurityDue, 'cash', false, 'asset_security')">Đã nhận tiền mặt</button>
+            </div>
+          </div>
+        }
+
+        @if (b.financials.incidentAmountDue > 0 && !b.pendingTransfer) {
+          <div class="mt-6 rounded-md border border-accent bg-accent-muted p-4">
+            <p class="text-sm">Còn <strong>{{ b.financials.incidentAmountDue | number }} ₫</strong> bồi thường sau cấn trừ bảo đảm tài sản.</p>
+            <button type="button" class="btn btn-outline mt-3" [disabled]="busy()" (click)="received(b.financials.incidentAmountDue, 'bank_transfer', false, 'incident')">Đã nhận bồi thường</button>
+          </div>
+        }
+
         @if (b.status !== 'cancelled') {
-          <form class="mt-8 space-y-4" (submit)="$event.preventDefault(); recordPayment()">
+          <form class="mt-8 space-y-4" novalidate (submit)="$event.preventDefault(); recordPayment()">
             <h3>Ghi nhận thanh toán</h3>
             <p class="text-sm text-muted-foreground">Chỉ ghi nhận số tiền đã thực nhận. Đặt phòng đang chờ sẽ được xác nhận và khách nhận email.</p>
-            <div class="grid gap-4 sm:grid-cols-3">
+            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <div>
                 <label class="label" for="manual-method">Hình thức</label>
-                <select id="manual-method" class="input" [value]="manualMethod()" (change)="setManualMethod($event)">
-                  <option value="cash">Tiền mặt</option>
-                  <option value="bank_transfer">Chuyển khoản</option>
-                </select>
+                <app-select
+                  inputId="manual-method"
+                  [options]="paymentMethodOptions"
+                  [value]="manualMethod()"
+                  (valueChange)="manualMethod.set($event === 'bank_transfer' ? 'bank_transfer' : 'cash')"
+                />
+              </div>
+              <div>
+                <label class="label" for="manual-purpose">Khoản tiền</label>
+                <app-select
+                  inputId="manual-purpose"
+                  [options]="paymentPurposeOptions"
+                  [value]="manualPurpose()"
+                  (valueChange)="manualPurpose.set($any($event))"
+                />
               </div>
               <div>
                 <label class="label" for="manual-amount">Số tiền (₫)</label>
@@ -334,7 +436,7 @@
                   type="number"
                   min="1"
                   step="1000"
-                  [placeholder]="b.amountDue"
+                  [placeholder]="manualSuggestedAmount()"
                   [value]="manualAmount() ?? ''"
                   (input)="manualAmount.set(amountValue($event))"
                 />
@@ -344,9 +446,77 @@
                 <input id="manual-note" class="input" type="text" maxlength="500" [value]="manualNote()" (input)="manualNote.set(value($event))" />
               </div>
             </div>
-            <button type="submit" class="btn btn-outline" [disabled]="busy() || (!manualAmount() && !b.amountDue)">
-              Ghi nhận {{ manualAmount() ?? b.amountDue | number }} ₫
+            <button type="submit" class="btn btn-outline" [disabled]="busy() || (!manualAmount() && !manualSuggestedAmount())">
+              Ghi nhận {{ manualAmount() ?? manualSuggestedAmount() | number }} ₫
             </button>
+          </form>
+        }
+      </div>
+
+      <div class="card">
+        <h2 class="text-2xl">Tài sản, hư hỏng và thất lạc</h2>
+        <p class="mt-2 text-sm text-muted-foreground">Mỗi khoản ghi rõ sự việc, giá trị và phần cấn trừ từ bảo đảm tài sản. Khoản đã miễn không còn tính vào số khách phải trả.</p>
+
+        @if (b.incidents.length) {
+          <ul class="mt-6 divide-y divide-border border-y border-border">
+            @for (incident of b.incidents; track incident.id) {
+              <li class="py-4">
+                <div class="flex flex-wrap items-start justify-between gap-4">
+                  <div>
+                    <p class="font-medium">{{ incident.description }}</p>
+                    <p class="mt-1 text-sm text-muted-foreground">
+                      {{ incident.createdAt | date: 'dd/MM/yyyy HH:mm' }} ·
+                      {{ incident.status === 'open' ? 'Đang xử lý' : incident.status === 'settled' ? 'Đã đóng' : 'Đã miễn' }}
+                    </p>
+                    @if (incident.securityApplied > 0) {
+                      <p class="mt-1 text-sm text-muted-foreground">Cấn trừ bảo đảm: {{ incident.securityApplied | number }} ₫</p>
+                    }
+                  </div>
+                  <p class="font-serif text-xl">{{ incident.amount | number }} ₫</p>
+                </div>
+                @if (incident.status === 'open') {
+                  @if (pendingIncidentResolution()?.id === incident.id) {
+                    <div class="mt-4 rounded-md border border-accent bg-accent-muted p-4">
+                      <p class="text-sm">
+                        {{ pendingIncidentResolution()?.status === 'waived' ? 'Miễn khoản này và bỏ toàn bộ phần cấn trừ bảo đảm?' : 'Đánh dấu khoản này đã xử lý?' }}
+                      </p>
+                      <div class="mt-3 flex gap-3">
+                        <button type="button" class="btn btn-primary" [disabled]="busy()" (click)="confirmIncidentResolution()">Xác nhận</button>
+                        <button type="button" class="btn btn-ghost" [disabled]="busy()" (click)="pendingIncidentResolution.set(undefined)">Thôi</button>
+                      </div>
+                    </div>
+                  } @else {
+                    <div class="mt-3 flex flex-wrap gap-3">
+                      <button type="button" class="link text-sm" (click)="requestIncidentResolution(incident.id, 'settled')">Đánh dấu đã xử lý</button>
+                      <button type="button" class="link-subtle text-sm" (click)="requestIncidentResolution(incident.id, 'waived')">Miễn khoản này</button>
+                    </div>
+                  }
+                }
+              </li>
+            }
+          </ul>
+        } @else {
+          <p class="mt-4 text-muted-foreground">Chưa ghi nhận hư hỏng hoặc thất lạc.</p>
+        }
+
+        @if (b.status === 'confirmed' || b.status === 'completed') {
+          <form class="mt-8 space-y-4 border-t border-border pt-6" novalidate (submit)="$event.preventDefault(); addIncident()">
+            <h3>Ghi nhận khoản mới</h3>
+            <div>
+              <label class="label" for="incident-description">Mô tả sự việc</label>
+              <textarea id="incident-description" class="input resize-none" maxlength="500" [value]="incidentDescription()" (input)="incidentDescription.set(value($event))"></textarea>
+            </div>
+            <div class="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label class="label" for="incident-amount">Giá trị (₫)</label>
+                <input id="incident-amount" class="input" type="number" min="1" step="1000" [value]="incidentAmount() ?? ''" (input)="incidentAmount.set(amountValue($event))" />
+              </div>
+              <div>
+                <label class="label" for="incident-security">Cấn trừ bảo đảm (tối đa {{ b.financials.assetSecurityHeld | number }} ₫)</label>
+                <input id="incident-security" class="input" type="number" min="0" [max]="b.financials.assetSecurityHeld" step="1000" [value]="incidentSecurityApplied()" (input)="incidentSecurityApplied.set(amountValue($event) ?? 0)" />
+              </div>
+            </div>
+            <button type="submit" class="btn btn-outline" [disabled]="busy() || !incidentDescription().trim() || !incidentAmount()">Ghi nhận hư hỏng / thất lạc</button>
           </form>
         }
       </div>
@@ -418,6 +588,34 @@
             <dt class="text-muted-foreground">Còn lại</dt>
             <dd>{{ b.amountDue | number }} ₫</dd>
           </div>
+          @if (b.financials.assetSecurityRequired > 0) {
+            <div class="mt-4 flex justify-between gap-4 border-t border-border pt-4">
+              <dt class="text-muted-foreground">Bảo đảm yêu cầu</dt>
+              <dd>{{ b.financials.assetSecurityRequired | number }} ₫</dd>
+            </div>
+            <div class="flex justify-between gap-4">
+              <dt class="text-muted-foreground">Đang giữ</dt>
+              <dd>{{ b.financials.assetSecurityHeld | number }} ₫</dd>
+            </div>
+            <div class="flex justify-between gap-4">
+              <dt class="text-muted-foreground">Đã cấn trừ</dt>
+              <dd>{{ b.financials.assetSecurityApplied | number }} ₫</dd>
+            </div>
+            <div class="flex justify-between gap-4">
+              <dt class="text-muted-foreground">Đã hoàn</dt>
+              <dd>{{ b.financials.assetSecurityRefunded | number }} ₫</dd>
+            </div>
+          }
+          @if (b.financials.incidentCharges > 0) {
+            <div class="mt-4 flex justify-between gap-4 border-t border-border pt-4">
+              <dt class="text-muted-foreground">Tổng hư hỏng / thất lạc</dt>
+              <dd>{{ b.financials.incidentCharges | number }} ₫</dd>
+            </div>
+            <div class="flex justify-between gap-4">
+              <dt class="text-muted-foreground">Khách còn phải trả</dt>
+              <dd>{{ b.financials.incidentAmountDue | number }} ₫</dd>
+            </div>
+          }
         </dl>
       </div>
     </aside>

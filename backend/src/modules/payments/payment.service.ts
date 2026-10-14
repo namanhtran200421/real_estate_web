@@ -22,22 +22,30 @@ import { HttpError } from '../../lib/http-error.js';
 import { readImageText } from '../../lib/image-text.js';
 import type { AdminIdentity } from '../admin-auth/admin-auth.types.js';
 import { assertAccess } from '../bookings/booking-access.js';
+import { assetIncidentRepository } from '../bookings/asset-incident.repository.js';
 import { bookingRepository } from '../bookings/booking.repository.js';
 import { derivePaymentStatus, isPayable, paymentOptions } from '../bookings/booking.rules.js';
-import type { BookingRecord, PaymentProvider, TransferInstructions } from '../bookings/booking.types.js';
+import type { BookingRecord, PaymentProvider, PaymentPurpose, TransferInstructions } from '../bookings/booking.types.js';
 import { emailService } from '../notifications/email.service.js';
 import { paymentRepository } from './payment.repository.js';
 import { showsTransfer, type ExpectedTransfer, type TransferScreenshot } from './transfer-screenshot.js';
 import { buildVietQrPayload } from './vietqr.js';
 
-export type PaymentOption = 'deposit' | 'full';
+export type PaymentOption = 'deposit' | 'full' | 'asset_security' | 'incident';
 
 /** Transfer screenshots are deleted this long after upload (docs/adr/0002). */
 const SCREENSHOT_RETENTION_DAYS = 35;
 
 /** "RE-2611-K7Q3M" → "RE2611K7Q3M": banks drop or mangle dashes in transfer notes. */
-export function transferNote(reference: string): string {
-  return reference.replaceAll('-', '');
+export function transferNote(reference: string, purpose: PaymentPurpose = 'accommodation'): string {
+  const suffix = purpose === 'asset_security' ? 'TS' : purpose === 'incident' ? 'BT' : '';
+  return `${reference.replaceAll('-', '')}${suffix}`;
+}
+
+function purposeFor(option: PaymentOption): PaymentPurpose {
+  if (option === 'asset_security') return 'asset_security';
+  if (option === 'incident') return 'incident';
+  return 'accommodation';
 }
 
 /** Recomputes the money received for a booking and its payment status. */
@@ -87,6 +95,19 @@ async function amountFor(booking: BookingRecord, option: PaymentOption, db?: Db)
   if (pending) {
     throw HttpError.conflict('TRANSFER_BEING_CHECKED', 'Chủ nhà đang kiểm tra khoản chuyển bạn đã báo. Vui lòng chờ xác nhận.');
   }
+  const purpose = purposeFor(option);
+  if (purpose !== 'accommodation') {
+    if (booking.status !== 'confirmed' && booking.status !== 'completed') {
+      throw HttpError.conflict('BOOKING_NOT_PAYABLE', 'Chỉ thanh toán khoản này sau khi đặt phòng đã được xác nhận.');
+    }
+    const financials = await assetIncidentRepository.financials(booking.id, booking.assetSecurityAmount, db);
+    const amount = purpose === 'asset_security' ? financials.assetSecurityDue : financials.incidentAmountDue;
+    if (amount < 1_000) {
+      throw HttpError.unprocessable('PAYMENT_OPTION_UNAVAILABLE', 'Khoản này hiện không còn số tiền cần thanh toán.');
+    }
+    return amount;
+  }
+
   const now = new Date();
   if (!isPayable(booking, now)) {
     throw HttpError.conflict(
@@ -94,7 +115,8 @@ async function amountFor(booking: BookingRecord, option: PaymentOption, db?: Db)
       'Đặt phòng này đã hết thời gian giữ chỗ hoặc không thể thanh toán. Vui lòng đặt lại.',
     );
   }
-  const amount = paymentOptions(booking, now, false)[option];
+  const accommodationOption = option as 'deposit' | 'full';
+  const amount = paymentOptions(booking, now, false)[accommodationOption];
   if (amount === null) {
     throw HttpError.unprocessable('PAYMENT_OPTION_UNAVAILABLE', 'Lựa chọn thanh toán này không còn áp dụng cho đặt phòng.');
   }
@@ -113,7 +135,7 @@ async function transferInstructions(
 ): Promise<TransferInstructions> {
   const booking = await bookingForGuest(reference, token);
   const amount = await amountFor(booking, option);
-  const note = transferNote(booking.reference);
+  const note = transferNote(booking.reference, purposeFor(option));
   const payload = buildVietQrPayload({ bin: env.bank.bin, accountNumber: env.bank.accountNumber, amount, note });
 
   return {
@@ -153,7 +175,8 @@ async function reportTransfer(
 ): Promise<void> {
   // Read the image before taking any lock: OCR takes a moment. The checks repeat under the lock.
   const unlocked = await bookingForGuest(reference, token);
-  const expected = { note: transferNote(unlocked.reference), amount: await amountFor(unlocked, option) };
+  const purpose = purposeFor(option);
+  const expected = { note: transferNote(unlocked.reference, purpose), amount: await amountFor(unlocked, option) };
   const shows = await checkScreenshot(screenshot, expected);
   if (shows === false && !sendAnyway) {
     throw HttpError.unprocessable(
@@ -165,17 +188,17 @@ async function reportTransfer(
   await withTransaction(async (db) => {
     const booking = await bookingForGuest(reference, token, db, true);
     const amount = await amountFor(booking, option, db);
-    const note = transferNote(booking.reference);
+    const note = transferNote(booking.reference, purpose);
 
-    const paymentId = await paymentRepository.insertReported(booking.id, amount, note, db);
+    const paymentId = await paymentRepository.insertReported(booking.id, purpose, amount, note, db);
     await paymentRepository.insertScreenshot(paymentId, screenshot, shows, db);
-    await bookingRepository.clearHold(booking.id, db);
-    await bookingRepository.addEvent(booking.id, 'transfer_reported', 'guest', { amount, paymentId }, db);
+    if (purpose === 'accommodation') await bookingRepository.clearHold(booking.id, db);
+    await bookingRepository.addEvent(booking.id, 'transfer_reported', 'guest', { amount, purpose, paymentId }, db);
 
     const context = await bookingRepository.emailContext(booking.id, db);
     await emailService.queueTransferReported(
       context,
-      { amount, note, bankName: env.bank.name, accountNumber: env.bank.accountNumber },
+      { amount, purpose, note, bankName: env.bank.name, accountNumber: env.bank.accountNumber },
       db,
     );
   });
@@ -222,7 +245,7 @@ async function verifyTransfer(paymentId: string, amount: number | undefined, adm
     await paymentRepository.markVerified(payment.id, received, admin.id, db);
     await bookingRepository.addEvent(booking.id, 'transfer_verified', admin.email, { amount: received, paymentId }, db);
     await recalculate(booking, db);
-    const newlyConfirmed = await confirmIfPending(booking, admin.email, db);
+    const newlyConfirmed = payment.purpose === 'accommodation' && (await confirmIfPending(booking, admin.email, db));
     await queueOwnerPaymentResult(booking, received, newlyConfirmed, db);
   });
 }
@@ -237,12 +260,17 @@ async function rejectTransfer(paymentId: string, reason: string, admin: AdminIde
 
     await paymentRepository.markFailed(payment.id, reason, admin.id, db);
     await bookingRepository.addEvent(booking.id, 'transfer_rejected', admin.email, { amount: payment.amount, reason }, db);
-    if (booking.status === 'pending' && booking.amountPaid === 0) {
+    if (payment.purpose === 'accommodation' && booking.status === 'pending' && booking.amountPaid === 0) {
       await bookingRepository.holdForMinutes(booking.id, env.booking.holdMinutes, db);
     }
 
     const context = await bookingRepository.emailContext(booking.id, db);
-    await emailService.queueTransferNotReceived(context, reason, env.booking.holdMinutes, db);
+    await emailService.queueTransferNotReceived(
+      context,
+      reason,
+      payment.purpose === 'accommodation' ? env.booking.holdMinutes : null,
+      db,
+    );
   });
 }
 
@@ -253,7 +281,7 @@ async function rejectTransfer(paymentId: string, reason: string, admin: AdminIde
  */
 async function recordManualPayment(
   reference: string,
-  payment: { method: PaymentProvider; amount: number; note?: string },
+  payment: { method: PaymentProvider; purpose: PaymentPurpose; amount: number; note?: string },
   admin: AdminIdentity,
 ): Promise<void> {
   await withTransaction(async (db) => {
@@ -265,7 +293,7 @@ async function recordManualPayment(
 
     // The money showed up after the hold ran out: the booking stands if its dates are still free.
     let current = booking;
-    if (booking.status === 'expired') {
+    if (payment.purpose === 'accommodation' && booking.status === 'expired') {
       if (!(await bookingRepository.reactivate(booking.id, db))) {
         throw HttpError.conflict(
           'DATES_TAKEN',
@@ -277,18 +305,25 @@ async function recordManualPayment(
     }
 
     const paymentId = await paymentRepository.insertManual(
-      { bookingId: booking.id, provider: payment.method, amount: payment.amount, note: payment.note, recordedBy: admin.id },
+      {
+        bookingId: booking.id,
+        provider: payment.method,
+        purpose: payment.purpose,
+        amount: payment.amount,
+        note: payment.note,
+        recordedBy: admin.id,
+      },
       db,
     );
     await bookingRepository.addEvent(
       booking.id,
       'payment_recorded',
       admin.email,
-      { method: payment.method, amount: payment.amount, paymentId, note: payment.note },
+      { method: payment.method, purpose: payment.purpose, amount: payment.amount, paymentId, note: payment.note },
       db,
     );
     await recalculate(current, db);
-    const newlyConfirmed = await confirmIfPending(current, admin.email, db);
+    const newlyConfirmed = payment.purpose === 'accommodation' && (await confirmIfPending(current, admin.email, db));
     await queueOwnerPaymentResult(current, payment.amount, newlyConfirmed, db);
   });
 }

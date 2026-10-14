@@ -78,6 +78,18 @@ function change(current: number, previous: number): { text: string; up: boolean 
       @if (actionError(); as message) {
         <p class="mt-8 rounded-md border border-accent bg-accent-muted p-3 text-sm text-accent-deep" role="alert">{{ message }}</p>
       }
+      @if (pendingPayment(); as pending) {
+        <section class="card card-accent-top mt-8" aria-labelledby="dashboard-payment-confirm">
+          <h2 id="dashboard-payment-confirm" class="text-xl">Xác nhận đã thực nhận tiền?</h2>
+          <p class="mt-2 text-sm text-muted-foreground">
+            Ghi nhận {{ pending.amount | number }} ₫ · {{ pending.method === 'cash' ? 'tiền mặt' : 'chuyển khoản' }} cho {{ pending.reference }}.
+          </p>
+          <div class="mt-4 flex gap-3">
+            <button type="button" class="btn btn-primary" [disabled]="busy()" (click)="confirmRecord()">Xác nhận đã nhận</button>
+            <button type="button" class="btn btn-ghost" [disabled]="busy()" (click)="pendingPayment.set(undefined)">Thôi</button>
+          </div>
+        </section>
+      }
       @if (s.bookingsAwaitingPayment.length) {
         <section class="card card-accent-top mt-8" aria-labelledby="awaiting-heading">
           <h2 id="awaiting-heading" class="text-2xl">Chờ tiền về ({{ s.bookingsAwaitingPayment.length }})</h2>
@@ -166,8 +178,13 @@ function change(current: number, previous: number): { text: string; up: boolean 
         </section>
       }
 
-      @if (s.awaitingConfirmation > 0 || s.unhandledMessages > 0) {
+      @if (s.awaitingConfirmation > 0 || s.unhandledMessages > 0 || s.lateCheckouts > 0) {
         <div class="mt-6 flex flex-wrap gap-3">
+          @if (s.lateCheckouts > 0) {
+            <a routerLink="/admin/bookings" [queryParams]="{ status: 'confirmed' }" class="rounded-md border border-accent bg-accent-muted px-4 py-2.5 text-sm text-accent-deep hover:border-accent-deep">
+              {{ s.lateCheckouts }} khách đã tới giờ trả phòng →
+            </a>
+          }
           @if (s.awaitingConfirmation > 0) {
             <a routerLink="/admin/bookings" [queryParams]="{ status: 'pending' }" class="rounded-md border border-accent bg-accent-muted px-4 py-2.5 text-sm hover:border-accent-deep">
               {{ s.awaitingConfirmation }} đặt phòng đã có tiền, chờ xác nhận →
@@ -301,6 +318,12 @@ export class AdminDashboard {
 
   protected readonly busy = signal(false);
   protected readonly actionError = signal<string | undefined>(undefined);
+  protected readonly pendingPayment = signal<{
+    reference: string;
+    method: 'bank_transfer' | 'cash';
+    amount: number;
+    note: string;
+  } | undefined>(undefined);
   protected readonly hint = arrivalHint;
 
   /** This month and last, from the chart data. */
@@ -354,23 +377,24 @@ export class AdminDashboard {
   });
 
   /** The transfer is in the bank account: records it, which confirms the booking and emails the guest. */
-  protected received(booking: AwaitingPayment, amount: number): Promise<void> {
-    return this.record(booking.reference, { method: 'bank_transfer', amount, note: `Chuyển khoản ${booking.note}` });
+  protected received(booking: AwaitingPayment, amount: number): void {
+    this.pendingPayment.set({ reference: booking.reference, method: 'bank_transfer', amount, note: `Chuyển khoản ${booking.note}` });
   }
 
   /** The rest of the price arrived (usually at check-in): the booking becomes fully paid. */
-  protected balanceReceived(booking: BalanceDue, method: 'bank_transfer' | 'cash'): Promise<void> {
+  protected balanceReceived(booking: BalanceDue, method: 'bank_transfer' | 'cash'): void {
     const note = method === 'cash' ? 'Tiền mặt, phần còn lại' : `Chuyển khoản ${booking.note}, phần còn lại`;
-    return this.record(booking.reference, { method, amount: booking.balance, note });
+    this.pendingPayment.set({ reference: booking.reference, method, amount: booking.balance, note });
   }
 
-  private async record(reference: string, payment: { method: 'bank_transfer' | 'cash'; amount: number; note: string }): Promise<void> {
-    const how = payment.method === 'cash' ? 'tiền mặt' : 'chuyển khoản';
-    if (!confirm(`Xác nhận đã nhận ${payment.amount.toLocaleString('vi-VN')} ₫ (${how}) cho ${reference}?`)) return;
+  protected async confirmRecord(): Promise<void> {
+    const payment = this.pendingPayment();
+    if (!payment) return;
     this.busy.set(true);
     this.actionError.set(undefined);
     try {
-      await this.api.recordPayment(reference, payment);
+      await this.api.recordPayment(payment.reference, payment);
+      this.pendingPayment.set(undefined);
       this.summary.reload();
       this.stats.reload();
     } catch (error) {

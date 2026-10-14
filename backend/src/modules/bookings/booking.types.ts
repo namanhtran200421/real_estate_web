@@ -9,6 +9,7 @@ import type { PriceBreakdown } from '../pricing/pricing.js';
 export type BookingStatus = 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'expired';
 export type PaymentStatus = 'unpaid' | 'deposit_paid' | 'fully_paid' | 'refunded';
 export type PaymentProvider = 'bank_transfer' | 'cash';
+export type PaymentPurpose = 'accommodation' | 'asset_security' | 'incident';
 /** pending = the guest reported a transfer the owner has not checked yet. */
 export type PaymentState = 'pending' | 'succeeded' | 'failed';
 
@@ -30,8 +31,34 @@ export interface QuoteRequest {
 
 export interface CreateBookingRequest extends QuoteRequest {
   customer: { name: string; phone: string; email: string };
+  guestIdentities: GuestIdentity[];
   message?: string;
 }
+
+interface IdentityBase {
+  fullName: string;
+  dateOfBirth: string;
+  issueDate: string;
+  expiryDate: string;
+  stayReason: string;
+}
+
+export interface VietnameseIdentity extends IdentityBase {
+  documentType: 'cccd';
+  nationality: 'VN';
+  documentNumber: string;
+  addressOnDocument: string;
+}
+
+export interface ForeignIdentity extends IdentityBase {
+  documentType: 'passport';
+  nationality: string;
+  gender: 'female' | 'male' | 'other';
+  documentNumber: string;
+  temporaryStayExpiry: string;
+}
+
+export type GuestIdentity = VietnameseIdentity | ForeignIdentity;
 
 /** A booking row, as the services use it. */
 export interface BookingRecord {
@@ -50,6 +77,7 @@ export interface BookingRecord {
   priceBreakdown: PriceBreakdown;
   totalAmount: number;
   depositAmount: number;
+  assetSecurityAmount: number;
   amountPaid: number;
   status: BookingStatus;
   paymentStatus: PaymentStatus;
@@ -61,17 +89,22 @@ export interface BookingRecord {
   cancelledAt: Date | null;
   cancellationReason: string | null;
   completedAt: Date | null;
+  actualCheckOutAt: Date | null;
+  scheduledCheckOutAt: Date;
 }
 
 /** What the guest may pay right now; null = that option is not available. */
 export interface PaymentOptions {
   deposit: number | null;
   full: number | null;
+  assetSecurity: number | null;
+  incident: number | null;
 }
 
 export interface GuestPayment {
   id: string;
   provider: PaymentProvider;
+  purpose: PaymentPurpose;
   amount: number;
   state: PaymentState;
   paidAt: string | null;
@@ -91,13 +124,52 @@ export interface GuestBooking {
   paymentStatus: PaymentStatus;
   amountPaid: number;
   amountDue: number;
+  financials: BookingFinancials;
   paymentOptions: PaymentOptions;
   /** Unpaid bookings are released at this time. */
   holdExpiresAt: string | null;
   /** A transfer the guest reported that the owner is still checking. */
-  pendingTransfer: { amount: number; reportedAt: string; hasScreenshot: boolean } | null;
+  pendingTransfer: { amount: number; purpose: PaymentPurpose; reportedAt: string; hasScreenshot: boolean } | null;
   createdAt: string;
   payments: GuestPayment[];
+  incidents: GuestAssetIncident[];
+}
+
+export interface BookingFinancials {
+  assetSecurityRequired: number;
+  assetSecurityReceived: number;
+  assetSecurityRefunded: number;
+  assetSecurityApplied: number;
+  assetSecurityHeld: number;
+  assetSecurityDue: number;
+  incidentCharges: number;
+  incidentPayments: number;
+  incidentAmountDue: number;
+}
+
+export type AssetIncidentStatus = 'open' | 'settled' | 'waived';
+
+export interface GuestAssetIncident {
+  id: string;
+  description: string;
+  amount: number;
+  securityApplied: number;
+  status: AssetIncidentStatus;
+  createdAt: string;
+}
+
+export interface AdminAssetIncident extends GuestAssetIncident {
+  createdBy: string | null;
+  resolvedBy: string | null;
+  resolvedAt: string | null;
+}
+
+export interface LateCheckoutState {
+  state: 'not_due' | 'due' | 'late' | 'urgent' | 'checked_out';
+  scheduledAt: string;
+  actualAt: string | null;
+  minutesLate: number;
+  nextArrivalReference: string | null;
 }
 
 /** What the guest needs to make the bank transfer. */
@@ -152,6 +224,10 @@ export interface AdminBookingDetail extends Omit<GuestBooking, 'payments'> {
   cancelledAt: string | null;
   cancellationReason: string | null;
   completedAt: string | null;
+  identities: GuestIdentity[];
+  identitiesPurged: boolean;
+  incidents: AdminAssetIncident[];
+  lateCheckout: LateCheckoutState;
   payments: AdminPayment[];
   events: BookingEvent[];
 }
@@ -264,4 +340,5 @@ export interface AdminSummary {
   arrivalsNext7Days: AdminBookingListItem[];
   revenueThisMonth: number;
   unhandledMessages: number;
+  lateCheckouts: number;
 }

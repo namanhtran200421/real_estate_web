@@ -74,6 +74,27 @@
             </dl>
           </div>
 
+          <div class="card">
+            <div class="flex items-baseline justify-between gap-4">
+              <h2 class="text-2xl">{{ 'booking.identity.title' | transloco }}</h2>
+              <a routerLink="/book" [queryParams]="{ apt: apt.slug }" class="link text-sm">{{ 'review.edit' | transloco }}</a>
+            </div>
+            <ul class="mt-6 divide-y divide-border border-y border-border">
+              @for (identity of identityDrafts.payload(); track $index; let i = $index) {
+                <li class="grid gap-1 py-4 sm:grid-cols-[8rem_minmax(0,1fr)]">
+                  <span class="small-caps text-muted-foreground">{{ 'booking.identity.guest' | transloco: { number: i + 1 } }}</span>
+                  <span>
+                    <span class="block font-medium">{{ identity.fullName }}</span>
+                    <span class="block text-sm text-muted-foreground">
+                      {{ identity.documentType === 'cccd' ? ('booking.identity.cccd' | transloco) : ('booking.identity.passport' | transloco) }}
+                      · {{ maskedDocument(identity.documentNumber) }}
+                    </span>
+                  </span>
+                </li>
+              }
+            </ul>
+          </div>
+
           <!-- Price breakdown -->
           <div class="card card-accent-top">
             <h2 class="text-2xl">{{ 'review.priceDetails' | transloco }}</h2>
@@ -132,7 +153,7 @@
 
               <!-- Promo code -->
               @if (!q.promo) {
-                <form class="mt-6 rounded-md bg-muted p-4" (submit)="$event.preventDefault(); applyPromo()">
+                <form class="mt-6 rounded-md bg-muted p-4" novalidate (submit)="$event.preventDefault(); applyPromo()">
                   <label class="label" for="promo-code">{{ 'review.promoCode' | transloco }}</label>
                   <div class="flex gap-2">
                     <input

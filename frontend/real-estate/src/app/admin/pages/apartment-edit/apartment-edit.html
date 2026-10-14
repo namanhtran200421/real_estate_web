@@ -12,7 +12,7 @@
 @if (loading()) {
   <p class="mt-8 text-muted-foreground" role="status">Đang tải…</p>
 } @else {
-  <form class="mt-8 max-w-4xl space-y-10" (submit)="$event.preventDefault(); save()">
+  <form class="mt-8 max-w-4xl space-y-10" novalidate (submit)="$event.preventDefault(); save()">
     <fieldset class="card space-y-6">
       <legend class="font-serif text-2xl">Hiển thị</legend>
       <label class="flex items-center gap-3">
@@ -59,7 +59,7 @@
       </div>
       <div>
         <label class="label" for="apt-description">Mô tả (các đoạn cách nhau một dòng trống)</label>
-        <textarea id="apt-description" class="input min-h-40" [value]="f.description" (input)="text('description', $event)"></textarea>
+        <textarea id="apt-description" class="input min-h-40 resize-none" [value]="f.description" (input)="text('description', $event)"></textarea>
       </div>
       <div class="grid gap-6 sm:grid-cols-4">
         <div>
@@ -107,6 +107,7 @@
         <div>
           <label class="label" for="apt-weekly">Theo tuần (7 đêm, 0 = không áp dụng)</label>
           <input id="apt-weekly" class="input" type="number" min="0" step="1000" [value]="f.weekly" (input)="number('weekly', $event)" />
+          <p class="mt-2 text-sm text-muted-foreground">Đêm lễ trong gói cộng phần chênh giữa giá lễ và giá thường/cuối tuần.</p>
         </div>
         <div>
           <label class="label" for="apt-monthly">Theo tháng (30 đêm, 0 = không áp dụng)</label>
@@ -116,10 +117,23 @@
           <label class="label" for="apt-deposit">Đặt cọc (%)</label>
           <input id="apt-deposit" class="input" type="number" min="0" max="100" [value]="f.depositPercent" (input)="number('depositPercent', $event)" />
         </div>
+        <div>
+          <label class="label" for="apt-security">Bảo đảm tài sản cho kỳ ở ≥ 30 đêm</label>
+          <input
+            id="apt-security"
+            class="input"
+            type="number"
+            min="0"
+            step="1000"
+            [value]="f.longStaySecurityAmount"
+            (input)="number('longStaySecurityAmount', $event)"
+          />
+          <p class="mt-2 text-sm text-muted-foreground">Khoản hoàn lại, tách khỏi tiền phòng; dùng để cấn trừ hư hỏng/thất lạc đã ghi nhận.</p>
+        </div>
       </div>
       <div>
         <label class="label" for="apt-discounts">Giảm giá ở dài ngày: mỗi dòng "số đêm | % giảm"</label>
-        <textarea id="apt-discounts" class="input font-mono" placeholder="3 | 5&#10;7 | 15" [value]="f.longStayDiscounts" (input)="text('longStayDiscounts', $event)"></textarea>
+        <textarea id="apt-discounts" class="input resize-none font-mono" placeholder="3 | 5&#10;7 | 15" [value]="f.longStayDiscounts" (input)="text('longStayDiscounts', $event)"></textarea>
         <p class="mt-2 text-sm text-muted-foreground">Khách được mức cao nhất đủ điều kiện, không áp dụng cho đêm ngày lễ.</p>
       </div>
     </fieldset>
@@ -128,7 +142,7 @@
       <legend class="font-serif text-2xl">Ảnh</legend>
       <div>
         <label class="label" for="apt-photos">Mỗi dòng "đường dẫn ảnh | mô tả ảnh"; ảnh đầu tiên là ảnh bìa</label>
-        <textarea id="apt-photos" class="input min-h-40 font-mono text-sm" [value]="f.photos" (input)="text('photos', $event)"></textarea>
+        <textarea id="apt-photos" class="input min-h-40 resize-none font-mono text-sm" [value]="f.photos" (input)="text('photos', $event)"></textarea>
       </div>
     </fieldset>
 
@@ -137,19 +151,19 @@
       <div class="grid gap-6 sm:grid-cols-2">
         <div>
           <label class="label" for="apt-key">Tiện nghi nổi bật (mỗi dòng một mục)</label>
-          <textarea id="apt-key" class="input min-h-32" [value]="f.keyFacilities" (input)="text('keyFacilities', $event)"></textarea>
+          <textarea id="apt-key" class="input min-h-32 resize-none" [value]="f.keyFacilities" (input)="text('keyFacilities', $event)"></textarea>
         </div>
         <div>
           <label class="label" for="apt-facilities">Tất cả tiện nghi (mỗi dòng một mục)</label>
-          <textarea id="apt-facilities" class="input min-h-32" [value]="f.facilities" (input)="text('facilities', $event)"></textarea>
+          <textarea id="apt-facilities" class="input min-h-32 resize-none" [value]="f.facilities" (input)="text('facilities', $event)"></textarea>
         </div>
         <div>
           <label class="label" for="apt-rules">Nội quy (mỗi dòng một mục)</label>
-          <textarea id="apt-rules" class="input min-h-32" [value]="f.rules" (input)="text('rules', $event)"></textarea>
+          <textarea id="apt-rules" class="input min-h-32 resize-none" [value]="f.rules" (input)="text('rules', $event)"></textarea>
         </div>
         <div>
           <label class="label" for="apt-nearby">Lân cận: mỗi dòng "địa điểm | khoảng cách"</label>
-          <textarea id="apt-nearby" class="input min-h-32" [value]="f.nearby" (input)="text('nearby', $event)"></textarea>
+          <textarea id="apt-nearby" class="input min-h-32 resize-none" [value]="f.nearby" (input)="text('nearby', $event)"></textarea>
         </div>
       </div>
     </fieldset>

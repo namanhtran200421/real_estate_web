@@ -34,6 +34,7 @@ interface BookingRow {
   price_breakdown: PriceBreakdown;
   total_amount: number;
   deposit_amount: number;
+  asset_security_amount: number;
   amount_paid: number;
   status: BookingStatus;
   payment_status: PaymentStatus;
@@ -45,6 +46,8 @@ interface BookingRow {
   cancelled_at: Date | null;
   cancellation_reason: string | null;
   completed_at: Date | null;
+  actual_check_out_at: Date | null;
+  scheduled_check_out_at: Date;
 }
 
 const SELECT_BOOKING = `
@@ -52,7 +55,10 @@ const SELECT_BOOKING = `
          b.check_in, b.check_out, b.guests, b.customer_name, b.customer_phone, b.customer_email,
          b.message, b.price_breakdown, b.total_amount, b.deposit_amount, b.amount_paid, b.status,
          b.payment_status, b.hold_expires_at, b.promo_code_id, host(b.created_ip) AS created_ip,
-         b.created_at, b.confirmed_at, b.cancelled_at, b.cancellation_reason, b.completed_at
+         b.created_at, b.confirmed_at, b.cancelled_at, b.cancellation_reason, b.completed_at,
+         b.asset_security_amount,
+         b.actual_check_out_at,
+         ((b.check_out + a.check_out_time) AT TIME ZONE current_setting('TIMEZONE')) AS scheduled_check_out_at
   FROM bookings b
   JOIN apartments a ON a.id = b.apartment_id
 `;
@@ -74,6 +80,7 @@ function toRecord(row: BookingRow): BookingRecord {
     priceBreakdown: row.price_breakdown,
     totalAmount: row.total_amount,
     depositAmount: row.deposit_amount,
+    assetSecurityAmount: row.asset_security_amount,
     amountPaid: row.amount_paid,
     status: row.status,
     paymentStatus: row.payment_status,
@@ -85,6 +92,8 @@ function toRecord(row: BookingRow): BookingRecord {
     cancelledAt: row.cancelled_at,
     cancellationReason: row.cancellation_reason,
     completedAt: row.completed_at,
+    actualCheckOutAt: row.actual_check_out_at,
+    scheduledCheckOutAt: row.scheduled_check_out_at,
   };
 }
 
@@ -100,6 +109,7 @@ export interface NewBooking {
   price: PriceBreakdown;
   promoCodeId: string | null;
   holdMinutes: number;
+  assetSecurityAmount: number;
   ip: string | undefined;
 }
 
@@ -112,9 +122,9 @@ async function insert(booking: NewBooking, db: Db): Promise<string | undefined> 
     `INSERT INTO bookings (
        reference, apartment_id, check_in, check_out, guests, customer_name, customer_phone,
        customer_email, message, deposit_percent, price_breakdown, subtotal, discount_amount,
-       total_amount, deposit_amount, promo_code_id, hold_expires_at, created_ip
+       total_amount, deposit_amount, asset_security_amount, promo_code_id, hold_expires_at, created_ip
      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16,
-               now() + make_interval(mins => $17), $18)
+               $17, now() + make_interval(mins => $18), $19)
      ON CONFLICT (reference) DO NOTHING
      RETURNING id`,
     [
@@ -133,6 +143,7 @@ async function insert(booking: NewBooking, db: Db): Promise<string | undefined> 
       booking.price.discountTotal,
       booking.price.total,
       booking.price.deposit,
+      booking.assetSecurityAmount,
       booking.promoCodeId,
       booking.holdMinutes,
       booking.ip ?? null,
@@ -268,7 +279,13 @@ async function markCancelled(id: string, reason: string, db: Db): Promise<void> 
 }
 
 async function markCompleted(id: string, db: Db): Promise<void> {
-  await query(`UPDATE bookings SET status = 'completed', completed_at = now() WHERE id = $1`, [id], db);
+  await query(
+    `UPDATE bookings
+     SET status = 'completed', completed_at = now(), actual_check_out_at = coalesce(actual_check_out_at, now())
+     WHERE id = $1`,
+    [id],
+    db,
+  );
 }
 
 /** Holds the dates without a deadline (a reported transfer is being checked). */
@@ -293,20 +310,48 @@ async function setPaymentProgress(id: string, amountPaid: number, paymentStatus:
   );
 }
 
-/** Confirmed stays whose check-out date has passed become completed. */
-async function completeFinishedStays(today: string): Promise<number> {
+/** Claims upcoming check-outs once, so each guest receives at most one reminder. */
+async function claimCheckoutReminders(db: Db): Promise<string[]> {
   const rows = await query<{ id: string }>(
-    `WITH done AS (
-       UPDATE bookings SET status = 'completed', completed_at = now()
-       WHERE status = 'confirmed' AND check_out <= $1
-       RETURNING id
-     )
-     INSERT INTO booking_events (booking_id, type, actor)
-     SELECT id, 'completed', 'system' FROM done
-     RETURNING booking_id AS id`,
-    [today],
+    `UPDATE bookings b SET checkout_reminder_sent_at = now()
+     FROM apartments a
+     WHERE a.id = b.apartment_id AND b.status = 'confirmed' AND b.actual_check_out_at IS NULL
+       AND b.checkout_reminder_sent_at IS NULL
+       AND ((b.check_out + a.check_out_time) AT TIME ZONE current_setting('TIMEZONE')) > now()
+       AND ((b.check_out + a.check_out_time) AT TIME ZONE current_setting('TIMEZONE')) <= now() + interval '24 hours'
+     RETURNING b.id`,
+    [],
+    db,
   );
-  return rows.length;
+  return rows.map((row) => row.id);
+}
+
+/** Claims check-outs at least 15 minutes late once, for an Owner alert. */
+async function claimLateCheckoutAlerts(db: Db): Promise<string[]> {
+  const rows = await query<{ id: string }>(
+    `UPDATE bookings b SET late_checkout_alert_sent_at = now()
+     FROM apartments a
+     WHERE a.id = b.apartment_id AND b.status = 'confirmed' AND b.actual_check_out_at IS NULL
+       AND b.late_checkout_alert_sent_at IS NULL
+       AND ((b.check_out + a.check_out_time) AT TIME ZONE current_setting('TIMEZONE')) <= now() - interval '15 minutes'
+     RETURNING b.id`,
+    [],
+    db,
+  );
+  return rows.map((row) => row.id);
+}
+
+async function nextArrival(booking: BookingRecord, db?: Db): Promise<string | null> {
+  const row = await queryOne<{ reference: string }>(
+    `SELECT reference FROM bookings
+     WHERE apartment_id = $1 AND check_in = $2 AND id <> $3
+       AND status IN ('pending', 'confirmed')
+       AND (status = 'confirmed' OR hold_expires_at IS NULL OR hold_expires_at > now())
+     ORDER BY check_in, created_at LIMIT 1`,
+    [booking.apartmentId, booking.checkOut, booking.id],
+    db,
+  );
+  return row?.reference ?? null;
 }
 
 async function emailContext(bookingId: string, db?: Db): Promise<BookingEmailContext> {
@@ -427,10 +472,14 @@ async function summary(today: string, weekAhead: string): Promise<AdminSummary> 
          WHERE status = 'pending' AND amount_paid = 0 AND hold_expires_at > now()) AS "awaitingPayment",
        (SELECT count(*)::int FROM bookings
          WHERE status = 'confirmed' AND check_in <= $1 AND check_out > $1) AS "inHouse",
+       (SELECT count(*)::int FROM bookings b JOIN apartments a ON a.id = b.apartment_id
+         WHERE b.status = 'confirmed' AND b.actual_check_out_at IS NULL
+           AND ((b.check_out + a.check_out_time) AT TIME ZONE current_setting('TIMEZONE')) <= now()) AS "lateCheckouts",
        (SELECT coalesce(sum(amount), 0)::int FROM payments
-         WHERE state = 'succeeded' AND paid_at >= date_trunc('month', now()))
+         WHERE state = 'succeeded' AND purpose <> 'asset_security' AND paid_at >= date_trunc('month', now()))
        - (SELECT coalesce(sum(amount), 0)::int FROM refunds
-         WHERE state = 'succeeded' AND completed_at >= date_trunc('month', now())) AS "revenueThisMonth",
+         WHERE state = 'succeeded' AND completed_at >= date_trunc('month', now())
+           AND payment_id IN (SELECT id FROM payments WHERE purpose <> 'asset_security')) AS "revenueThisMonth",
        (SELECT count(*)::int FROM contact_messages WHERE handled_at IS NULL) AS "unhandledMessages"`,
     [today],
   );
@@ -570,11 +619,13 @@ async function monthlyStats(today: string): Promise<AdminStats> {
      span AS (SELECT min(month) AS first, max(next) AS last FROM months),
      received AS (
        SELECT date_trunc('month', paid_at)::date AS month, sum(amount) AS amount
-       FROM payments, span WHERE state = 'succeeded' AND paid_at >= span.first GROUP BY 1
+       FROM payments, span
+       WHERE state = 'succeeded' AND purpose <> 'asset_security' AND paid_at >= span.first GROUP BY 1
      ),
      refunded AS (
-       SELECT date_trunc('month', completed_at)::date AS month, sum(amount) AS amount
-       FROM refunds, span WHERE state = 'succeeded' AND completed_at >= span.first GROUP BY 1
+       SELECT date_trunc('month', r.completed_at)::date AS month, sum(r.amount) AS amount
+       FROM refunds r JOIN payments p ON p.id = r.payment_id, span
+       WHERE r.state = 'succeeded' AND p.purpose <> 'asset_security' AND r.completed_at >= span.first GROUP BY 1
      ),
      confirmed AS (
        SELECT date_trunc('month', confirmed_at)::date AS month, count(*) AS bookings
@@ -631,7 +682,9 @@ export const bookingRepository = {
   clearHold,
   holdForMinutes,
   setPaymentProgress,
-  completeFinishedStays,
+  claimCheckoutReminders,
+  claimLateCheckoutAlerts,
+  nextArrival,
   emailContext,
   list,
   summary,

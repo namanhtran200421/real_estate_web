@@ -48,13 +48,15 @@ export function paymentOptions(
   transferPending: boolean,
 ): PaymentOptions {
   const due = booking.totalAmount - booking.amountPaid;
-  if (transferPending || !isPayable(booking, now) || due < MIN_TRANSFER) return { deposit: null, full: null };
+  if (transferPending || !isPayable(booking, now) || due < MIN_TRANSFER) {
+    return { deposit: null, full: null, assetSecurity: null, incident: null };
+  }
 
   let deposit: number | null = null;
   const depositUseful = booking.depositAmount >= MIN_TRANSFER && booking.depositAmount < due;
   if (booking.amountPaid === 0 && depositUseful) deposit = booking.depositAmount;
 
-  return { deposit, full: due };
+  return { deposit, full: due, assetSecurity: null, incident: null };
 }
 
 /** Payment status from the money received and refunded (both in VND). */

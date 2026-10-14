@@ -13,8 +13,10 @@ import {
   bookingCancelledEmail,
   bookingConfirmedEmail,
   bookingHeldEmail,
+  checkoutReminderEmail,
   ownerContactEmail,
   ownerHoldEndingEmail,
+  ownerLateCheckoutEmail,
   ownerNewBookingEmail,
   ownerTransferReportedEmail,
   paymentReceivedEmail,
@@ -49,7 +51,7 @@ async function queueTransferReported(booking: BookingEmailContext, transfer: Tra
   await emailRepository.enqueue({ to: env.email.ownerAddress, ...ownerTransferReportedEmail(booking, transfer) }, db);
 }
 
-async function queueTransferNotReceived(booking: BookingEmailContext, reason: string, holdMinutes: number, db: Db): Promise<void> {
+async function queueTransferNotReceived(booking: BookingEmailContext, reason: string, holdMinutes: number | null, db: Db): Promise<void> {
   await emailRepository.enqueue({ to: booking.customerEmail, ...transferNotReceivedEmail(booking, reason, holdMinutes) }, db);
 }
 
@@ -68,6 +70,21 @@ async function queueBookingCancelled(booking: BookingEmailContext, reason: strin
 
 async function queueRefundIssued(booking: BookingEmailContext, amount: number, db: Db): Promise<void> {
   await emailRepository.enqueue({ to: booking.customerEmail, ...refundIssuedEmail(booking, amount) }, db);
+}
+
+async function queueCheckoutReminder(booking: BookingEmailContext, db: Db): Promise<void> {
+  await emailRepository.enqueue({ to: booking.customerEmail, ...checkoutReminderEmail(booking) }, db);
+}
+
+async function queueLateCheckoutAlert(
+  booking: BookingEmailContext,
+  nextArrivalReference: string | null,
+  db: Db,
+): Promise<void> {
+  await emailRepository.enqueue(
+    { to: env.email.ownerAddress, ...ownerLateCheckoutEmail(booking, nextArrivalReference) },
+    db,
+  );
 }
 
 async function queueAdminPasswordChanged(change: PasswordChangedContext): Promise<void> {
@@ -117,6 +134,8 @@ export const emailService = {
   queueBookingConfirmed,
   queueBookingCancelled,
   queueRefundIssued,
+  queueCheckoutReminder,
+  queueLateCheckoutAlert,
   queueAdminPasswordChanged,
   queueContactMessage,
   deliverDueEmails,

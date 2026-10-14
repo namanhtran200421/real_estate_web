@@ -53,24 +53,54 @@ describe('paymentOptions', () => {
   const booking = { status: 'pending' as const, amountPaid: 0, holdExpiresAt: LATER, totalAmount: 5_130_000, depositAmount: 1_539_000 };
 
   it('offers the deposit or the full amount before anything is paid', () => {
-    assert.deepEqual(paymentOptions(booking, NOW, false), { deposit: 1_539_000, full: 5_130_000 });
+    assert.deepEqual(paymentOptions(booking, NOW, false), {
+      deposit: 1_539_000,
+      full: 5_130_000,
+      assetSecurity: null,
+      incident: null,
+    });
   });
 
   it('offers only the balance once the deposit is paid', () => {
-    assert.deepEqual(paymentOptions({ ...booking, amountPaid: 1_539_000 }, NOW, false), { deposit: null, full: 3_591_000 });
+    assert.deepEqual(paymentOptions({ ...booking, amountPaid: 1_539_000 }, NOW, false), {
+      deposit: null,
+      full: 3_591_000,
+      assetSecurity: null,
+      incident: null,
+    });
   });
 
   it('offers nothing when fully paid or no longer payable', () => {
-    assert.deepEqual(paymentOptions({ ...booking, amountPaid: 5_130_000 }, NOW, false), { deposit: null, full: null });
-    assert.deepEqual(paymentOptions({ ...booking, status: 'cancelled' }, NOW, false), { deposit: null, full: null });
+    assert.deepEqual(paymentOptions({ ...booking, amountPaid: 5_130_000 }, NOW, false), {
+      deposit: null,
+      full: null,
+      assetSecurity: null,
+      incident: null,
+    });
+    assert.deepEqual(paymentOptions({ ...booking, status: 'cancelled' }, NOW, false), {
+      deposit: null,
+      full: null,
+      assetSecurity: null,
+      incident: null,
+    });
   });
 
   it('offers nothing while a reported transfer is being checked', () => {
-    assert.deepEqual(paymentOptions(booking, NOW, true), { deposit: null, full: null });
+    assert.deepEqual(paymentOptions(booking, NOW, true), {
+      deposit: null,
+      full: null,
+      assetSecurity: null,
+      incident: null,
+    });
   });
 
   it('skips the deposit option when there is no deposit', () => {
-    assert.deepEqual(paymentOptions({ ...booking, depositAmount: 0 }, NOW, false), { deposit: null, full: 5_130_000 });
+    assert.deepEqual(paymentOptions({ ...booking, depositAmount: 0 }, NOW, false), {
+      deposit: null,
+      full: 5_130_000,
+      assetSecurity: null,
+      incident: null,
+    });
   });
 });
 

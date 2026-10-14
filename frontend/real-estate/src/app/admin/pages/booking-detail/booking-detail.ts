@@ -1,9 +1,10 @@
 import { Component, DestroyRef, computed, effect, inject, input, resource, signal, untracked } from '@angular/core';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { Select, SelectOption } from '../../../components/select/select';
 import { StatusBadge } from '../../../components/status-badge/status-badge';
 import { toApiError } from '../../../core/api';
-import { NIGHT_RATE_LABELS, PAYMENT_PROVIDER_LABELS } from '../../../models/booking';
+import { NIGHT_RATE_LABELS, PAYMENT_PROVIDER_LABELS, PaymentPurpose } from '../../../models/booking';
 import { AdminApiService } from '../../admin-api.service';
 import { AdminBookingDetail, AdminPayment, BookingEvent } from '../../admin.types';
 
@@ -19,6 +20,10 @@ const EVENT_LABELS: Record<string, string> = {
   expired: 'Hết hạn giữ chỗ',
   reactivated: 'Mở lại đặt phòng (tiền về sau khi hết hạn giữ chỗ)',
   refund_recorded: 'Ghi nhận hoàn tiền',
+  checked_out: 'Ghi nhận khách đã trả phòng',
+  asset_incident_recorded: 'Ghi nhận hư hỏng / thất lạc',
+  asset_incident_settled: 'Đóng khoản bồi thường',
+  asset_incident_waived: 'Miễn khoản bồi thường',
 };
 
 /** A guest's transfer screenshot on this page: being fetched, shown (as a local URL), or failed. */
@@ -30,9 +35,22 @@ const PAYMENT_STATE_LABELS: Record<string, string> = {
   failed: 'Không nhận được',
 };
 
+const PAYMENT_PURPOSE_LABELS: Record<PaymentPurpose, string> = {
+  accommodation: 'Tiền phòng',
+  asset_security: 'Bảo đảm tài sản',
+  incident: 'Bồi thường',
+};
+
+interface PendingReceipt {
+  amount: number;
+  method: 'bank_transfer' | 'cash';
+  purpose: PaymentPurpose;
+  rest: boolean;
+}
+
 @Component({
   selector: 'app-admin-booking-detail',
-  imports: [DatePipe, DecimalPipe, RouterLink, StatusBadge],
+  imports: [DatePipe, DecimalPipe, RouterLink, Select, StatusBadge],
   templateUrl: './booking-detail.html',
 })
 export class AdminBookingDetailPage {
@@ -44,6 +62,16 @@ export class AdminBookingDetailPage {
   protected readonly providerLabels = PAYMENT_PROVIDER_LABELS;
   protected readonly stateLabels = PAYMENT_STATE_LABELS;
   protected readonly rateLabels = NIGHT_RATE_LABELS;
+  protected readonly purposeLabels = PAYMENT_PURPOSE_LABELS;
+  protected readonly paymentMethodOptions: SelectOption[] = [
+    { value: 'cash', label: 'Tiền mặt' },
+    { value: 'bank_transfer', label: 'Chuyển khoản' },
+  ];
+  protected readonly paymentPurposeOptions: SelectOption[] = [
+    { value: 'accommodation', label: 'Tiền phòng' },
+    { value: 'asset_security', label: 'Bảo đảm tài sản' },
+    { value: 'incident', label: 'Bồi thường' },
+  ];
 
   protected readonly booking = resource({
     params: () => this.reference(),
@@ -62,6 +90,7 @@ export class AdminBookingDetailPage {
   protected readonly cancelling = signal(false);
   protected readonly cancelReason = signal('');
   protected readonly manualMethod = signal<'cash' | 'bank_transfer'>('cash');
+  protected readonly manualPurpose = signal<PaymentPurpose>('accommodation');
   protected readonly manualAmount = signal<number | undefined>(undefined);
   protected readonly manualNote = signal('');
   protected readonly verifyAmount = signal<number | undefined>(undefined);
@@ -70,6 +99,18 @@ export class AdminBookingDetailPage {
   protected readonly refundFor = signal<string | undefined>(undefined);
   protected readonly refundAmount = signal<number | undefined>(undefined);
   protected readonly refundReason = signal('');
+  protected readonly pendingReceipt = signal<PendingReceipt | undefined>(undefined);
+  protected readonly incidentDescription = signal('');
+  protected readonly incidentAmount = signal<number | undefined>(undefined);
+  protected readonly incidentSecurityApplied = signal(0);
+  protected readonly pendingIncidentResolution = signal<{ id: string; status: 'settled' | 'waived' } | undefined>(undefined);
+  protected readonly manualSuggestedAmount = computed(() => {
+    const booking = this.b();
+    if (!booking) return undefined;
+    if (this.manualPurpose() === 'asset_security') return booking.financials.assetSecurityDue || undefined;
+    if (this.manualPurpose() === 'incident') return booking.financials.incidentAmountDue || undefined;
+    return booking.amountDue || undefined;
+  });
 
   /** The guests' transfer screenshots on this page, by payment id. */
   protected readonly screenshots = signal<Record<string, ScreenshotView>>({});
@@ -131,11 +172,6 @@ export class AdminBookingDetailPage {
     return Math.round(value);
   }
 
-  protected setManualMethod(event: Event): void {
-    if (this.value(event) === 'bank_transfer') this.manualMethod.set('bank_transfer');
-    else this.manualMethod.set('cash');
-  }
-
   /** Runs an action, then shows the updated booking (or the error). */
   private async run(action: () => Promise<AdminBookingDetail | void>): Promise<boolean> {
     this.busy.set(true);
@@ -157,8 +193,8 @@ export class AdminBookingDetailPage {
     void this.run(() => this.api.confirm(this.reference()));
   }
 
-  protected complete(): void {
-    void this.run(() => this.api.complete(this.reference()));
+  protected checkOut(): void {
+    void this.run(() => this.api.checkOut(this.reference()));
   }
 
   protected async cancel(): Promise<void> {
@@ -175,21 +211,39 @@ export class AdminBookingDetailPage {
    * Money arrived: records it. The first payment confirms the booking; the rest (usually at
    * check-in) makes it fully paid. The guest is emailed either way.
    */
-  protected async received(amount: number, method: 'bank_transfer' | 'cash' = 'bank_transfer', rest = false): Promise<void> {
+  protected received(
+    amount: number,
+    method: 'bank_transfer' | 'cash' = 'bank_transfer',
+    rest = false,
+    purpose: PaymentPurpose = 'accommodation',
+  ): void {
+    this.pendingReceipt.set({ amount, method, rest, purpose });
+  }
+
+  protected async confirmReceipt(): Promise<void> {
+    const receipt = this.pendingReceipt();
+    if (!receipt) return;
     const reference = this.reference();
-    const how = method === 'cash' ? 'tiền mặt' : 'chuyển khoản';
-    if (!confirm(`Xác nhận đã nhận ${amount.toLocaleString('vi-VN')} ₫ (${how}) cho ${reference}?`)) return;
-    let note = method === 'cash' ? 'Tiền mặt' : `Chuyển khoản ${this.transferNote(reference)}`;
-    if (rest) note += ', phần còn lại';
-    await this.run(() => this.api.recordPayment(reference, { method, amount, note }));
+    let note = receipt.method === 'cash' ? 'Tiền mặt' : `Chuyển khoản ${this.transferNote(reference)}`;
+    if (receipt.rest) note += ', phần còn lại';
+    const done = await this.run(() =>
+      this.api.recordPayment(reference, {
+        method: receipt.method,
+        purpose: receipt.purpose,
+        amount: receipt.amount,
+        note,
+      }),
+    );
+    if (done) this.pendingReceipt.set(undefined);
   }
 
   protected async recordPayment(): Promise<void> {
-    const amount = this.manualAmount() ?? this.b()?.amountDue;
+    const amount = this.manualAmount() ?? this.manualSuggestedAmount();
     if (!amount) return;
     const done = await this.run(() =>
       this.api.recordPayment(this.reference(), {
         method: this.manualMethod(),
+        purpose: this.manualPurpose(),
         amount,
         note: this.manualNote().trim() || undefined,
       }),
@@ -198,6 +252,34 @@ export class AdminBookingDetailPage {
       this.manualAmount.set(undefined);
       this.manualNote.set('');
     }
+  }
+
+  protected async addIncident(): Promise<void> {
+    const amount = this.incidentAmount();
+    if (!amount || !this.incidentDescription().trim()) return;
+    const done = await this.run(() =>
+      this.api.addIncident(this.reference(), {
+        description: this.incidentDescription().trim(),
+        amount,
+        securityApplied: this.incidentSecurityApplied(),
+      }),
+    );
+    if (done) {
+      this.incidentDescription.set('');
+      this.incidentAmount.set(undefined);
+      this.incidentSecurityApplied.set(0);
+    }
+  }
+
+  protected requestIncidentResolution(incidentId: string, status: 'settled' | 'waived'): void {
+    this.pendingIncidentResolution.set({ id: incidentId, status });
+  }
+
+  protected async confirmIncidentResolution(): Promise<void> {
+    const resolution = this.pendingIncidentResolution();
+    if (!resolution) return;
+    const done = await this.run(() => this.api.resolveIncident(this.reference(), resolution.id, resolution.status));
+    if (done) this.pendingIncidentResolution.set(undefined);
   }
 
   protected startRefund(payment: AdminPayment): void {

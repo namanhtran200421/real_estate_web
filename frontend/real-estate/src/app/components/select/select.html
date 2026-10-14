@@ -8,6 +8,8 @@
     [attr.aria-controls]="listboxId()"
     [attr.aria-expanded]="open()"
     [attr.aria-activedescendant]="open() && activeIndex() >= 0 ? optionId(activeIndex()) : null"
+    [attr.aria-invalid]="invalid() || null"
+    [attr.aria-describedby]="describedBy() ?? null"
     class="input flex items-center justify-between gap-3 text-left"
     [class.border-accent-deep]="open()"
     (click)="toggle()"

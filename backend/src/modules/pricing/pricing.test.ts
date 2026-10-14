@@ -77,6 +77,26 @@ describe('priceStay', () => {
     assert.equal(quote.total, Math.min(longStayTotal, packageTotal));
   });
 
+  it('adds the holiday premium to a weekly package instead of discounting the holiday night', () => {
+    const nights = nightsOf('2026-11-02', '2026-11-09');
+    const holiday = nights[2]!; // Wednesday: ordinary weekday rate.
+    const quote = priceStay(nights, RULES, new Set([holiday]));
+    const packageWithHolidayPremium = RULES.weekly + (RULES.holiday - RULES.weekday);
+    assert.equal(quote.stayDiscount?.kind, 'weekly_monthly');
+    assert.equal(quote.total, packageWithHolidayPremium);
+  });
+
+  it('adds every holiday premium inside a 30-night monthly package', () => {
+    const nights = nightsOf('2026-11-01', '2026-12-01');
+    const holidays = new Set([nights[1]!, nights[6]!]); // Monday and Saturday.
+    const quote = priceStay(nights, RULES, holidays);
+    const expected = RULES.monthly
+      + (RULES.holiday - RULES.weekday)
+      + (RULES.holiday - RULES.weekend);
+    assert.equal(quote.stayDiscount?.kind, 'weekly_monthly');
+    assert.equal(quote.total, expected);
+  });
+
   it('ignores packages that are not offered', () => {
     const quote = priceStay(nightsOf('2026-11-01', '2026-12-01'), { ...RULES, weekly: 0, monthly: 0 }, NO_HOLIDAYS);
     assert.equal(quote.stayDiscount?.kind, 'long_stay');

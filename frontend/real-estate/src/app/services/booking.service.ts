@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { API_URL, ApiResponse, captchaHeaders } from '../core/api';
-import { Booking, PaymentOption, Quote, TransferInstructions } from '../models/booking';
+import { Booking, GuestIdentity, PaymentOption, Quote, TransferInstructions } from '../models/booking';
 import { readJson, writeJson } from './browser-storage';
 
 export interface StayRequest {
@@ -15,6 +15,7 @@ export interface StayRequest {
 
 export interface NewBooking extends StayRequest {
   customer: { name: string; phone: string; email: string };
+  guestIdentities: GuestIdentity[];
   message?: string;
 }
 

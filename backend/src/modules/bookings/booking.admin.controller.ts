@@ -21,12 +21,19 @@ const listQuery = z.object({
 const cancelBody = z.object({ reason: text(500) });
 const manualPaymentBody = z.object({
   method: z.enum(['cash', 'bank_transfer']),
+  purpose: z.enum(['accommodation', 'asset_security', 'incident']).default('accommodation'),
   amount: vnd.min(1),
   note: optionalText(500),
 });
 const refundBody = z.object({ amount: vnd.min(1), reason: text(500) });
 const verifyBody = z.object({ amount: vnd.min(1).optional() });
 const rejectBody = z.object({ reason: text(500) });
+const incidentBody = z.object({
+  description: text(500),
+  amount: vnd.min(1),
+  securityApplied: vnd.default(0),
+});
+const incidentStatusBody = z.object({ status: z.enum(['settled', 'waived']) });
 
 /** GET /admin/summary */
 async function summary(_req: Request, res: Response): Promise<void> {
@@ -72,7 +79,29 @@ async function cancel(req: Request<{ reference: string }>, res: Response): Promi
 
 /** POST /admin/bookings/:reference/complete */
 async function complete(req: Request<{ reference: string }>, res: Response): Promise<void> {
-  res.json({ data: await bookingService.complete(req.params.reference, res.locals.admin) });
+  res.json({ data: await bookingService.checkOut(req.params.reference, res.locals.admin) });
+}
+
+/** POST /admin/bookings/:reference/check-out — records the actual departure time. */
+async function checkOut(req: Request<{ reference: string }>, res: Response): Promise<void> {
+  res.json({ data: await bookingService.checkOut(req.params.reference, res.locals.admin) });
+}
+
+async function addIncident(req: Request<{ reference: string }>, res: Response): Promise<void> {
+  const input = parse(incidentBody, req.body);
+  res.status(201).json({ data: await bookingService.addIncident(req.params.reference, input, res.locals.admin) });
+}
+
+async function resolveIncident(req: Request<{ reference: string; incidentId: string }>, res: Response): Promise<void> {
+  const { status } = parse(incidentStatusBody, req.body);
+  res.json({
+    data: await bookingService.resolveIncident(
+      req.params.reference,
+      parse(z.uuid(), req.params.incidentId),
+      status,
+      res.locals.admin,
+    ),
+  });
 }
 
 /** POST /admin/bookings/:reference/payments { method, amount, note? } */
@@ -117,6 +146,9 @@ export const bookingAdminController = {
   confirm,
   cancel,
   complete,
+  checkOut,
+  addIncident,
+  resolveIncident,
   recordPayment,
   verifyTransfer,
   rejectTransfer,

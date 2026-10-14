@@ -8,11 +8,14 @@ import {
   AdminBookingListItem,
   AdminStats,
   AdminSummary,
+  AssetIncidentStatus,
   ApartmentInput,
   BlockedDate,
   BookingFilters,
   ContactMessage,
   Holiday,
+  IncidentInput,
+  PaymentPurpose,
   PromoCode,
   PromoCodeInput,
 } from './admin.types';
@@ -28,7 +31,7 @@ export class AdminApiService {
     return this.unwrap(this.http.get<ApiResponse<T>>(`${this.api}${path}`, { params }));
   }
 
-  private send<T>(method: 'POST' | 'PUT', path: string, body: unknown): Promise<T> {
+  private send<T>(method: 'POST' | 'PUT' | 'PATCH', path: string, body: unknown): Promise<T> {
     return this.unwrap(this.http.request<ApiResponse<T>>(method, `${this.api}${path}`, { body }));
   }
 
@@ -79,9 +82,21 @@ export class AdminApiService {
     return this.send('POST', `/bookings/${encodeURIComponent(reference)}/complete`, {});
   }
 
+  checkOut(reference: string): Promise<AdminBookingDetail> {
+    return this.send('POST', `/bookings/${encodeURIComponent(reference)}/check-out`, {});
+  }
+
+  addIncident(reference: string, input: IncidentInput): Promise<AdminBookingDetail> {
+    return this.send('POST', `/bookings/${encodeURIComponent(reference)}/incidents`, input);
+  }
+
+  resolveIncident(reference: string, incidentId: string, status: Exclude<AssetIncidentStatus, 'open'>): Promise<AdminBookingDetail> {
+    return this.send('PATCH', `/bookings/${encodeURIComponent(reference)}/incidents/${incidentId}`, { status });
+  }
+
   recordPayment(
     reference: string,
-    payment: { method: 'cash' | 'bank_transfer'; amount: number; note?: string },
+    payment: { method: 'cash' | 'bank_transfer'; purpose?: PaymentPurpose; amount: number; note?: string },
   ): Promise<AdminBookingDetail> {
     return this.send('POST', `/bookings/${encodeURIComponent(reference)}/payments`, payment);
   }

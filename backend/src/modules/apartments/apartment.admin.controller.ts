@@ -41,6 +41,7 @@ const apartmentBody = z.object({
       .max(20),
   }),
   depositPercent: z.number().int().min(0).max(100),
+  longStaySecurityAmount: vnd,
   nearby: z.array(z.object({ place: text(120), distance: text(60) })).max(30),
   isActive: z.boolean(),
   sortOrder: z.number().int().min(0).max(10_000),

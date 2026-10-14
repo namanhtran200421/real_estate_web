@@ -35,6 +35,7 @@ interface ApartmentForm {
   monthly: number;
   longStayDiscounts: string;
   depositPercent: number;
+  longStaySecurityAmount: number;
   isActive: boolean;
   sortOrder: number;
 }
@@ -65,6 +66,7 @@ const EMPTY: ApartmentForm = {
   monthly: 0,
   longStayDiscounts: '',
   depositPercent: 30,
+  longStaySecurityAmount: 0,
   isActive: false,
   sortOrder: 0,
 };
@@ -127,6 +129,7 @@ function fromForm(form: ApartmentForm): ApartmentInput {
       })),
     },
     depositPercent: form.depositPercent,
+    longStaySecurityAmount: form.longStaySecurityAmount,
     isActive: form.isActive,
     sortOrder: form.sortOrder,
   };

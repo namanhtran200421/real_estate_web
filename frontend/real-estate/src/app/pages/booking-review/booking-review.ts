@@ -12,6 +12,7 @@ import { Quote, Stay } from '../../models/booking';
 import { ApartmentService } from '../../services/apartment.service';
 import { BookingDraftService } from '../../services/booking-draft.service';
 import { BookingService } from '../../services/booking.service';
+import { GuestIdentityDraftService } from '../../services/guest-identity-draft.service';
 
 /** Step 2: check details and the price breakdown, apply a promo code, create the booking. */
 @Component({
@@ -23,6 +24,7 @@ export class BookingReview {
   private readonly apartments = inject(ApartmentService);
   private readonly bookings = inject(BookingService);
   private readonly drafts = inject(BookingDraftService);
+  protected readonly identityDrafts = inject(GuestIdentityDraftService);
   private readonly router = inject(Router);
   protected readonly errorMessages = inject(ApiErrorMessages);
 
@@ -79,7 +81,7 @@ export class BookingReview {
   constructor() {
     // Arriving here without complete details (refresh after the draft expired, direct link): back to step 1.
     effect(() => {
-      if (!this.drafts.complete()) {
+      if (!this.drafts.complete() || !this.identityDrafts.complete(this.draft().guests)) {
         void this.router.navigate(['/book'], { queryParams: { apt: this.slug() }, replaceUrl: true });
       }
     });
@@ -138,12 +140,15 @@ export class BookingReview {
           guests: draft.guests,
           promoCode: draft.promoCode || undefined,
           customer: { name: draft.name.trim(), phone: draft.phone.trim(), email: draft.email.trim() },
+          guestIdentities: this.identityDrafts.payload(),
           message: draft.message.trim() || undefined,
         },
         this.captchaToken(),
       );
       this.drafts.rememberBooking(booking.reference);
-      void this.router.navigate(['/book/payment'], { queryParams: { ref: booking.reference } });
+      void this.router
+        .navigate(['/book/payment'], { queryParams: { ref: booking.reference } })
+        .then(() => this.identityDrafts.clear());
     } catch (error) {
       this.submitError.set(this.errorMessages.message(toApiError(error)));
       this.quote.reload();
@@ -152,5 +157,10 @@ export class BookingReview {
     } finally {
       this.submitting.set(false);
     }
+  }
+
+  protected maskedDocument(value: string): string {
+    if (value.length <= 4) return value;
+    return `${'•'.repeat(Math.min(value.length - 4, 8))}${value.slice(-4)}`;
   }
 }

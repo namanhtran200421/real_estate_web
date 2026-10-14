@@ -1,0 +1,197 @@
+@let item = identity();
+@let i = index();
+<section class="card space-y-6" [attr.aria-labelledby]="'guest-identity-' + i">
+  <h2 [id]="'guest-identity-' + i" class="text-xl">
+    {{ 'booking.identity.guest' | transloco: { number: i + 1 } }}
+  </h2>
+
+  <div class="grid gap-6 sm:grid-cols-2">
+    <div>
+      <label class="label" [for]="'identity-nationality-' + i">{{ 'booking.identity.nationality' | transloco }}</label>
+      <app-select
+        [inputId]="'identity-nationality-' + i"
+        [options]="nationalityOptions"
+        [value]="item.nationalityChoice"
+        (valueChange)="setNationality($event)"
+      />
+    </div>
+    <div>
+      <label class="label" [for]="'identity-name-' + i">{{ 'common.fullName' | transloco }}</label>
+      <input
+        [id]="'identity-name-' + i"
+        class="input"
+        type="text"
+        autocomplete="off"
+        maxlength="120"
+        [value]="item.fullName"
+        (input)="set('fullName', fromInput($event))"
+        [attr.aria-invalid]="!!error('fullName')"
+      />
+      @if (error('fullName'); as key) {
+        <p class="mt-2 text-sm text-accent-deep" role="alert">{{ key | transloco }}</p>
+      }
+    </div>
+    <div>
+      <label class="label" [for]="'identity-dob-' + i">{{ 'booking.identity.dateOfBirth' | transloco }}</label>
+      <input
+        [id]="'identity-dob-' + i"
+        class="input"
+        type="date"
+        autocomplete="off"
+        [max]="today()"
+        [value]="item.dateOfBirth"
+        (input)="set('dateOfBirth', fromInput($event))"
+        [attr.aria-invalid]="!!error('dateOfBirth')"
+      />
+      @if (error('dateOfBirth'); as key) {
+        <p class="mt-2 text-sm text-accent-deep" role="alert">{{ key | transloco }}</p>
+      }
+    </div>
+
+    @if (item.nationalityChoice === 'VN') {
+      <div>
+        <label class="label" [for]="'identity-document-' + i">{{ 'booking.identity.cccd' | transloco }}</label>
+        <input
+          [id]="'identity-document-' + i"
+          class="input font-mono"
+          type="text"
+          inputmode="numeric"
+          autocomplete="off"
+          maxlength="12"
+          [value]="item.documentNumber"
+          (input)="set('documentNumber', fromInput($event))"
+          [attr.aria-invalid]="!!error('documentNumber')"
+        />
+        @if (error('documentNumber'); as key) {
+          <p class="mt-2 text-sm text-accent-deep" role="alert">{{ key | transloco }}</p>
+        }
+      </div>
+      <div class="sm:col-span-2">
+        <label class="label" [for]="'identity-address-' + i">{{ 'booking.identity.address' | transloco }}</label>
+        <input
+          [id]="'identity-address-' + i"
+          class="input"
+          type="text"
+          autocomplete="off"
+          maxlength="500"
+          [value]="item.addressOnDocument"
+          (input)="set('addressOnDocument', fromInput($event))"
+          [attr.aria-invalid]="!!error('addressOnDocument')"
+        />
+        @if (error('addressOnDocument'); as key) {
+          <p class="mt-2 text-sm text-accent-deep" role="alert">{{ key | transloco }}</p>
+        }
+      </div>
+    } @else {
+      <div>
+        <label class="label" [for]="'identity-country-' + i">{{ 'booking.identity.country' | transloco }}</label>
+        <input
+          [id]="'identity-country-' + i"
+          class="input"
+          type="text"
+          autocomplete="country-name"
+          maxlength="100"
+          [value]="item.nationality"
+          (input)="set('nationality', fromInput($event))"
+          [attr.aria-invalid]="!!error('nationality')"
+        />
+        @if (error('nationality'); as key) {
+          <p class="mt-2 text-sm text-accent-deep" role="alert">{{ key | transloco }}</p>
+        }
+      </div>
+      <div>
+        <label class="label" [for]="'identity-gender-' + i">{{ 'booking.identity.gender' | transloco }}</label>
+        <app-select
+          [inputId]="'identity-gender-' + i"
+          [options]="genderOptions"
+          [value]="item.gender"
+          (valueChange)="setGender($event)"
+          [invalid]="!!error('gender')"
+        />
+        @if (error('gender'); as key) {
+          <p class="mt-2 text-sm text-accent-deep" role="alert">{{ key | transloco }}</p>
+        }
+      </div>
+      <div>
+        <label class="label" [for]="'identity-document-' + i">{{ 'booking.identity.passport' | transloco }}</label>
+        <input
+          [id]="'identity-document-' + i"
+          class="input font-mono uppercase"
+          type="text"
+          autocomplete="off"
+          maxlength="30"
+          [value]="item.documentNumber"
+          (input)="set('documentNumber', fromInput($event))"
+          [attr.aria-invalid]="!!error('documentNumber')"
+        />
+        @if (error('documentNumber'); as key) {
+          <p class="mt-2 text-sm text-accent-deep" role="alert">{{ key | transloco }}</p>
+        }
+      </div>
+      <div>
+        <label class="label" [for]="'identity-stay-expiry-' + i">{{ 'booking.identity.temporaryStayExpiry' | transloco }}</label>
+        <input
+          [id]="'identity-stay-expiry-' + i"
+          class="input"
+          type="date"
+          autocomplete="off"
+          [value]="item.temporaryStayExpiry"
+          (input)="set('temporaryStayExpiry', fromInput($event))"
+          [attr.aria-invalid]="!!error('temporaryStayExpiry')"
+        />
+        @if (error('temporaryStayExpiry'); as key) {
+          <p class="mt-2 text-sm text-accent-deep" role="alert">{{ key | transloco }}</p>
+        }
+      </div>
+    }
+
+    <div>
+      <label class="label" [for]="'identity-issued-' + i">{{ 'booking.identity.issueDate' | transloco }}</label>
+      <input
+        [id]="'identity-issued-' + i"
+        class="input"
+        type="date"
+        autocomplete="off"
+        [max]="today()"
+        [value]="item.issueDate"
+        (input)="set('issueDate', fromInput($event))"
+        [attr.aria-invalid]="!!error('issueDate')"
+      />
+      @if (error('issueDate'); as key) {
+        <p class="mt-2 text-sm text-accent-deep" role="alert">{{ key | transloco }}</p>
+      }
+    </div>
+    <div>
+      <label class="label" [for]="'identity-expiry-' + i">{{ 'booking.identity.expiryDate' | transloco }}</label>
+      <input
+        [id]="'identity-expiry-' + i"
+        class="input"
+        type="date"
+        autocomplete="off"
+        [value]="item.expiryDate"
+        (input)="set('expiryDate', fromInput($event))"
+        [attr.aria-invalid]="!!error('expiryDate')"
+      />
+      @if (error('expiryDate'); as key) {
+        <p class="mt-2 text-sm text-accent-deep" role="alert">{{ key | transloco }}</p>
+      }
+    </div>
+    <div class="sm:col-span-2">
+      <label class="label" [for]="'identity-reason-' + i">{{ 'booking.identity.stayReason' | transloco }}</label>
+      <input
+        [id]="'identity-reason-' + i"
+        class="input"
+        type="text"
+        autocomplete="off"
+        maxlength="250"
+        [placeholder]="'booking.identity.stayReasonPlaceholder' | transloco"
+        [value]="item.stayReason"
+        (input)="set('stayReason', fromInput($event))"
+        [attr.aria-invalid]="!!error('stayReason')"
+      />
+      @if (error('stayReason'); as key) {
+        <p class="mt-2 text-sm text-accent-deep" role="alert">{{ key | transloco }}</p>
+      }
+    </div>
+  </div>
+</section>

@@ -7,18 +7,30 @@ import { Select, SelectOption } from '../../components/select/select';
 import { ApartmentNotFound } from '../../components/apartment-not-found/apartment-not-found';
 import { BookingSteps } from '../../components/booking-steps/booking-steps';
 import { BookingSummary } from '../../components/booking-summary/booking-summary';
+import { GuestIdentityForm } from '../../components/guest-identity-form/guest-identity-form';
 import { DateRange, DateRangePicker } from '../../components/date-range-picker/date-range-picker';
 import { ApiErrorMessages, ApiResponse, toApiError } from '../../core/api';
 import { Quote, Stay } from '../../models/booking';
 import { ApartmentService } from '../../services/apartment.service';
 import { BookingDraft, BookingDraftService } from '../../services/booking-draft.service';
 import { BookingService } from '../../services/booking.service';
+import { GuestIdentityDraftService } from '../../services/guest-identity-draft.service';
 import { MAX_DAYS_AHEAD, MAX_NIGHTS, addDaysIso, todayIso } from '../../shared/dates';
 
 /** Step 1: dates and contact details. The price updates live as dates change. */
 @Component({
   selector: 'app-booking',
-  imports: [DecimalPipe, RouterLink, TranslocoPipe, ApartmentNotFound, BookingSteps, BookingSummary, DateRangePicker, Select],
+  imports: [
+    DecimalPipe,
+    RouterLink,
+    TranslocoPipe,
+    ApartmentNotFound,
+    BookingSteps,
+    BookingSummary,
+    DateRangePicker,
+    GuestIdentityForm,
+    Select,
+  ],
   templateUrl: './booking.html',
 })
 export class BookingPage {
@@ -27,6 +39,7 @@ export class BookingPage {
   private readonly router = inject(Router);
   private readonly errorMessages = inject(ApiErrorMessages);
   protected readonly drafts = inject(BookingDraftService);
+  protected readonly identityDrafts = inject(GuestIdentityDraftService);
 
   /** Bound from the `?apt=` query param. */
   readonly slug = input<string>(undefined, { alias: 'apt' });
@@ -48,6 +61,13 @@ export class BookingPage {
   protected readonly apartmentOptions = computed<SelectOption[]>(() =>
     this.all().map((a) => ({ value: a.slug, label: `${a.name} · ${a.area}` })),
   );
+  protected readonly guestOptions = computed<SelectOption[]>(() =>
+    Array.from({ length: this.apartment()?.guests ?? 1 }, (_, index) => ({
+      value: String(index + 1),
+      label: String(index + 1),
+    })),
+  );
+  protected readonly identities = this.identityDrafts.identities;
 
   /** Live price for the chosen dates; reloads whenever apartment, dates or guests change. */
   protected readonly quote = httpResource<ApiResponse<Quote>>(() => {
@@ -90,6 +110,11 @@ export class BookingPage {
       if (apt) this.drafts.forApartment(apt.slug, apt.guests);
     });
 
+    effect(() => {
+      const draft = this.draft();
+      this.identityDrafts.resize(draft.guests, draft.name);
+    });
+
     // Someone else just booked some of these dates: refresh the calendar so it shows them.
     effect(() => {
       if (this.quoteApiError()?.code === 'DATES_UNAVAILABLE') this.apartments.reload();
@@ -112,9 +137,13 @@ export class BookingPage {
     void this.router.navigate([], { queryParams: { apt: slug }, replaceUrl: true });
   }
 
+  protected chooseGuests(value: string): void {
+    this.set('guests', Number(value));
+  }
+
   protected continue(): void {
     this.submitted.set(true);
-    if (!this.drafts.complete() || this.quoteError() || !this.quoteValue()) return;
+    if (!this.drafts.complete() || !this.identityDrafts.complete(this.draft().guests) || this.quoteError() || !this.quoteValue()) return;
     void this.router.navigate(['/book/review'], { queryParams: { apt: this.draft().apartmentSlug } });
   }
 }

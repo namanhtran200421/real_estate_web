@@ -1,0 +1,15 @@
+{
+  "profile": "product-admin",
+  "canonicalMap": "UX-CONTRACT.md",
+  "sourceRoots": ["frontend/real-estate/src/app"],
+  "requiredCapabilities": ["Select/Listbox", "Date", "Form", "Toast", "CRUD"],
+  "ownership": {
+    "Select/Listbox": "authored",
+    "Date": "native"
+  },
+  "requiredCommands": ["backend", "frontend"],
+  "commands": {
+    "backend": "cd backend && npm run typecheck && npm test && npm run build",
+    "frontend": "cd frontend/real-estate && npm test -- --watch=false && npm run build"
+  }
+}

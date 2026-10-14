@@ -11,7 +11,7 @@
           <span class="font-mono text-foreground">{{ reference() }}</span>.
         </p>
       </div>
-      <form class="card mx-auto mt-10 max-w-lg" (submit)="$event.preventDefault(); lookup()">
+      <form class="card mx-auto mt-10 max-w-lg" novalidate (submit)="$event.preventDefault(); lookup()">
         <label class="label" for="confirm-contact">{{ 'common.emailOrPhone' | transloco }}</label>
         <input
           id="confirm-contact"
@@ -240,6 +240,44 @@
             <span class="font-serif text-2xl">{{ b.amountDue | number }} ₫</span>
           </div>
         </div>
+
+        @if (b.financials.assetSecurityRequired > 0 || b.incidents.length) {
+          <section class="mt-6 rounded-md border border-border p-5" aria-labelledby="asset-financials-heading">
+            <h2 id="asset-financials-heading" class="text-xl">{{ 'confirmation.assetsTitle' | transloco }}</h2>
+            @if (b.financials.assetSecurityRequired > 0) {
+              <dl class="mt-4 space-y-2 text-sm">
+                <div class="flex justify-between gap-4">
+                  <dt class="text-muted-foreground">{{ 'confirmation.securityRequired' | transloco }}</dt>
+                  <dd>{{ b.financials.assetSecurityRequired | number }} ₫</dd>
+                </div>
+                <div class="flex justify-between gap-4">
+                  <dt class="text-muted-foreground">{{ 'confirmation.securityHeld' | transloco }}</dt>
+                  <dd>{{ b.financials.assetSecurityHeld | number }} ₫</dd>
+                </div>
+              </dl>
+            }
+            @if (b.incidents.length) {
+              <ul class="mt-4 divide-y divide-border border-y border-border text-sm">
+                @for (incident of b.incidents; track incident.id) {
+                  <li class="flex justify-between gap-4 py-3">
+                    <span>
+                      <span class="block">{{ incident.description }}</span>
+                      @if (incident.securityApplied > 0) {
+                        <span class="text-muted-foreground">{{ 'confirmation.securityApplied' | transloco: { amount: (incident.securityApplied | number) } }}</span>
+                      }
+                    </span>
+                    <span>{{ incident.amount | number }} ₫</span>
+                  </li>
+                }
+              </ul>
+            }
+            @if (b.paymentOptions.assetSecurity !== null || b.paymentOptions.incident !== null) {
+              <a routerLink="/book/payment" [queryParams]="{ ref: b.reference }" class="btn btn-outline mt-5">
+                {{ 'confirmation.payAssets' | transloco }}
+              </a>
+            }
+          </section>
+        }
       </div>
 
       <div class="mt-10 flex flex-col justify-center gap-3 sm:flex-row">

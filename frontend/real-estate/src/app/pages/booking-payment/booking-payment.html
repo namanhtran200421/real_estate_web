@@ -32,7 +32,12 @@
             {{ 'payment.bookAgain' | transloco }}
           </a>
         </div>
-      } @else if (options.full === null) {
+      } @else if (
+        options.full === null &&
+        options.deposit === null &&
+        options.assetSecurity === null &&
+        options.incident === null
+      ) {
         <!-- Nothing to pay: cancelled or already paid -->
         <div class="card mt-10 max-w-2xl">
           @if (b.amountDue === 0) {
@@ -92,32 +97,72 @@
                       <span class="block font-medium">{{ 'payment.deposit' | transloco: { percent: b.quote.depositPercent } }}</span>
                       <span class="mt-2 block font-serif text-2xl">{{ options.deposit | number }} ₫</span>
                       <span class="mt-1 block text-sm text-muted-foreground">
-                        {{ 'payment.remainder' | transloco: { amount: (options.full - options.deposit | number) } }}
+                        {{ 'payment.remainder' | transloco: { amount: ($any(options.full) - options.deposit | number) } }}
                       </span>
                     </span>
                   </label>
                 }
-                <label
-                  class="card flex cursor-pointer gap-4 p-6 has-[:checked]:border-accent-deep has-[:checked]:bg-accent-muted md:p-6"
-                >
-                  <input
-                    type="radio"
-                    name="amount"
-                    value="full"
-                    [checked]="option() === 'full' || options.deposit === null"
-                    (change)="option.set('full')"
-                    class="mt-1.5 h-4 w-4 shrink-0 accent-accent-deep"
-                  />
-                  <span>
-                    @if (b.amountPaid > 0) {
-                      <span class="block font-medium">{{ 'payment.payRemaining' | transloco }}</span>
-                    } @else {
-                      <span class="block font-medium">{{ 'payment.payFull' | transloco }}</span>
-                    }
-                    <span class="mt-2 block font-serif text-2xl">{{ options.full | number }} ₫</span>
-                    <span class="mt-1 block text-sm text-muted-foreground">{{ 'payment.nothingAtCheckIn' | transloco }}</span>
-                  </span>
-                </label>
+                @if (options.full !== null) {
+                  <label
+                    class="card flex cursor-pointer gap-4 p-6 has-[:checked]:border-accent-deep has-[:checked]:bg-accent-muted md:p-6"
+                  >
+                    <input
+                      type="radio"
+                      name="amount"
+                      value="full"
+                      [checked]="option() === 'full'"
+                      (change)="option.set('full')"
+                      class="mt-1.5 h-4 w-4 shrink-0 accent-accent-deep"
+                    />
+                    <span>
+                      @if (b.amountPaid > 0) {
+                        <span class="block font-medium">{{ 'payment.payRemaining' | transloco }}</span>
+                      } @else {
+                        <span class="block font-medium">{{ 'payment.payFull' | transloco }}</span>
+                      }
+                      <span class="mt-2 block font-serif text-2xl">{{ options.full | number }} ₫</span>
+                      <span class="mt-1 block text-sm text-muted-foreground">{{ 'payment.nothingAtCheckIn' | transloco }}</span>
+                    </span>
+                  </label>
+                }
+                @if (options.assetSecurity !== null) {
+                  <label
+                    class="card flex cursor-pointer gap-4 p-6 has-[:checked]:border-accent-deep has-[:checked]:bg-accent-muted md:p-6"
+                  >
+                    <input
+                      type="radio"
+                      name="amount"
+                      value="asset_security"
+                      [checked]="option() === 'asset_security'"
+                      (change)="option.set('asset_security')"
+                      class="mt-1.5 h-4 w-4 shrink-0 accent-accent-deep"
+                    />
+                    <span>
+                      <span class="block font-medium">{{ 'payment.assetSecurity' | transloco }}</span>
+                      <span class="mt-2 block font-serif text-2xl">{{ options.assetSecurity | number }} ₫</span>
+                      <span class="mt-1 block text-sm text-muted-foreground">{{ 'payment.assetSecurityNote' | transloco }}</span>
+                    </span>
+                  </label>
+                }
+                @if (options.incident !== null) {
+                  <label
+                    class="card flex cursor-pointer gap-4 p-6 has-[:checked]:border-accent-deep has-[:checked]:bg-accent-muted md:p-6"
+                  >
+                    <input
+                      type="radio"
+                      name="amount"
+                      value="incident"
+                      [checked]="option() === 'incident'"
+                      (change)="option.set('incident')"
+                      class="mt-1.5 h-4 w-4 shrink-0 accent-accent-deep"
+                    />
+                    <span>
+                      <span class="block font-medium">{{ 'payment.incidentCharge' | transloco }}</span>
+                      <span class="mt-2 block font-serif text-2xl">{{ options.incident | number }} ₫</span>
+                      <span class="mt-1 block text-sm text-muted-foreground">{{ 'payment.incidentChargeNote' | transloco }}</span>
+                    </span>
+                  </label>
+                }
               </div>
             </fieldset>
 

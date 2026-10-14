@@ -31,7 +31,9 @@ import { transferNote } from '../payments/payment.service.js';
 import { priceStay } from '../pricing/pricing.js';
 import { promoCodeService } from '../promo-codes/promo-code.service.js';
 import { accessTokenFor, assertAccess } from './booking-access.js';
+import { assetIncidentRepository } from './asset-incident.repository.js';
 import { bookingRepository } from './booking.repository.js';
+import { guestIdentityRepository } from './guest-identity.repository.js';
 import { assertValidStay, MAX_ACTIVE_HOLDS, paymentOptions } from './booking.rules.js';
 import type {
   AdminBookingDetail,
@@ -40,6 +42,8 @@ import type {
   AdminPayment,
   AdminStats,
   AdminSummary,
+  AssetIncidentStatus,
+  BookingFinancials,
   BookingRecord,
   CreateBookingRequest,
   GuestBooking,
@@ -153,6 +157,7 @@ function toGuestPayment(payment: PaymentRecord): GuestPayment {
   return {
     id: payment.id,
     provider: payment.provider,
+    purpose: payment.purpose,
     amount: payment.amount,
     state: payment.state,
     paidAt: payment.paidAt?.toISOString() ?? null,
@@ -160,11 +165,21 @@ function toGuestPayment(payment: PaymentRecord): GuestPayment {
   };
 }
 
-function toGuestBooking(booking: BookingRecord, payments: PaymentRecord[]): GuestBooking {
+function toGuestBooking(
+  booking: BookingRecord,
+  payments: PaymentRecord[],
+  financials: BookingFinancials,
+  incidents: Awaited<ReturnType<typeof assetIncidentRepository.list>>,
+): GuestBooking {
   const pending = payments.find((payment) => payment.state === 'pending');
   let pendingTransfer: GuestBooking['pendingTransfer'] = null;
   if (pending) {
-    pendingTransfer = { amount: pending.amount, reportedAt: pending.createdAt.toISOString(), hasScreenshot: pending.hasScreenshot };
+    pendingTransfer = {
+      amount: pending.amount,
+      purpose: pending.purpose,
+      reportedAt: pending.createdAt.toISOString(),
+      hasScreenshot: pending.hasScreenshot,
+    };
   }
 
   return {
@@ -180,17 +195,34 @@ function toGuestBooking(booking: BookingRecord, payments: PaymentRecord[]): Gues
     paymentStatus: booking.paymentStatus,
     amountPaid: booking.amountPaid,
     amountDue: Math.max(booking.totalAmount - booking.amountPaid, 0),
-    paymentOptions: paymentOptions(booking, new Date(), pending !== undefined),
+    financials,
+    paymentOptions: {
+      ...paymentOptions(booking, new Date(), pending !== undefined),
+      assetSecurity:
+        !pending && (booking.status === 'confirmed' || booking.status === 'completed') && financials.assetSecurityDue >= 1_000
+          ? financials.assetSecurityDue
+          : null,
+      incident:
+        !pending && (booking.status === 'confirmed' || booking.status === 'completed') && financials.incidentAmountDue >= 1_000
+          ? financials.incidentAmountDue
+          : null,
+    },
     holdExpiresAt: booking.holdExpiresAt?.toISOString() ?? null,
     pendingTransfer,
     createdAt: booking.createdAt.toISOString(),
     // Guests see money that arrived; a transfer still being checked is `pendingTransfer`.
     payments: payments.filter((payment) => payment.state === 'succeeded').map(toGuestPayment),
+    incidents: incidents.map(assetIncidentRepository.toGuest),
   };
 }
 
 async function guestView(booking: BookingRecord): Promise<GuestBooking> {
-  return toGuestBooking(booking, await paymentRepository.listForBooking(booking.id));
+  const [payments, financials, incidents] = await Promise.all([
+    paymentRepository.listForBooking(booking.id),
+    assetIncidentRepository.financials(booking.id, booking.assetSecurityAmount),
+    assetIncidentRepository.list(booking.id),
+  ]);
+  return toGuestBooking(booking, payments, financials, incidents);
 }
 
 function newReference(today: string): string {
@@ -228,6 +260,11 @@ async function createBooking(
     }
 
     const { quote: price, apartment, promoCodeId } = await priceRequest(request, db, true);
+    if (request.guestIdentities.length !== request.guests) {
+      throw HttpError.validation([
+        { path: 'guestIdentities', message: 'Cần thông tin giấy tờ cho từng khách lưu trú.' },
+      ]);
+    }
     const today = todayIn(env.timezone);
 
     for (let attempt = 0; attempt < REFERENCE_ATTEMPTS; attempt++) {
@@ -246,6 +283,7 @@ async function createBooking(
             price,
             promoCodeId,
             holdMinutes: env.booking.holdMinutes,
+            assetSecurityAmount: price.nights >= 30 ? apartment.longStaySecurityAmount : 0,
             ip,
           },
           db,
@@ -256,6 +294,7 @@ async function createBooking(
         throw error;
       }
       if (id) {
+        await guestIdentityRepository.insertAll(id, request.checkOut, request.guestIdentities, db);
         await bookingRepository.addEvent(id, 'created', 'guest', { total: price.total, promoCode: request.promoCode }, db);
         const context = await bookingRepository.emailContext(id, db);
         await emailService.queueBookingHeld(context, transferNote(context.reference), db);
@@ -328,13 +367,28 @@ async function adminDetail(reference: string): Promise<AdminBookingDetail> {
   const booking = await bookingRepository.findByReference(reference);
   if (!booking) throw notFound();
 
-  const [payments, refunds, events] = await Promise.all([
+  const [payments, refunds, events, identities, financials, incidents, nextArrivalReference] = await Promise.all([
     paymentRepository.listForBooking(booking.id),
     paymentRepository.listRefundsForBooking(booking.id),
     bookingRepository.listEvents(booking.id),
+    guestIdentityRepository.list(booking.id),
+    assetIncidentRepository.financials(booking.id, booking.assetSecurityAmount),
+    assetIncidentRepository.list(booking.id),
+    bookingRepository.nextArrival(booking),
   ]);
 
-  const { payments: _guestPayments, ...guest } = toGuestBooking(booking, payments);
+  const { payments: _guestPayments, incidents: _guestIncidents, ...guest } = toGuestBooking(
+    booking,
+    payments,
+    financials,
+    incidents,
+  );
+  const minutesLate = Math.max(Math.floor((Date.now() - booking.scheduledCheckOutAt.getTime()) / 60_000), 0);
+  let lateState: AdminBookingDetail['lateCheckout']['state'] = 'not_due';
+  if (booking.actualCheckOutAt) lateState = 'checked_out';
+  else if (minutesLate >= 30 && nextArrivalReference) lateState = 'urgent';
+  else if (minutesLate >= 15) lateState = 'late';
+  else if (booking.scheduledCheckOutAt.getTime() <= Date.now()) lateState = 'due';
   return {
     ...guest,
     apartmentName: booking.apartmentName,
@@ -344,6 +398,16 @@ async function adminDetail(reference: string): Promise<AdminBookingDetail> {
     cancelledAt: booking.cancelledAt?.toISOString() ?? null,
     cancellationReason: booking.cancellationReason,
     completedAt: booking.completedAt?.toISOString() ?? null,
+    identities,
+    identitiesPurged: identities.length === 0,
+    incidents,
+    lateCheckout: {
+      state: lateState,
+      scheduledAt: booking.scheduledCheckOutAt.toISOString(),
+      actualAt: booking.actualCheckOutAt?.toISOString() ?? null,
+      minutesLate,
+      nextArrivalReference,
+    },
     payments: payments.map((payment) => toAdminPayment(payment, refunds)),
     events,
   };
@@ -396,12 +460,46 @@ async function cancel(reference: string, reason: string, admin: AdminIdentity): 
   });
 }
 
-async function complete(reference: string, admin: AdminIdentity): Promise<AdminBookingDetail> {
+async function checkOut(reference: string, admin: AdminIdentity): Promise<AdminBookingDetail> {
   return adminChange(reference, async (booking, db) => {
     if (booking.status !== 'confirmed') throw invalidStatus('Chỉ hoàn thành được đặt phòng đã xác nhận.');
     if (booking.checkIn > todayIn(env.timezone)) throw invalidStatus('Khách chưa đến ngày nhận phòng.');
     await bookingRepository.markCompleted(booking.id, db);
-    await bookingRepository.addEvent(booking.id, 'completed', admin.email, {}, db);
+    await bookingRepository.addEvent(booking.id, 'checked_out', admin.email, { actualAt: new Date().toISOString() }, db);
+  });
+}
+
+async function addIncident(
+  reference: string,
+  input: { description: string; amount: number; securityApplied: number },
+  admin: AdminIdentity,
+): Promise<AdminBookingDetail> {
+  return adminChange(reference, async (booking, db) => {
+    if (booking.status !== 'confirmed' && booking.status !== 'completed') {
+      throw invalidStatus('Chỉ ghi nhận hư hỏng hoặc thất lạc cho đặt phòng đã xác nhận.');
+    }
+    const financials = await assetIncidentRepository.financials(booking.id, booking.assetSecurityAmount, db);
+    if (input.securityApplied > financials.assetSecurityHeld) {
+      throw HttpError.unprocessable(
+        'SECURITY_APPLIED_TOO_LARGE',
+        `Chỉ còn ${financials.assetSecurityHeld.toLocaleString('vi-VN')} ₫ tiền bảo đảm tài sản có thể cấn trừ.`,
+      );
+    }
+    await assetIncidentRepository.insert({ bookingId: booking.id, ...input, createdBy: admin.id }, db);
+    await bookingRepository.addEvent(booking.id, 'asset_incident_recorded', admin.email, input, db);
+  });
+}
+
+async function resolveIncident(
+  reference: string,
+  incidentId: string,
+  status: Exclude<AssetIncidentStatus, 'open'>,
+  admin: AdminIdentity,
+): Promise<AdminBookingDetail> {
+  return adminChange(reference, async (booking, db) => {
+    const changed = await assetIncidentRepository.setStatus(booking.id, incidentId, status, admin.id, db);
+    if (!changed) throw HttpError.conflict('INVALID_STATUS', 'Khoản bồi thường này đã được xử lý hoặc không tồn tại.');
+    await bookingRepository.addEvent(booking.id, `asset_incident_${status}`, admin.email, { incidentId }, db);
   });
 }
 
@@ -438,10 +536,30 @@ async function remindOwnerOfEndingHolds(): Promise<number> {
   });
 }
 
-async function completeFinishedStays(): Promise<number> {
-  const completed = await bookingRepository.completeFinishedStays(todayIn(env.timezone));
-  if (completed > 0) invalidateCaches();
-  return completed;
+/** T-24h guest reminder and one Owner alert once check-out is 15 minutes late. */
+async function sendCheckoutNotifications(): Promise<number> {
+  return withTransaction(async (db) => {
+    const [reminders, late] = await Promise.all([
+      bookingRepository.claimCheckoutReminders(db),
+      bookingRepository.claimLateCheckoutAlerts(db),
+    ]);
+    for (const id of reminders) {
+      await emailService.queueCheckoutReminder(await bookingRepository.emailContext(id, db), db);
+    }
+    for (const id of late) {
+      const booking = (await bookingRepository.findById(id, db))!;
+      await emailService.queueLateCheckoutAlert(
+        await bookingRepository.emailContext(id, db),
+        await bookingRepository.nextArrival(booking, db),
+        db,
+      );
+    }
+    return reminders.length + late.length;
+  });
+}
+
+async function purgeExpiredGuestIdentities(): Promise<number> {
+  return guestIdentityRepository.purgeExpired();
 }
 
 export const bookingService = {
@@ -453,10 +571,13 @@ export const bookingService = {
   adminDetail,
   confirm,
   cancel,
-  complete,
+  checkOut,
+  addIncident,
+  resolveIncident,
   summary,
   stats,
   expireStaleHolds,
   remindOwnerOfEndingHolds,
-  completeFinishedStays,
+  sendCheckoutNotifications,
+  purgeExpiredGuestIdentities,
 };

@@ -3,9 +3,10 @@
 export type BookingStatus = 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'expired';
 export type PaymentStatus = 'unpaid' | 'deposit_paid' | 'fully_paid' | 'refunded';
 export type PaymentProvider = 'bank_transfer' | 'cash';
+export type PaymentPurpose = 'accommodation' | 'asset_security' | 'incident';
 /** pending = the guest reported a transfer the owner has not checked yet. */
 export type PaymentState = 'pending' | 'succeeded' | 'failed';
-export type PaymentOption = 'deposit' | 'full';
+export type PaymentOption = 'deposit' | 'full' | 'asset_security' | 'incident';
 
 // Labels for the owner's admin pages, which are Vietnamese only.
 // Guest pages use the translations in src/i18n/*.json ("status", "providers", "rates").
@@ -75,9 +76,34 @@ export interface Customer {
   email: string;
 }
 
+interface IdentityBase {
+  fullName: string;
+  dateOfBirth: string;
+  documentNumber: string;
+  issueDate: string;
+  expiryDate: string;
+  stayReason: string;
+}
+
+export interface VietnameseIdentity extends IdentityBase {
+  documentType: 'cccd';
+  nationality: 'VN';
+  addressOnDocument: string;
+}
+
+export interface ForeignIdentity extends IdentityBase {
+  documentType: 'passport';
+  nationality: string;
+  gender: 'female' | 'male' | 'other';
+  temporaryStayExpiry: string;
+}
+
+export type GuestIdentity = VietnameseIdentity | ForeignIdentity;
+
 export interface BookingPayment {
   id: string;
   provider: PaymentProvider;
+  purpose: PaymentPurpose;
   amount: number;
   state: PaymentState;
   paidAt: string | null;
@@ -97,15 +123,45 @@ export interface Booking {
   paymentStatus: PaymentStatus;
   amountPaid: number;
   amountDue: number;
+  financials: BookingFinancials;
   /** What can be paid now; null = not available. */
-  paymentOptions: { deposit: number | null; full: number | null };
+  paymentOptions: {
+    deposit: number | null;
+    full: number | null;
+    assetSecurity: number | null;
+    incident: number | null;
+  };
   /** An unpaid booking is released at this time. */
   holdExpiresAt: string | null;
   /** A transfer the guest reported that the owner is still checking. */
-  pendingTransfer: { amount: number; reportedAt: string; hasScreenshot: boolean } | null;
+  pendingTransfer: { amount: number; purpose: PaymentPurpose; reportedAt: string; hasScreenshot: boolean } | null;
   createdAt: string; // ISO timestamp
   /** Money that has arrived. */
   payments: BookingPayment[];
+  incidents: AssetIncident[];
+}
+
+export interface BookingFinancials {
+  assetSecurityRequired: number;
+  assetSecurityReceived: number;
+  assetSecurityRefunded: number;
+  assetSecurityApplied: number;
+  assetSecurityHeld: number;
+  assetSecurityDue: number;
+  incidentCharges: number;
+  incidentPayments: number;
+  incidentAmountDue: number;
+}
+
+export type AssetIncidentStatus = 'open' | 'settled' | 'waived';
+
+export interface AssetIncident {
+  id: string;
+  description: string;
+  amount: number;
+  securityApplied: number;
+  status: AssetIncidentStatus;
+  createdAt: string;
 }
 
 /** Bank details and a VietQR code for one transfer. */

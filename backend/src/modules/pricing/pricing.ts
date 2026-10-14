@@ -7,7 +7,9 @@
  * 2. Long-stay discount: the best tier the stay qualifies for (e.g. 7+ nights → 15%),
  *    applied to non-holiday nights only ("Không áp dụng giảm giá cho ngày lễ").
  * 3. Weekly / monthly rates: stays of 7+ nights may instead be priced as whole months
- *    (30 nights) and weeks (7 nights) plus the remaining nights at nightly rates.
+ *    (30 nights) and weeks (7 nights), plus each package night's holiday premium and the
+ *    remaining nights at nightly rates. A holiday premium is holiday rate minus that date's
+ *    ordinary weekday/weekend rate, never less than zero.
  *    The guest always gets whichever of rules 2 and 3 is cheaper, never both.
  * 4. A promo code then takes a percentage or fixed amount off what remains.
  * 5. Deposit = total × deposit percent, rounded to the nearest 1,000 ₫.
@@ -77,6 +79,10 @@ function rateFor(date: string, holidays: ReadonlySet<string>): NightRate {
   return 'weekday';
 }
 
+function ordinaryRateFor(date: string): Exclude<NightRate, 'holiday'> {
+  return WEEKEND_DAYS.has(dayOfWeek(date)) ? 'weekend' : 'weekday';
+}
+
 function sum(amounts: number[]): number {
   return amounts.reduce((total, amount) => total + amount, 0);
 }
@@ -100,7 +106,7 @@ function longStayDiscount(lines: NightLine[], rules: PricingRules): StayDiscount
   return { kind: 'long_stay', percent, amount };
 }
 
-/** Whole months and weeks at their package price; leftover nights (the last ones) at nightly rates. */
+/** Whole months and weeks at package price plus holiday premiums; leftover nights use nightly rates. */
 function packageDiscount(lines: NightLine[], rules: PricingRules, subtotal: number): StayDiscount | null {
   let remaining = lines.length;
 
@@ -118,8 +124,15 @@ function packageDiscount(lines: NightLine[], rules: PricingRules, subtotal: numb
 
   if (months === 0 && weeks === 0) return null;
 
-  const leftover = sum(lines.slice(lines.length - remaining).map((line) => line.amount));
-  const packageTotal = months * rules.monthly + weeks * rules.weekly + leftover;
+  const packagedCount = lines.length - remaining;
+  const packagedLines = lines.slice(0, packagedCount);
+  const holidayPremium = sum(
+    packagedLines
+      .filter((line) => line.rate === 'holiday')
+      .map((line) => Math.max(rules.holiday - rules[ordinaryRateFor(line.date)], 0)),
+  );
+  const leftover = sum(lines.slice(packagedCount).map((line) => line.amount));
+  const packageTotal = months * rules.monthly + weeks * rules.weekly + holidayPremium + leftover;
   const amount = subtotal - packageTotal;
   if (amount <= 0) return null;
   return { kind: 'weekly_monthly', percent: null, amount };

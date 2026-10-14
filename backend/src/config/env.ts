@@ -133,6 +133,8 @@ const isProduction = nodeEnv === 'production';
 
 const resendApiKey = read('RESEND_API_KEY');
 const captchaSecret = read('TURNSTILE_SECRET_KEY');
+const guestIdentityEncryptionKey = optionalSecret('GUEST_IDENTITY_ENCRYPTION_KEY', 32);
+const guestIdentityRetentionConfigured = read('GUEST_IDENTITY_RETENTION_DAYS') !== undefined;
 const turnstileTestSecrets = new Set([
   '1x0000000000000000000000000000000AA',
   '2x0000000000000000000000000000000AA',
@@ -212,6 +214,11 @@ export const env = Object.freeze({
     holdMinutes: integer('BOOKING_HOLD_MINUTES', 180, 10, 24 * 60),
     /** Signs the per-booking access tokens guests use to view and pay their booking. */
     tokenSecret: secret('BOOKING_TOKEN_SECRET', 32),
+    /** AES-256-GCM key material for temporary-stay identity documents. */
+    identityEncryptionKey:
+      guestIdentityEncryptionKey ?? 'development-only-guest-identity-key-change-before-production',
+    /** Delete encrypted identity documents this many days after the scheduled check-out. */
+    identityRetentionDays: integer('GUEST_IDENTITY_RETENTION_DAYS', 35, 1, 365),
   }),
 
   admin: Object.freeze({
@@ -250,6 +257,8 @@ if (isProduction) {
   if (captchaSecret && turnstileTestSecrets.has(captchaSecret)) {
     problems.push('TURNSTILE_SECRET_KEY is a Cloudflare test key; use a real widget secret in production');
   }
+  if (!guestIdentityEncryptionKey) problems.push('GUEST_IDENTITY_ENCRYPTION_KEY is required in production');
+  if (!guestIdentityRetentionConfigured) problems.push('GUEST_IDENTITY_RETENTION_DAYS is required in production');
 }
 
 if (problems.length > 0) {

@@ -1,6 +1,15 @@
 /** Admin API shapes (backend: booking.types.ts, apartment.types.ts, promo-code.types.ts, contact.types.ts). */
 import { Apartment } from '../models/apartment';
-import { Booking, BookingPayment, BookingStatus, PaymentStatus } from '../models/booking';
+import {
+  AssetIncident,
+  AssetIncidentStatus,
+  Booking,
+  BookingPayment,
+  BookingStatus,
+  GuestIdentity,
+  PaymentPurpose,
+  PaymentStatus,
+} from '../models/booking';
 
 export interface AdminBookingListItem {
   reference: string;
@@ -49,7 +58,13 @@ export interface BookingEvent {
   createdAt: string;
 }
 
-export interface AdminBookingDetail extends Omit<Booking, 'payments'> {
+export interface AdminAssetIncident extends AssetIncident {
+  createdBy: string | null;
+  resolvedBy: string | null;
+  resolvedAt: string | null;
+}
+
+export interface AdminBookingDetail extends Omit<Booking, 'payments' | 'incidents'> {
   apartmentName: string;
   promoCode: string | null;
   createdIp: string | null;
@@ -57,6 +72,16 @@ export interface AdminBookingDetail extends Omit<Booking, 'payments'> {
   cancelledAt: string | null;
   cancellationReason: string | null;
   completedAt: string | null;
+  identities: GuestIdentity[];
+  identitiesPurged: boolean;
+  incidents: AdminAssetIncident[];
+  lateCheckout: {
+    state: 'not_due' | 'due' | 'late' | 'urgent' | 'checked_out';
+    scheduledAt: string;
+    actualAt: string | null;
+    minutesLate: number;
+    nextArrivalReference: string | null;
+  };
   payments: AdminPayment[];
   events: BookingEvent[];
 }
@@ -138,7 +163,16 @@ export interface AdminSummary {
   arrivalsNext7Days: AdminBookingListItem[];
   revenueThisMonth: number;
   unhandledMessages: number;
+  lateCheckouts: number;
 }
+
+export interface IncidentInput {
+  description: string;
+  amount: number;
+  securityApplied: number;
+}
+
+export type { AssetIncidentStatus, PaymentPurpose };
 
 export interface BookingFilters {
   status?: BookingStatus;

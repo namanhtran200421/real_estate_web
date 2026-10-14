@@ -40,6 +40,8 @@ export class Select {
   readonly placeholder = input<string>();
   /** Optional form field name, submitted through a hidden input. */
   readonly name = input<string>();
+  readonly invalid = input(false);
+  readonly describedBy = input<string>();
 
   protected readonly open = signal(false);
   protected readonly activeIndex = signal(-1);

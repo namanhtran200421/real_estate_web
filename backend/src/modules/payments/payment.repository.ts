@@ -5,13 +5,14 @@
  * verified or rejected by the owner, or recorded directly by the owner (state `succeeded`).
  */
 import { query, queryOne, type Db } from '../../db/pool.js';
-import type { PaymentProvider, PaymentState } from '../bookings/booking.types.js';
+import type { PaymentProvider, PaymentPurpose, PaymentState } from '../bookings/booking.types.js';
 import type { TransferScreenshot } from './transfer-screenshot.js';
 
 export interface PaymentRecord {
   id: string;
   bookingId: string;
   provider: PaymentProvider;
+  purpose: PaymentPurpose;
   amount: number;
   state: PaymentState;
   failureReason: string | null;
@@ -37,7 +38,7 @@ export interface RefundRecord {
 }
 
 const PAYMENT_COLUMNS = `
-  p.id, p.booking_id AS "bookingId", p.provider, p.amount, p.state,
+  p.id, p.booking_id AS "bookingId", p.provider, p.purpose, p.amount, p.state,
   p.failure_reason AS "failureReason", p.note, u.email AS "recordedBy",
   s.payment_id IS NOT NULL AS "hasScreenshot", s.shows_transfer AS "screenshotShowsTransfer",
   p.paid_at AS "paidAt", p.created_at AS "createdAt"
@@ -59,10 +60,11 @@ const FROM_REFUNDS = 'FROM refunds r LEFT JOIN admin_users u ON u.id = r.created
 // ---------------------------------------------------------------------------
 
 /** The guest says they transferred `amount`; waits for the owner to check the bank account. */
-async function insertReported(bookingId: string, amount: number, note: string, db: Db): Promise<string> {
+async function insertReported(bookingId: string, purpose: PaymentPurpose, amount: number, note: string, db: Db): Promise<string> {
   const row = await queryOne<{ id: string }>(
-    `INSERT INTO payments (booking_id, provider, amount, state, note) VALUES ($1, 'bank_transfer', $2, 'pending', $3) RETURNING id`,
-    [bookingId, amount, note],
+    `INSERT INTO payments (booking_id, provider, purpose, amount, state, note)
+     VALUES ($1, 'bank_transfer', $2, $3, 'pending', $4) RETURNING id`,
+    [bookingId, purpose, amount, note],
     db,
   );
   return row!.id;
@@ -110,14 +112,21 @@ async function deleteCheckedScreenshotsOlderThan(days: number, now: Date): Promi
 
 /** Money the owner received and records directly (cash, or a transfer the guest did not report). */
 async function insertManual(
-  payment: { bookingId: string; provider: PaymentProvider; amount: number; note: string | undefined; recordedBy: string },
+  payment: {
+    bookingId: string;
+    provider: PaymentProvider;
+    purpose: PaymentPurpose;
+    amount: number;
+    note: string | undefined;
+    recordedBy: string;
+  },
   db: Db,
 ): Promise<string> {
   const row = await queryOne<{ id: string }>(
-    `INSERT INTO payments (booking_id, provider, amount, state, note, recorded_by, paid_at)
-     VALUES ($1, $2, $3, 'succeeded', $4, $5, now())
+    `INSERT INTO payments (booking_id, provider, purpose, amount, state, note, recorded_by, paid_at)
+     VALUES ($1, $2, $3, $4, 'succeeded', $5, $6, now())
      RETURNING id`,
-    [payment.bookingId, payment.provider, payment.amount, payment.note ?? null, payment.recordedBy],
+    [payment.bookingId, payment.provider, payment.purpose, payment.amount, payment.note ?? null, payment.recordedBy],
     db,
   );
   return row!.id;
@@ -168,9 +177,10 @@ async function failPendingForBooking(bookingId: string, reason: string, db: Db):
 async function totals(bookingId: string, db: Db): Promise<{ received: number; refunded: number }> {
   const row = await queryOne<{ received: number; refunded: number }>(
     `SELECT
-       (SELECT coalesce(sum(amount), 0)::int FROM payments WHERE booking_id = $1 AND state = 'succeeded') AS received,
+       (SELECT coalesce(sum(amount), 0)::int FROM payments
+         WHERE booking_id = $1 AND purpose = 'accommodation' AND state = 'succeeded') AS received,
        (SELECT coalesce(sum(r.amount), 0)::int FROM refunds r JOIN payments p ON p.id = r.payment_id
-         WHERE p.booking_id = $1 AND r.state = 'succeeded') AS refunded`,
+         WHERE p.booking_id = $1 AND p.purpose = 'accommodation' AND r.state = 'succeeded') AS refunded`,
     [bookingId],
     db,
   );

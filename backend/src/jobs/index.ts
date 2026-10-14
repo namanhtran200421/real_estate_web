@@ -6,7 +6,7 @@
  * | send-emails             | 15 s   | Deliver queued emails, with retries                              |
  * | expire-holds            | 1 min  | Free dates held by bookings that were never paid                 |
  * | remind-owner            | 1 min  | Remind the owner to look for a transfer before its hold runs out |
- * | complete-stays          | 15 min | Mark confirmed stays as completed once check-out has passed      |
+ * | checkout-notifications  | 15 min | Remind guests and alert the Owner about late check-outs          |
  * | purge-admin-sessions    | 1 h    | Delete expired admin sessions                                    |
  * | purge-emails            | 6 h    | Delete sent emails after 90 days (they hold guests' details)     |
  * | purge-screenshots       | 6 h    | Delete checked transfer screenshots 35 days after upload         |
@@ -25,8 +25,9 @@ export const jobs: Job[] = [
   { name: 'send-emails', intervalMs: 15 * SECOND, run: emailService.deliverDueEmails },
   { name: 'expire-holds', intervalMs: MINUTE, run: bookingService.expireStaleHolds },
   { name: 'remind-owner', intervalMs: MINUTE, run: bookingService.remindOwnerOfEndingHolds },
-  { name: 'complete-stays', intervalMs: 15 * MINUTE, run: bookingService.completeFinishedStays },
+  { name: 'checkout-notifications', intervalMs: 15 * MINUTE, run: bookingService.sendCheckoutNotifications },
   { name: 'purge-admin-sessions', intervalMs: HOUR, run: adminAuthService.purgeExpiredSessions },
   { name: 'purge-emails', intervalMs: 6 * HOUR, run: emailService.purgeOldEmails },
   { name: 'purge-screenshots', intervalMs: 6 * HOUR, run: () => paymentService.purgeOldTransferScreenshots() },
+  { name: 'purge-guest-identities', intervalMs: 6 * HOUR, run: bookingService.purgeExpiredGuestIdentities },
 ];

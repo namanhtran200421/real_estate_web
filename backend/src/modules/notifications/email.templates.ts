@@ -250,27 +250,44 @@ export function bookingHeldEmail(booking: BookingEmailContext, note: string): Co
   });
 }
 
-export function transferReportedEmail(booking: BookingEmailContext, transfer: TransferContext): Content {
+export function checkoutReminderEmail(booking: BookingEmailContext): Content {
   return render({
-    subject: `Đã nhận thông báo chuyển khoản · ${booking.reference}`,
-    heading: `Cảm ơn bạn, ${booking.customerName}`,
+    subject: `Nhắc trả phòng trước ${booking.checkOutTime} · ${booking.reference}`,
+    heading: 'Nhắc lịch trả phòng ngày mai',
     paragraphs: [
-      `Chúng tôi đã nhận ảnh chuyển khoản ${formatVnd(transfer.amount)} của bạn cho đặt phòng ${booking.reference}.`,
-      'Chủ nhà sẽ kiểm tra tài khoản và xác nhận đặt phòng sớm nhất. Ngày của bạn được giữ trong thời gian này.',
+      `Vui lòng trả ${booking.apartmentName} trước ${booking.checkOutTime} ngày ${formatDate(booking.checkOut)}.`,
+      'Hãy kiểm tra hành lý, trả chìa khóa theo hướng dẫn và báo chủ nhà ngay nếu bạn cần hỗ trợ.',
     ],
     rows: bookingRows(booking),
     button: { label: 'Xem đặt phòng', url: lookupUrl(booking.reference) },
   });
 }
 
-export function transferNotReceivedEmail(booking: BookingEmailContext, reason: string, holdMinutes: number): Content {
+export function transferReportedEmail(booking: BookingEmailContext, transfer: TransferContext): Content {
+  return render({
+    subject: `Đã nhận thông báo chuyển khoản · ${booking.reference}`,
+    heading: `Cảm ơn bạn, ${booking.customerName}`,
+    paragraphs: [
+      `Chúng tôi đã nhận ảnh chuyển khoản ${formatVnd(transfer.amount)} của bạn cho đặt phòng ${booking.reference}.`,
+      transfer.purpose === 'accommodation'
+        ? 'Chủ nhà sẽ kiểm tra tài khoản và xác nhận đặt phòng sớm nhất. Ngày của bạn được giữ trong thời gian này.'
+        : 'Chủ nhà sẽ kiểm tra tài khoản và xác nhận khoản tiền này sớm nhất.',
+    ],
+    rows: bookingRows(booking),
+    button: { label: 'Xem đặt phòng', url: lookupUrl(booking.reference) },
+  });
+}
+
+export function transferNotReceivedEmail(booking: BookingEmailContext, reason: string, holdMinutes: number | null): Content {
   return render({
     subject: `Chưa nhận được chuyển khoản · ${booking.reference}`,
     heading: 'Chúng tôi chưa nhận được chuyển khoản',
     paragraphs: [
       `Chủ nhà chưa thấy khoản chuyển cho đặt phòng ${booking.reference}.`,
       `Ghi chú: ${reason}`,
-      `Nếu bạn đã chuyển, vui lòng liên hệ chủ nhà. Nếu chưa, bạn có ${holdMinutes} phút để chuyển khoản và gửi ảnh chuyển khoản trên trang đặt phòng trước khi ngày được mở lại cho khách khác.`,
+      holdMinutes === null
+        ? 'Nếu bạn đã chuyển, vui lòng liên hệ chủ nhà. Nếu chưa, hãy mở trang đặt phòng để gửi lại khoản cần thanh toán.'
+        : `Nếu bạn đã chuyển, vui lòng liên hệ chủ nhà. Nếu chưa, bạn có ${holdMinutes} phút để chuyển khoản và gửi ảnh chuyển khoản trên trang đặt phòng trước khi ngày được mở lại cho khách khác.`,
     ],
     rows: bookingRows(booking),
     button: { label: 'Xem đặt phòng', url: lookupUrl(booking.reference) },
@@ -283,6 +300,7 @@ export function transferNotReceivedEmail(booking: BookingEmailContext, reason: s
 
 export interface TransferContext {
   amount: number;
+  purpose: 'accommodation' | 'asset_security' | 'incident';
   note: string;
   bankName: string;
   accountNumber: string;
@@ -290,6 +308,12 @@ export interface TransferContext {
 
 /** The guest says they transferred: the owner checks the bank account, then confirms in the admin. */
 export function ownerTransferReportedEmail(booking: BookingEmailContext, transfer: TransferContext): Content {
+  const purpose =
+    transfer.purpose === 'asset_security'
+      ? 'bảo đảm tài sản'
+      : transfer.purpose === 'incident'
+        ? 'bồi thường hư hỏng / thất lạc'
+        : 'tiền phòng';
   const rows: Rows = [
     ...bookingRows(booking),
     ['Khách', booking.customerName],
@@ -302,8 +326,8 @@ export function ownerTransferReportedEmail(booking: BookingEmailContext, transfe
     subject: `[${booking.reference}] Khách báo đã chuyển ${formatVnd(transfer.amount)} · cần kiểm tra`,
     heading: 'Kiểm tra chuyển khoản',
     paragraphs: [
-      `${booking.customerName} báo đã chuyển ${formatVnd(transfer.amount)} vào tài khoản ${transfer.bankName} ${transfer.accountNumber}, nội dung "${transfer.note}", kèm ảnh chụp màn hình chuyển khoản.`,
-      'Ảnh chỉ để đối chiếu: hãy kiểm tra tài khoản ngân hàng, rồi bấm "Đã nhận" (đặt phòng được xác nhận) hoặc "Chưa nhận được" trong trang đặt phòng, nơi có ảnh khách gửi. Ngày của khách được giữ cho đến khi bạn xử lý.',
+      `${booking.customerName} báo đã chuyển ${formatVnd(transfer.amount)} (${purpose}) vào tài khoản ${transfer.bankName} ${transfer.accountNumber}, nội dung "${transfer.note}", kèm ảnh chụp màn hình chuyển khoản.`,
+      'Ảnh chỉ để đối chiếu: hãy kiểm tra tài khoản ngân hàng, rồi bấm "Đã nhận" hoặc "Chưa nhận được" trong trang đặt phòng, nơi có ảnh khách gửi.',
     ],
     rows,
     button: { label: 'Mở đặt phòng', url: adminBookingUrl(booking.reference) },
@@ -345,6 +369,19 @@ export function ownerHoldEndingEmail(booking: BookingEmailContext, note: string)
       `Nếu đã thấy tiền với nội dung "${note}", hãy bấm "Đã nhận cọc" hoặc "Đã nhận đủ" trong trang quản lý. Nếu không thấy, không cần làm gì: ngày sẽ tự mở lại cho khách khác.`,
     ],
     rows: [['Nội dung chuyển khoản', note], ...amountRows(booking), ...guestRows(booking)],
+    button: { label: 'Mở đặt phòng', url: adminBookingUrl(booking.reference) },
+  });
+}
+
+export function ownerLateCheckoutEmail(booking: BookingEmailContext, nextArrivalReference: string | null): Content {
+  const next = nextArrivalReference
+    ? `Có khách ${nextArrivalReference} nhận phòng cùng ngày. Hãy liên hệ khách đang ở và chuẩn bị phương án dọn phòng ngay.`
+    : 'Hãy liên hệ khách để xác nhận thời điểm rời căn hộ và cập nhật trả phòng trong trang quản lý.';
+  return render({
+    subject: `[${booking.reference}] Khách chưa trả phòng sau ${booking.checkOutTime}`,
+    heading: 'Trả phòng đang trễ',
+    paragraphs: [`Đặt phòng ${booking.reference} đã qua giờ trả phòng ${booking.checkOutTime} nhưng chưa được đánh dấu trả phòng.`, next],
+    rows: [...guestRows(booking), ...bookingRows(booking)],
     button: { label: 'Mở đặt phòng', url: adminBookingUrl(booking.reference) },
   });
 }

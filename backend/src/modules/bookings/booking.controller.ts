@@ -24,12 +24,42 @@ const createBody = z.object({
   guests: z.number().int().min(1).max(50),
   promoCode: promoCode.optional(),
   customer: z.object({ name: text(120), phone, email }),
+  guestIdentities: z
+    .array(
+      z.discriminatedUnion('documentType', [
+        z.object({
+          documentType: z.literal('cccd'),
+          nationality: z.literal('VN'),
+          fullName: text(120),
+          dateOfBirth: isoDate,
+          documentNumber: z.string().trim().regex(/^\d{12}$/, 'Số CCCD phải có 12 chữ số.'),
+          addressOnDocument: text(500),
+          issueDate: isoDate,
+          expiryDate: isoDate,
+          stayReason: text(250),
+        }),
+        z.object({
+          documentType: z.literal('passport'),
+          nationality: text(100).refine((value) => value.toUpperCase() !== 'VN', 'Chọn CCCD cho khách Việt Nam.'),
+          gender: z.enum(['female', 'male', 'other']),
+          fullName: text(120),
+          dateOfBirth: isoDate,
+          documentNumber: z.string().trim().min(5).max(30),
+          issueDate: isoDate,
+          expiryDate: isoDate,
+          temporaryStayExpiry: isoDate,
+          stayReason: text(250),
+        }),
+      ]),
+    )
+    .min(1)
+    .max(50),
   message: optionalText(1_000),
 });
 
 const lookupBody = z.object({ reference, contact: text(254) });
 
-const paymentOption = z.object({ option: z.enum(['deposit', 'full']) });
+const paymentOption = z.object({ option: z.enum(['deposit', 'full', 'asset_security', 'incident']) });
 
 const reportQuery = paymentOption.extend({
   /** The guest saw the "not a transfer screenshot" warning and sends the image anyway. */
