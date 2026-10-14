@@ -1,20 +1,29 @@
 import { TestBed } from '@angular/core/testing';
-import { FunctionalTranspiler, TranslocoService, provideTransloco, provideTranslocoTranspiler } from '@jsverse/transloco';
+import {
+  FunctionalTranspiler,
+  TranslocoService,
+  provideTransloco,
+  provideTranslocoTranspiler,
+} from '@jsverse/transloco';
 import en from '../../i18n/en.json';
 import vi from '../../i18n/vi.json';
 import { LANG, PluralFunction } from './i18n';
 import { splitLangPrefix, withLangPrefix } from './lang';
 
-interface Tree {
-  [key: string]: string | Tree;
-}
+// Values are strings, nested objects, or lists of those (the policy page's items).
+type Tree = string | undefined | Tree[] | { [key: string]: Tree };
 
 const flatten = (tree: Tree, prefix = ''): [string, string][] =>
-  Object.entries(tree).flatMap(([key, value]) =>
-    typeof value === 'string' ? [[prefix + key, value] as [string, string]] : flatten(value, `${prefix}${key}.`),
-  );
+  tree === undefined
+    ? []
+    : typeof tree === 'string'
+      ? [[prefix, tree]]
+      : Object.entries(tree).flatMap(([key, value]) =>
+          flatten(value, prefix ? `${prefix}.${key}` : key),
+        );
 
-const placeholders = (value: string) => [...new Set([...value.matchAll(/\{\{\s*(\w+)\s*\}\}/g)].map((m) => m[1]))].sort();
+const placeholders = (value: string) =>
+  [...new Set([...value.matchAll(/\{\{\s*(\w+)\s*\}\}/g)].map((m) => m[1]))].sort();
 
 describe('translations', () => {
   const viStrings = new Map(flatten(vi));
@@ -54,15 +63,18 @@ describe('English plurals', () => {
   });
 
   it('handle several plurals in one sentence', () => {
-    expect(transloco.translate('apartment.capacity', { guests: 4, bedrooms: 2, beds: 1, bathrooms: 1 })).toBe(
-      '4 guests · 2 bedrooms · 1 bed · 1 bathroom',
-    );
+    expect(
+      transloco.translate('apartment.capacity', { guests: 4, bedrooms: 2, beds: 1, bathrooms: 1 }),
+    ).toBe('4 guests · 2 bedrooms · 1 bed · 1 bathroom');
   });
 });
 
 describe('language URLs', () => {
   it('read English from the /en prefix and strip it', () => {
-    expect(splitLangPrefix('/en/apartment?apt=x')).toEqual({ lang: 'en', path: '/apartment?apt=x' });
+    expect(splitLangPrefix('/en/apartment?apt=x')).toEqual({
+      lang: 'en',
+      path: '/apartment?apt=x',
+    });
     expect(splitLangPrefix('/en')).toEqual({ lang: 'en', path: '/' });
     expect(splitLangPrefix('/en?apt=x')).toEqual({ lang: 'en', path: '/?apt=x' });
   });

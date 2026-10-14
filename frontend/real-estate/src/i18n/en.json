@@ -615,5 +615,154 @@
       "message": "Enter a message.",
       "other": "Please check this field."
     }
+  },
+  "policy": {
+    "title": "House rules & policies",
+    "intro": "A few simple things to keep your stay, and the stays of the guests after you, a pleasure. You will be asked to agree to these terms before paying.",
+    "updated": "Updated 14/10/2026",
+    "contents": "Contents",
+    "pageTitle": "House rules & policies · {{ site }}",
+    "metaDescription": "House rules and stay policies for {{ site }}: check-in and check-out, deposit and refund, guest numbers, quiet hours and the check-out procedure.",
+    "footerLink": "House rules & policies",
+    "viewAll": "Read the full house rules & policies →",
+    "whyIdentity": "Why do we need this?",
+    "items": [
+      {
+        "title": "Check-in and check-out",
+        "body": [
+          "Check-in is expected from 14:00 and check-out is before 12:00. We are happy to consider an early check-in or a late check-out, depending on the apartment’s availability and prior arrangement."
+        ]
+      },
+      {
+        "title": "Deposit, payment and refund policy",
+        "body": [
+          "Item 1 - Deposit ({{ percent }}%): Once your booking is confirmed, please pay a deposit of {{ percent }}% of the total room price to secure the apartment for your registered dates. This amount is held separately to safeguard the use and care of the property throughout your stay.",
+          "Item 2 - Apartment rent (100%): At check-in, please pay 100% of the total apartment rent in full, separate from the initial deposit.",
+          "Deposit refund: When check-out is complete, we will refund 100% of the initial deposit ({{ percent }}%) after inspecting the apartment and confirming that there is no damage, no lost property and no additional cost for which the guest is responsible. The refund is made promptly and transparently, to protect your rights and give you peace of mind."
+        ]
+      },
+      {
+        "title": "Number of guests and extra-guest surcharge",
+        "body": [
+          "Item 1 - The apartment has 2 bedrooms and suits families and small groups. Please tell us the exact number of guests when you book. Additional guests need to be confirmed in advance so that everyone stays comfortably and safely.",
+          "Item 2 - Apartment A04-12 has a standard capacity of 04 guests, including the living room, which has a sofa that converts into a bed. If you need to host more people, the apartment can accommodate up to 02 additional guests (06 in total) for a surcharge of 200,000 VND per person per night. Please let us know in advance so that we can prepare and arrange the space with care, keeping every member of your party comfortable."
+        ]
+      },
+      {
+        "title": "Stay registration information",
+        "body": [
+          "Please provide valid identity information and documents as required, so that we can complete the accommodation notification, while keeping your personal data confidential as required by law."
+        ]
+      },
+      {
+        "title": "Your own private space",
+        "body": [
+          "The whole apartment is handed over to you for the duration of your stay. You are welcome to use all the areas and amenities provided, and we kindly ask you to respect the shared spaces of the building."
+        ]
+      },
+      {
+        "title": "Keeping things clean",
+        "body": [
+          "We always prepare the apartment to be spotless before each guest arrives. We kindly ask you to help keep the living space tidy, dispose of rubbish in the designated place and avoid leaving strong-smelling food in the apartment."
+        ]
+      },
+      {
+        "title": "Furniture and equipment",
+        "body": [
+          "Please use the furniture, electrical equipment and household items for their intended purpose, and let us know if you notice any damage or problem. If property is damaged through misuse, the cost of repair will be discussed openly and based on the actual damage."
+        ]
+      },
+      {
+        "title": "Kitchen and dining",
+        "body": [
+          "You are welcome to use the kitchen and the equipment provided to prepare family meals. Please clean up after use and avoid cooking dishes that create a lot of smoke, a very strong smell or a risk of fire or explosion."
+        ]
+      },
+      {
+        "title": "No smoking",
+        "body": [
+          "To keep the air fresh for every guest, smoking is not allowed in the bedrooms, the living room or anywhere inside the apartment. Smoking on the balcony is only permitted if the building’s rules allow it."
+        ]
+      },
+      {
+        "title": "Keeping the peace and quiet",
+        "body": [
+          "Please keep noise down, especially between 22:00 and 07:00, so that all residents and visitors can enjoy a full and restful night."
+        ]
+      },
+      {
+        "title": "Parties and gatherings",
+        "body": [
+          "The apartment welcomes cosy get-togethers within the number of guests registered. Large parties, loud music or anything that disturbs neighbouring residents should be avoided and needs our agreement before being held."
+        ]
+      },
+      {
+        "title": "Visitors",
+        "body": [
+          "Please let us know before you receive visitors. Any visitor staying overnight must be registered and confirmed, to ensure security and compliance with accommodation regulations."
+        ]
+      },
+      {
+        "title": "Pets",
+        "body": [
+          "To keep the apartment hygienic and comfortable for later guests, bringing a pet must be discussed and confirmed before you book."
+        ]
+      },
+      {
+        "title": "Balcony and safety",
+        "body": [
+          "Please close the balcony door when you go out, do not climb or sit on the railing, and take particular care to supervise young children near the balcony and windows."
+        ]
+      },
+      {
+        "title": "Saving energy",
+        "body": [
+          "We appreciate your help in using electricity and water sensibly. Please switch off lights and unneeded electrical devices and turn off the taps before you go out."
+        ]
+      },
+      {
+        "title": "Security and personal belongings",
+        "body": [
+          "Please lock the door when you go out and keep your belongings, cash and valuables safe yourself. If you notice anything unusual, contact the manager right away for help."
+        ]
+      },
+      {
+        "title": "Parking",
+        "body": [
+          "You may use the car and motorbike parking area according to the building’s instructions and rules. Parking depends on actual availability and does not automatically include a vehicle-keeping service."
+        ]
+      },
+      {
+        "title": "Services and amenities",
+        "body": [
+          "Sun Garden Đà Lạt is a self-service, whole-apartment rental, not a hotel. The price of your stay does not include room service, a minibar, a swimming pool, a restaurant, a 24/7 reception or other hotel services."
+        ]
+      },
+      {
+        "title": "Support during your stay",
+        "body": [
+          "If you need help with the apartment or run into a technical problem, please contact us on the phone number provided. We will work with you to resolve it within a reasonable time, depending on the nature of the issue."
+        ]
+      },
+      {
+        "title": "Booking and cancellation policy",
+        "body": [
+          "The rental price, advance payment, payment deadline and the conditions for cancelling or changing your dates will be clearly communicated and confirmed with you before your booking is completed."
+        ]
+      },
+      {
+        "title": "Check-out procedure",
+        "body": [
+          "The apartment sincerely appreciates your cooperation."
+        ],
+        "steps": [
+          "Tell us your exact check-out time for the apartment",
+          "Check that you have all your belongings before leaving",
+          "Turn off electrical devices and water",
+          "Lock the door",
+          "Return the key or access card as instructed"
+        ]
+      }
+    ]
   }
 }

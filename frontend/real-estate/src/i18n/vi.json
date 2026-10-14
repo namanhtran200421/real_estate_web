@@ -615,5 +615,154 @@
       "message": "Nhập lời nhắn.",
       "other": "Vui lòng kiểm tra lại mục này."
     }
+  },
+  "policy": {
+    "title": "Chính sách lưu trú",
+    "intro": "Vài điều giản dị để kỳ nghỉ của bạn và của những vị khách sau được trọn vẹn. Bạn sẽ được mời đồng ý với các điều khoản này trước khi thanh toán.",
+    "updated": "Cập nhật 14/10/2026",
+    "contents": "Mục lục",
+    "pageTitle": "Chính sách lưu trú · {{ site }}",
+    "metaDescription": "Nội quy và chính sách lưu trú của {{ site }}: nhận và trả phòng, đặt cọc và hoàn cọc, số khách, giờ yên tĩnh và quy trình trả phòng.",
+    "footerLink": "Chính sách lưu trú",
+    "viewAll": "Xem toàn bộ chính sách lưu trú →",
+    "whyIdentity": "Vì sao cần thông tin này?",
+    "items": [
+      {
+        "title": "Thời gian nhận và trả phòng",
+        "body": [
+          "Giờ nhận phòng dự kiến từ 14:00 và trả phòng trước 12:00. Chúng tôi sẵn lòng xem xét hỗ trợ nhận phòng sớm hoặc trả phòng muộn tùy theo tình trạng căn hộ và thỏa thuận trước."
+        ]
+      },
+      {
+        "title": "Chính sách đặt cọc, thanh toán và hoàn cọc",
+        "body": [
+          "Khoản 1 - Tiền đặt cọc ({{ percent }}%): Sau khi xác nhận đặt phòng, Quý khách vui lòng đặt cọc {{ percent }}% tổng giá trị tiền phòng để đảm bảo giữ căn hộ theo lịch đã đăng ký. Khoản tiền này được giữ riêng nhằm đảm bảo việc sử dụng và bảo quản tài sản trong suốt thời gian lưu trú.",
+          "Khoản 2 - Tiền thuê căn hộ (100%): Khi nhận phòng (Check-in), Quý khách vui lòng thanh toán đầy đủ 100% tổng giá trị tiền thuê căn hộ, độc lập với khoản tiền đặt cọc ban đầu.",
+          "Hoàn trả tiền đặt cọc: Khi hoàn tất thủ tục trả phòng (Check-out), chúng tôi sẽ hoàn trả 100% khoản tiền đặt cọc ban đầu ({{ percent }}%) sau khi kiểm tra và xác nhận căn hộ không có hư hỏng, mất mát tài sản hoặc chi phí phát sinh thuộc trách nhiệm của Quý khách. Việc hoàn cọc được thực hiện nhanh chóng, minh bạch, đảm bảo quyền lợi và sự an tâm của Quý khách."
+        ]
+      },
+      {
+        "title": "Số lượng khách lưu trú & phụ thu khách bổ sung",
+        "body": [
+          "Khoản 1 - Căn hộ được bố trí với 2 phòng ngủ, phù hợp cho gia đình và nhóm khách nhỏ. Kính mong Quý khách thông báo chính xác số người lưu trú khi đặt phòng. Khách bổ sung cần được xác nhận trước để bảo đảm sự thoải mái và an toàn.",
+          "Khoản 2 - Căn hộ A04-12 có sức chứa tiêu chuẩn 04 khách, bao gồm khu vực phòng khách được trang bị sofa có thể chuyển đổi thành giường ngủ. Trường hợp Quý khách có nhu cầu lưu trú thêm, căn hộ có thể tiếp nhận tối đa 02 khách bổ sung (tổng cộng 06 khách) với mức phụ thu 200.000 VNĐ/người/đêm. Kính mong Quý khách thông báo trước để chúng tôi có thể chuẩn bị và sắp xếp không gian lưu trú chu đáo, đảm bảo sự thoải mái cho tất cả thành viên."
+        ]
+      },
+      {
+        "title": "Thông tin đăng ký lưu trú",
+        "body": [
+          "Quý khách vui lòng cung cấp thông tin và giấy tờ định danh hợp lệ theo quy định để chúng tôi hoàn tất thủ tục thông báo lưu trú, đồng thời bảo mật thông tin cá nhân theo quy định pháp luật."
+        ]
+      },
+      {
+        "title": "Không gian riêng tư",
+        "body": [
+          "Căn hộ được bàn giao nguyên căn trong thời gian lưu trú. Quý khách có thể thoải mái sử dụng các khu vực và tiện nghi được cung cấp, đồng thời vui lòng tôn trọng không gian chung của tòa nhà."
+        ]
+      },
+      {
+        "title": "Giữ gìn vệ sinh",
+        "body": [
+          "Chúng tôi luôn chuẩn bị căn hộ sạch sẽ trước mỗi lượt đón khách. Kính mong Quý khách cùng giữ gìn không gian sống gọn gàng, bỏ rác đúng nơi quy định và hạn chế để thực phẩm gây mùi trong căn hộ."
+        ]
+      },
+      {
+        "title": "Sử dụng nội thất và thiết bị",
+        "body": [
+          "Quý khách vui lòng sử dụng nội thất, thiết bị điện và đồ gia dụng đúng công năng, đồng thời thông báo khi phát hiện hư hỏng hoặc sự cố. Trường hợp tài sản bị hư hỏng do lỗi sử dụng, chi phí khắc phục sẽ được trao đổi minh bạch dựa trên thiệt hại thực tế."
+        ]
+      },
+      {
+        "title": "Khu vực bếp và ăn uống",
+        "body": [
+          "Quý khách được sử dụng khu vực bếp và các dụng cụ được trang bị để chuẩn bị những bữa ăn gia đình. Vui lòng vệ sinh sau khi sử dụng và không chế biến các món ăn tạo nhiều khói, mùi quá nồng hoặc tiềm ẩn nguy cơ cháy nổ."
+        ]
+      },
+      {
+        "title": "Không hút thuốc",
+        "body": [
+          "Để giữ không khí trong lành cho mọi vị khách, căn hộ áp dụng quy định không hút thuốc trong phòng ngủ, phòng khách và các khu vực bên trong. Việc hút thuốc tại ban công chỉ được thực hiện nếu nội quy tòa nhà cho phép."
+        ]
+      },
+      {
+        "title": "Giữ gìn sự yên tĩnh",
+        "body": [
+          "Kính mong Quý khách hạn chế tiếng ồn, đặc biệt trong khung giờ 22:00 – 07:00, để mọi cư dân và du khách đều có những giờ phút nghỉ ngơi trọn vẹn."
+        ]
+      },
+      {
+        "title": "Tiệc tùng và tụ họp",
+        "body": [
+          "Căn hộ chào đón những buổi sum họp ấm cúng trong phạm vi số khách đã đăng ký. Các hoạt động tiệc đông người, mở nhạc lớn hoặc gây ảnh hưởng đến cư dân xung quanh cần được hạn chế và phải có sự đồng ý trước khi tổ chức."
+        ]
+      },
+      {
+        "title": "Khách đến thăm",
+        "body": [
+          "Quý khách vui lòng thông báo trước khi đón khách đến thăm. Khách ở lại qua đêm cần được đăng ký và xác nhận, nhằm bảo đảm an ninh và thực hiện đúng quy định lưu trú."
+        ]
+      },
+      {
+        "title": "Thú cưng",
+        "body": [
+          "Để bảo đảm vệ sinh và sự thoải mái cho những lượt khách tiếp theo, việc mang theo thú cưng cần được trao đổi và xác nhận trước khi đặt phòng."
+        ]
+      },
+      {
+        "title": "Ban công và an toàn",
+        "body": [
+          "Quý khách vui lòng đóng cửa ban công khi ra ngoài, không trèo hoặc ngồi lên lan can và đặc biệt giám sát trẻ nhỏ tại khu vực ban công, cửa sổ."
+        ]
+      },
+      {
+        "title": "Tiết kiệm năng lượng",
+        "body": [
+          "Chúng tôi trân trọng sự đồng hành của Quý khách trong việc sử dụng điện, nước hợp lý. Vui lòng tắt đèn, thiết bị điện không cần thiết và khóa vòi nước trước khi ra ngoài."
+        ]
+      },
+      {
+        "title": "An ninh và tài sản cá nhân",
+        "body": [
+          "Quý khách vui lòng khóa cửa khi ra ngoài và tự bảo quản tư trang, tiền mặt cùng tài sản có giá trị. Nếu phát hiện dấu hiệu bất thường, hãy liên hệ ngay với người quản lý để được hỗ trợ."
+        ]
+      },
+      {
+        "title": "Bãi đỗ xe",
+        "body": [
+          "Quý khách có thể sử dụng khu vực đỗ ô tô, xe máy theo hướng dẫn và quy định của tòa nhà. Việc bố trí chỗ đỗ phụ thuộc tình trạng thực tế và không mặc nhiên bao gồm dịch vụ trông giữ phương tiện."
+        ]
+      },
+      {
+        "title": "Dịch vụ và tiện ích",
+        "body": [
+          "Sun Garden Đà Lạt hoạt động theo mô hình căn hộ nguyên căn tự phục vụ, không phải khách sạn. Giá lưu trú không bao gồm phục vụ tại phòng, minibar, hồ bơi, nhà hàng, lễ tân trực 24/7 hay các dịch vụ khách sạn khác."
+        ]
+      },
+      {
+        "title": "Hỗ trợ trong thời gian lưu trú",
+        "body": [
+          "Trong trường hợp cần hỗ trợ về căn hộ hoặc phát sinh sự cố kỹ thuật, Quý khách vui lòng liên hệ qua số điện thoại được cung cấp. Chúng tôi sẽ phối hợp xử lý trong thời gian hợp lý tùy theo tính chất sự việc."
+        ]
+      },
+      {
+        "title": "Chính sách đặt phòng và hủy phòng",
+        "body": [
+          "Giá thuê, tiền đặt trước, thời hạn thanh toán, điều kiện hủy hoặc thay đổi lịch lưu trú sẽ được thông báo rõ ràng và xác nhận với Quý khách trước khi hoàn tất đặt phòng."
+        ]
+      },
+      {
+        "title": "Quy trình trả phòng",
+        "body": [
+          "Căn hộ rất trân trọng sự hợp tác của Quý khách."
+        ],
+        "steps": [
+          "Thông báo chính xác giờ check out cho Căn hộ",
+          "Kiểm tra, đảm bảo tư trang trước khi rời đi",
+          "Tắt các thiết bị điện/nước",
+          "Khoá cửa",
+          "Hoàn trả chìa khóa hoặc thẻ ra vào theo hướng dẫn"
+        ]
+      }
+    ]
   }
 }

@@ -52,6 +52,12 @@ export const routes: Routes = [
     data: { description: 'meta.contact' },
   },
   {
+    path: 'policy',
+    loadComponent: () => import('./pages/policy/policy').then((m) => m.Policy),
+    title: 'policy.pageTitle',
+    data: { description: 'policy.metaDescription' },
+  },
+  {
     path: 'book',
     loadComponent: () => import('./pages/booking/booking').then((m) => m.BookingPage),
     title: 'titles.book',

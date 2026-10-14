@@ -20,5 +20,6 @@ export class SiteFooter {
     { label: 'nav.book', path: '/book' },
     { label: 'nav.lookup', path: '/booking/manage' },
     { label: 'nav.contact', path: '/contact' },
+    { label: 'policy.footerLink', path: '/policy' },
   ];
 }

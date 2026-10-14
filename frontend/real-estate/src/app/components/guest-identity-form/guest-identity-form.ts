@@ -1,4 +1,5 @@
 import { Component, computed, inject, input } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { Select, SelectOption } from '../select/select';
 import {
@@ -10,7 +11,7 @@ import {
 
 @Component({
   selector: 'app-guest-identity-form',
-  imports: [TranslocoPipe, Select],
+  imports: [RouterLink, TranslocoPipe, Select],
   templateUrl: './guest-identity-form.html',
 })
 export class GuestIdentityForm {

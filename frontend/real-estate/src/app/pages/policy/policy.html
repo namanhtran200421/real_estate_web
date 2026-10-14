@@ -1,0 +1,54 @@
+<section class="pb-10 pt-16 md:pb-14 md:pt-20">
+  <div class="container-editorial max-w-6xl">
+    <p class="label-caps text-accent-deep">{{ 'policy.updated' | transloco }}</p>
+    <h1 class="display-section mt-4">{{ 'policy.title' | transloco }}</h1>
+    <p class="mt-6 max-w-2xl text-lg text-muted-foreground">{{ 'policy.intro' | transloco }}</p>
+  </div>
+</section>
+
+<section class="pb-20 md:pb-28">
+  <div class="container-editorial grid max-w-6xl gap-10 lg:grid-cols-[16rem_minmax(0,1fr)] lg:gap-16">
+    <nav [attr.aria-label]="'policy.contents' | transloco" class="lg:sticky lg:top-28 lg:self-start">
+      <p class="label-caps text-accent-deep">{{ 'policy.contents' | transloco }}</p>
+      <ol class="mt-4 space-y-0.5 text-sm">
+        @for (item of items(); track $index) {
+          <li>
+            <a
+              routerLink="/policy"
+              [fragment]="'item-' + ($index + 1)"
+              class="link-subtle flex min-h-11 items-center gap-2 lg:min-h-9"
+            >
+              <span class="w-6 shrink-0 text-muted-foreground">{{ $index + 1 }}.</span>
+              <span>{{ item.title }}</span>
+            </a>
+          </li>
+        }
+      </ol>
+    </nav>
+
+    <div class="space-y-6">
+      @for (item of items(); track $index) {
+        <article [id]="'item-' + ($index + 1)" class="panel">
+          <h2 class="text-2xl md:text-3xl">{{ $index + 1 }}. {{ item.title }}</h2>
+          <div class="mt-4 space-y-3 text-muted-foreground">
+            @for (paragraph of item.body; track $index) {
+              @if (!item.steps) {
+                <p>{{ paragraph }}</p>
+              }
+            }
+            @if (item.steps) {
+              <ol class="list-decimal space-y-1.5 pl-6">
+                @for (step of item.steps; track $index) {
+                  <li>{{ step }}</li>
+                }
+              </ol>
+              @for (paragraph of item.body; track $index) {
+                <p>{{ paragraph }}</p>
+              }
+            }
+          </div>
+        </article>
+      }
+    </div>
+  </div>
+</section>
