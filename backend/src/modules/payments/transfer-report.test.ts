@@ -513,6 +513,97 @@ describe('reporting a transfer with its screenshot', { skip: !databaseUrl && 'TE
     });
     assert.equal(await errorCode(again, 422), 'REFUND_TOO_LARGE');
   });
+
+  it('keeps the saved checklist when an apartment is saved without one, and clears it with []', async () => {
+    const owner = { Authorization: `Bearer ${await signInAsOwner()}`, 'Content-Type': 'application/json' };
+    const current = (await (await call(`/admin/apartments/${APARTMENT}`, { headers: owner })).json()).data;
+    const { id: _id, inspectionChecklist: _saved, defaultInspectionChecklist: _default, ...editable } = current;
+    const save = async (extra: object) => {
+      const response = await call(`/admin/apartments/${APARTMENT}`, {
+        method: 'PUT',
+        headers: owner,
+        body: JSON.stringify({ ...editable, ...extra }),
+      });
+      assert.equal(response.status, 200, await response.clone().text());
+      return (await response.json()).data;
+    };
+
+    const custom = [{ room: 'Bếp', items: ['Tủ lạnh'] }];
+    assert.deepEqual((await save({ inspectionChecklist: custom })).inspectionChecklist, custom);
+    assert.deepEqual((await save({})).inspectionChecklist, custom, 'omitted: unchanged');
+    const cleared = await save({ inspectionChecklist: [] });
+    assert.deepEqual(cleared.inspectionChecklist, []);
+    assert.ok(cleared.defaultInspectionChecklist.length > 0);
+    const published = (await (await call(`/apartments/${APARTMENT}`)).json()).data;
+    assert.equal('inspectionChecklist' in published, false, 'never on the public apartment');
+  });
+
+  it('guards the inspection and the deposit refund by status, rent, and accepts blank notes', async () => {
+    const owner = { Authorization: `Bearer ${await signInAsOwner()}`, 'Content-Type': 'application/json' };
+    const { pool } = await import('../../db/pool.js');
+    await pool.query(`UPDATE bookings SET status = 'cancelled' WHERE status IN ('pending', 'confirmed')`);
+    const results = [
+      { room: 'Bếp', item: 'Tủ lạnh', ok: true, note: '' },
+      { room: 'Bếp', item: 'Ấm siêu tốc', ok: true, note: '   ' },
+      { room: 'Bếp', item: 'Bồn rửa và vòi nước', ok: true },
+    ];
+    const put = (reference: string, body: unknown = { results }) =>
+      call(`/admin/bookings/${reference}/inspection`, { method: 'PUT', headers: owner, body: JSON.stringify(body) });
+    const code = async (response: Response, status: number) => {
+      assert.equal(response.status, status);
+      return (await response.json()).error.code as string;
+    };
+
+    // Pending booking: no inspection.
+    const pending = await book(190);
+    assert.equal(await code(await put(pending.reference), 409), 'INVALID_STATUS');
+
+    // Confirmed but before check-in: no inspection.
+    const early = await book(200);
+    await call(`/admin/bookings/${early.reference}/payments`, {
+      method: 'POST',
+      headers: owner,
+      body: JSON.stringify({ method: 'cash', purpose: 'asset_security', amount: early.deposit }),
+    });
+    assert.equal(await code(await put(early.reference), 409), 'INVALID_STATUS');
+
+    // Completed with the rent unpaid: RENT_DUE comes before INSPECTION_REQUIRED.
+    await pool.query(
+      `UPDATE bookings
+       SET check_in = (now() AT TIME ZONE 'Asia/Ho_Chi_Minh')::date - 1,
+           check_out = (now() AT TIME ZONE 'Asia/Ho_Chi_Minh')::date + 1
+       WHERE reference = $1`,
+      [early.reference],
+    );
+    assert.equal((await call(`/admin/bookings/${early.reference}/check-out`, { method: 'POST', headers: owner })).status, 200);
+    const refund = await call(`/admin/bookings/${early.reference}/deposit-refund`, { method: 'POST', headers: owner });
+    assert.equal(await code(refund, 409), 'RENT_DUE');
+
+    // Blank and missing notes are stored as null.
+    const saved = await put(early.reference);
+    assert.equal(saved.status, 200, await saved.clone().text());
+    assert.deepEqual(
+      (await saved.json()).data.inspection.results.map((result: { note: string | null }) => result.note),
+      [null, null, null],
+    );
+
+    // Waiving an incident frees its deposit share.
+    const incident = await call(`/admin/bookings/${early.reference}/incidents`, {
+      method: 'POST',
+      headers: owner,
+      body: JSON.stringify({ description: 'Vết bẩn', amount: 50_000, securityApplied: 50_000 }),
+    });
+    assert.equal(incident.status, 201, await incident.clone().text());
+    const [{ id }] = (await (await call(`/admin/bookings/${early.reference}`, { headers: owner })).json()).data.incidents;
+    const waived = await call(`/admin/bookings/${early.reference}/incidents/${id}`, {
+      method: 'PATCH',
+      headers: owner,
+      body: JSON.stringify({ status: 'waived' }),
+    });
+    assert.equal(waived.status, 200, await waived.clone().text());
+    const row = await pool.query('SELECT status, security_applied FROM booking_asset_incidents WHERE id = $1', [id]);
+    assert.deepEqual(row.rows[0], { status: 'waived', security_applied: 0 });
+  });
 });
 
 let ownerToken: string | undefined;

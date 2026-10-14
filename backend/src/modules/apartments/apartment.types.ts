@@ -82,7 +82,8 @@ export interface AdminApartment extends ApartmentRecord {
 export interface ApartmentInput extends ApartmentContent {
   isActive: boolean;
   sortOrder: number;
-  inspectionChecklist: InspectionChecklist;
+  /** Omitted: the saved checklist is left as it is. */
+  inspectionChecklist?: InspectionChecklist;
 }
 
 export interface BlockedDate {

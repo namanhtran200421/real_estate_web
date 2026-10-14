@@ -1,7 +1,7 @@
 /**
  * The check-out inspection of a booking: one saved checklist result per booking.
  */
-import { queryOne, type Db } from '../../db/pool.js';
+import { query, queryOne, type Db } from '../../db/pool.js';
 import type { InspectionResult } from './inspection.js';
 
 export interface SavedInspection {
@@ -34,7 +34,7 @@ async function get(bookingId: string, db?: Db): Promise<SavedInspection | null> 
 
 /** Saves (or replaces) the booking's inspection. */
 async function upsert(bookingId: string, results: InspectionResult[], adminId: string, db: Db): Promise<void> {
-  await queryOne(
+  await query(
     `INSERT INTO booking_inspections (booking_id, results, inspected_by) VALUES ($1, $2::jsonb, $3)
      ON CONFLICT (booking_id) DO UPDATE
        SET results = EXCLUDED.results, inspected_by = EXCLUDED.inspected_by, inspected_at = now()`,

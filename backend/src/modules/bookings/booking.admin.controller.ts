@@ -35,7 +35,10 @@ const incidentBody = z.object({
 });
 const inspectionBody = z.object({
   results: z
-    .array(z.object({ room: text(120), item: text(120), ok: z.boolean(), note: z.union([text(500), z.null()]) }))
+    .array(z.object({ room: text(120), item: text(120), ok: z.boolean(), note: z.preprocess(
+        (value) => (typeof value === 'string' && value.trim() === '' ? null : value ?? null),
+        z.union([text(500), z.null()]),
+      ) }))
     .min(1)
     .max(200),
 });

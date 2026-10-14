@@ -47,7 +47,7 @@ const apartmentBody = z.object({
   inspectionChecklist: z
     .array(z.object({ room: text(120), items: z.array(text(120)).min(1).max(60) }))
     .max(20)
-    .default([]),
+    .optional(),
 });
 
 const dateRangeQuery = z.object({ from: isoDate, to: isoDate });

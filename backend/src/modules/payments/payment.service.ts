@@ -379,6 +379,10 @@ async function transferScreenshot(paymentId: string): Promise<TransferScreenshot
 /** Records money the owner gave back (the owner makes the transfer from their bank app). */
 async function recordRefund(paymentId: string, request: { amount: number; reason: string }, admin: AdminIdentity): Promise<void> {
   await withTransaction(async (db) => {
+    // Lock order is booking, then payment (as in refundDeposit), so the two can never deadlock.
+    const unlocked = await paymentRepository.findById(paymentId, db);
+    if (!unlocked) throw HttpError.notFound('Không tìm thấy giao dịch.');
+    const booking = (await bookingRepository.findById(unlocked.bookingId, db, true))!;
     const payment = await paymentRepository.findById(paymentId, db, true);
     if (!payment) throw HttpError.notFound('Không tìm thấy giao dịch.');
     if (payment.state !== 'succeeded') throw HttpError.conflict('INVALID_STATUS', 'Chỉ hoàn tiền được khoản đã nhận.');
@@ -388,7 +392,6 @@ async function recordRefund(paymentId: string, request: { amount: number; reason
       throw HttpError.unprocessable('REFUND_TOO_LARGE', `Chỉ còn hoàn được tối đa ${refundable.toLocaleString('vi-VN')} ₫.`);
     }
 
-    const booking = (await bookingRepository.findById(payment.bookingId, db, true))!;
     if (payment.purpose === 'asset_security') {
       // Deposit applied to damage is no longer the guest's: a manual refund cannot give it back.
       const { assetSecurityHeld } = await assetIncidentRepository.financials(booking.id, booking.assetSecurityAmount, db);
