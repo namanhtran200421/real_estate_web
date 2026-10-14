@@ -28,9 +28,35 @@ _Avoid_: Booking ID, code, order number
 The time an unpaid booking keeps its dates blocked for other guests. When it runs out the booking expires and the dates are free again.
 _Avoid_: Reservation window, lock, timeout
 
-**Deposit**:
-The part of the price (a percentage set per apartment) a guest may pay up front instead of the full price; the rest is due at check-in.
-_Avoid_: Down payment, advance
+**Deposit** (_Tiền đặt cọc_):
+A guarantee of a percentage of the price (set per apartment; 20% by the house rules), paid when booking. Its arrival confirms the booking. It is held apart from the rent, is never revenue, and goes back to the guest after the check-out **Inspection**, minus any **Incident** charged to it. In code: payment purpose `asset_security`.
+_Avoid_: Security, asset security, down payment, advance
+
+**Rent** (_Tiền phòng_):
+The price of the stay, paid in full by transfer from check-in day. In code: payment purpose `accommodation`.
+_Avoid_: Balance, remainder, room charge
+
+**Legacy booking**:
+A booking made before deposits existed (no deposit amount). Its deposit was an optional part of the rent paid up front, and a rent payment confirms it.
+_Avoid_: Old booking
+
+**House rules** (_Chính sách lưu trú_):
+The owner's 21 published rules and policies (`/policy`). A guest agrees to them each time they report a transfer, and the agreement is recorded with the version of the rules.
+_Avoid_: Terms, T&C, policy page
+
+### Check-out
+
+**Inspection** (_Kiểm tra trả phòng_):
+The owner's room-by-room check of the apartment's equipment at check-out, against the apartment's checklist. Each item is fine or has a problem with a note.
+_Avoid_: Checklist (that is the list, not the check), audit
+
+**Incident**:
+Damage or loss found during a stay, with its cost. Part of the cost may be taken from the deposit; the rest the guest pays separately.
+_Avoid_: Damage claim, fine, penalty
+
+**Deposit refund** (_Hoàn cọc_):
+Sending back what is still held of the deposit once the guest has checked out, the rent is paid, the inspection is saved and no incident is open. The owner makes the transfer and records it in one step.
+_Avoid_: Return, release
 
 ### Payments
 

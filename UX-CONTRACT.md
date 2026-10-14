@@ -20,6 +20,9 @@
 | Identity retention and encryption | `backend/src/config/env.ts`, migration 014 | API / data lifecycle | 2026-10-13 |
 | Pricing, asset security and incidents | `backend/src/modules/pricing/pricing.ts`, migration 014 | Domain implementation | 2026-10-13 |
 | Temporary-stay registration fields | Product brief supplied by the Owner; production copy requires legal review | Product brief | 2026-10-13 |
+| Deposit, rent and deposit refund | `docs/adr/0003-a-deposit-confirms-the-booking-rent-is-paid-at-check-in.md`, `backend/src/modules/bookings/booking.rules.ts` | ADR / domain rules | 2026-10-14 |
+| House rules (21 items, `/policy`) | Text supplied by the Owner's team ("Nội Quy Lưu Trú dành cho Quý Khách"), published verbatim in `frontend/real-estate/src/i18n/vi.json` → `policy.items`; English is a translation | Owner document | 2026-10-14 |
+| Check-out inspection checklist | Drafted from the apartment's amenities (`backend/src/modules/bookings/inspection.ts`), editable per apartment in admin | Domain implementation | 2026-10-14 |
 
 ## Visual contract
 
