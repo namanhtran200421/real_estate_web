@@ -5,7 +5,7 @@
  * Every value that can come from a guest is HTML-escaped before it is placed in the markup.
  */
 import { env } from '../../config/env.js';
-import { MIN_TRANSFER } from '../bookings/booking.rules.js';
+import { confirmingPurpose, MIN_TRANSFER } from '../bookings/booking.rules.js';
 import type { OutgoingEmail } from './email.repository.js';
 
 /** Everything the booking emails show. */
@@ -24,6 +24,10 @@ export interface BookingEmailContext {
   nights: number;
   total: number;
   deposit: number;
+  /** The security deposit asked to confirm the booking; 0 for a legacy booking. */
+  assetSecurityAmount: number;
+  /** Security deposit received and not refunded. */
+  assetSecurityHeld: number;
   amountPaid: number;
   /** Unpaid bookings are released at this time. */
   holdExpiresAt: Date | null;
@@ -83,6 +87,7 @@ export function formatDeadline(date: Date): string {
 
 /** What the guest can transfer for an unpaid booking: the deposit (when there is one) and the full price. */
 function amountRows(booking: BookingEmailContext): Rows {
+  if (booking.assetSecurityAmount > 0) return [['Tiền đặt cọc', formatVnd(booking.assetSecurityAmount)]];
   const rows: Rows = [];
   if (booking.deposit >= MIN_TRANSFER && booking.deposit < booking.total) rows.push(['Đặt cọc', formatVnd(booking.deposit)]);
   rows.push(['Thanh toán đủ', formatVnd(booking.total)]);
@@ -92,6 +97,11 @@ function amountRows(booking: BookingEmailContext): Rows {
 function holdDeadline(booking: BookingEmailContext): string {
   if (!booking.holdExpiresAt) return 'khi chủ nhà xác nhận';
   return formatDeadline(booking.holdExpiresAt);
+}
+
+/** The rent's transfer note (payment.service `transferNote` without a suffix; not imported, to avoid a cycle). */
+function transferNoteOf(reference: string): string {
+  return reference.replaceAll('-', '');
 }
 
 function lookupUrl(reference: string): string {
@@ -192,7 +202,12 @@ export function paymentReceivedEmail(booking: BookingEmailContext, amount: numbe
 export function bookingConfirmedEmail(booking: BookingEmailContext): Content {
   const remaining = booking.total - booking.amountPaid;
   const paragraphs = [`Chủ nhà đã xác nhận đặt phòng ${booking.reference}.`];
-  if (remaining > 0) paragraphs.push(`Số tiền còn lại ${formatVnd(remaining)} thanh toán khi nhận phòng.`);
+  if (booking.assetSecurityAmount > 0) {
+    paragraphs.push(
+      `Chúng tôi đã nhận tiền đặt cọc ${formatVnd(booking.assetSecurityAmount)}.`,
+      `Tiền phòng ${formatVnd(remaining)} được thanh toán bằng chuyển khoản từ ngày nhận phòng ${formatDate(booking.checkIn)}. Tiền đặt cọc được hoàn lại khi trả phòng, sau khi kiểm tra căn hộ.`,
+    );
+  } else if (remaining > 0) paragraphs.push(`Số tiền còn lại ${formatVnd(remaining)} thanh toán khi nhận phòng.`);
 
   return render({
     subject: `Đặt phòng đã được xác nhận · ${booking.reference}`,
@@ -205,7 +220,7 @@ export function bookingConfirmedEmail(booking: BookingEmailContext): Content {
 
 export function bookingCancelledEmail(booking: BookingEmailContext, reason: string): Content {
   const paragraphs = [`Đặt phòng ${booking.reference} đã được huỷ.`, `Lý do: ${reason}`];
-  if (booking.amountPaid > 0) {
+  if (booking.amountPaid > 0 || booking.assetSecurityHeld > 0) {
     paragraphs.push('Nếu bạn đủ điều kiện hoàn tiền, chúng tôi sẽ gửi email khi hoàn tiền được thực hiện.');
   }
 
@@ -231,13 +246,22 @@ export function refundIssuedEmail(booking: BookingEmailContext, amount: number):
 
 /** Right after booking: the dates are held, here is how to pay and send the screenshot. */
 export function bookingHeldEmail(booking: BookingEmailContext, note: string): Content {
+  const depositFirst = booking.assetSecurityAmount > 0;
+  const paragraphs = [
+    depositFirst
+      ? `Ngày của bạn được giữ đến ${holdDeadline(booking)}. Vui lòng chuyển khoản tiền đặt cọc ${formatVnd(booking.assetSecurityAmount)} trước thời gian này, giữ đúng nội dung "${note}".`
+      : `Ngày của bạn được giữ đến ${holdDeadline(booking)}. Vui lòng chuyển khoản trước thời gian này, giữ đúng nội dung "${note}".`,
+    'Chuyển khoản xong, hãy mở trang đặt phòng, tải ảnh chụp màn hình chuyển khoản thành công lên và bấm "Tiếp tục thanh toán". Chủ nhà xác nhận khi thấy tiền về và bạn sẽ nhận email.',
+  ];
+  if (depositFirst) {
+    paragraphs.push(
+      `Tiền phòng ${formatVnd(booking.total)} được thanh toán bằng chuyển khoản từ ngày nhận phòng ${formatDate(booking.checkIn)}. Tiền đặt cọc được hoàn lại khi trả phòng, sau khi kiểm tra căn hộ.`,
+    );
+  }
   return render({
     subject: `Đã giữ ngày cho bạn · ${booking.reference}`,
     heading: `Cảm ơn bạn, ${booking.customerName}`,
-    paragraphs: [
-      `Ngày của bạn được giữ đến ${holdDeadline(booking)}. Vui lòng chuyển khoản trước thời gian này, giữ đúng nội dung "${note}".`,
-      'Chuyển khoản xong, hãy mở trang đặt phòng, tải ảnh chụp màn hình chuyển khoản thành công lên và bấm "Tiếp tục thanh toán". Chủ nhà xác nhận khi thấy tiền về và bạn sẽ nhận email.',
-    ],
+    paragraphs,
     rows: [
       ['Ngân hàng', env.bank.name],
       ['Chủ tài khoản', env.bank.accountName],
@@ -247,6 +271,28 @@ export function bookingHeldEmail(booking: BookingEmailContext, note: string): Co
       ...bookingRows(booking),
     ],
     button: { label: 'Xem đặt phòng và mã QR', url: lookupUrl(booking.reference) },
+  });
+}
+
+/** Check-in morning: the rent of a deposit-first booking is payable now. */
+export function rentRequestEmail(booking: BookingEmailContext): Content {
+  const rent = Math.max(booking.total - booking.amountPaid, 0);
+  return render({
+    subject: `Thanh toán tiền phòng · ${booking.reference}`,
+    heading: 'Thanh toán tiền phòng',
+    paragraphs: [
+      `Hôm nay là ngày nhận phòng ${booking.apartmentName}. Vui lòng chuyển khoản tiền phòng ${formatVnd(rent)}, giữ đúng nội dung "${transferNoteOf(booking.reference)}".`,
+      'Chuyển khoản xong, hãy mở trang đặt phòng và tải ảnh chụp màn hình chuyển khoản thành công lên. Tiền đặt cọc của bạn được hoàn lại khi trả phòng, sau khi kiểm tra căn hộ.',
+    ],
+    rows: [
+      ['Ngân hàng', env.bank.name],
+      ['Chủ tài khoản', env.bank.accountName],
+      ['Số tài khoản', env.bank.accountNumber],
+      ['Nội dung chuyển khoản', transferNoteOf(booking.reference)],
+      ['Tiền phòng', formatVnd(rent)],
+      ...bookingRows(booking),
+    ],
+    button: { label: 'Thanh toán tiền phòng', url: lookupUrl(booking.reference) },
   });
 }
 
@@ -269,7 +315,7 @@ export function transferReportedEmail(booking: BookingEmailContext, transfer: Tr
     heading: `Cảm ơn bạn, ${booking.customerName}`,
     paragraphs: [
       `Chúng tôi đã nhận ảnh chuyển khoản ${formatVnd(transfer.amount)} của bạn cho đặt phòng ${booking.reference}.`,
-      transfer.purpose === 'accommodation'
+      transfer.purpose === confirmingPurpose(booking)
         ? 'Chủ nhà sẽ kiểm tra tài khoản và xác nhận đặt phòng sớm nhất. Ngày của bạn được giữ trong thời gian này.'
         : 'Chủ nhà sẽ kiểm tra tài khoản và xác nhận khoản tiền này sớm nhất.',
     ],
@@ -310,7 +356,7 @@ export interface TransferContext {
 export function ownerTransferReportedEmail(booking: BookingEmailContext, transfer: TransferContext): Content {
   const purpose =
     transfer.purpose === 'asset_security'
-      ? 'bảo đảm tài sản'
+      ? 'tiền đặt cọc'
       : transfer.purpose === 'incident'
         ? 'bồi thường hư hỏng / thất lạc'
         : 'tiền phòng';
@@ -351,7 +397,7 @@ export function ownerNewBookingEmail(booking: BookingEmailContext, note: string)
     heading: 'Đặt phòng mới',
     paragraphs: [
       `${booking.customerName} vừa đặt ${booking.apartmentName}, ${booking.nights} đêm từ ${formatDate(booking.checkIn)}.`,
-      `Chuyển khoản xong, khách sẽ gửi ảnh chuyển khoản và bạn nhận email để kiểm tra. Nếu thấy tiền về với nội dung "${note}" trước đó, mở đặt phòng và bấm "Đã nhận cọc" hoặc "Đã nhận đủ": đặt phòng được xác nhận và khách nhận email.`,
+      `Chuyển khoản xong, khách sẽ gửi ảnh chuyển khoản và bạn nhận email để kiểm tra. Nếu thấy tiền về với nội dung "${note}" trước đó, mở đặt phòng và bấm "Đã nhận cọc": đặt phòng được xác nhận và khách nhận email.`,
       `Ngày được giữ đến ${holdDeadline(booking)}. Sau đó đặt phòng tự hết hạn; nếu tiền về muộn, bạn vẫn xác nhận được khi ngày còn trống.`,
     ],
     rows: [['Nội dung chuyển khoản', note], ...amountRows(booking), ...guestRows(booking), ...bookingRows(booking)],
@@ -366,7 +412,7 @@ export function ownerHoldEndingEmail(booking: BookingEmailContext, note: string)
     heading: 'Sắp hết hạn giữ chỗ',
     paragraphs: [
       `Đặt phòng của ${booking.customerName} hết hạn giữ chỗ lúc ${holdDeadline(booking)} và khách chưa gửi ảnh chuyển khoản.`,
-      `Nếu đã thấy tiền với nội dung "${note}", hãy bấm "Đã nhận cọc" hoặc "Đã nhận đủ" trong trang quản lý. Nếu không thấy, không cần làm gì: ngày sẽ tự mở lại cho khách khác.`,
+      `Nếu đã thấy tiền với nội dung "${note}", hãy bấm "Đã nhận cọc" trong trang quản lý. Nếu không thấy, không cần làm gì: ngày sẽ tự mở lại cho khách khác.`,
     ],
     rows: [['Nội dung chuyển khoản', note], ...amountRows(booking), ...guestRows(booking)],
     button: { label: 'Mở đặt phòng', url: adminBookingUrl(booking.reference) },

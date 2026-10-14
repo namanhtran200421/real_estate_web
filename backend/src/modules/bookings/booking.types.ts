@@ -126,6 +126,10 @@ export interface GuestBooking {
   amountDue: number;
   financials: BookingFinancials;
   paymentOptions: PaymentOptions;
+  /** Pays a security deposit to confirm, then the rent from check-in day. */
+  depositFirst: boolean;
+  /** The day the rent becomes payable (check-in day) while it is still owed; null otherwise. */
+  rentDueFrom: string | null;
   /** Unpaid bookings are released at this time. */
   holdExpiresAt: string | null;
   /** A transfer the guest reported that the owner is still checking. */

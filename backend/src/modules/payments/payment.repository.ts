@@ -173,14 +173,21 @@ async function failPendingForBooking(bookingId: string, reason: string, db: Db):
   await query(`UPDATE payments SET state = 'failed', failure_reason = $2 WHERE booking_id = $1 AND state = 'pending'`, [bookingId, reason], db);
 }
 
-/** Money received and refunded for a booking. */
-async function totals(bookingId: string, db: Db): Promise<{ received: number; refunded: number }> {
-  const row = await queryOne<{ received: number; refunded: number }>(
+/** Rent (`accommodation`) and security deposit (`asset_security`) received and refunded for a booking. */
+async function totals(
+  bookingId: string,
+  db: Db,
+): Promise<{ received: number; refunded: number; depositReceived: number; depositRefunded: number }> {
+  const row = await queryOne<{ received: number; refunded: number; depositReceived: number; depositRefunded: number }>(
     `SELECT
        (SELECT coalesce(sum(amount), 0)::int FROM payments
          WHERE booking_id = $1 AND purpose = 'accommodation' AND state = 'succeeded') AS received,
        (SELECT coalesce(sum(r.amount), 0)::int FROM refunds r JOIN payments p ON p.id = r.payment_id
-         WHERE p.booking_id = $1 AND p.purpose = 'accommodation' AND r.state = 'succeeded') AS refunded`,
+         WHERE p.booking_id = $1 AND p.purpose = 'accommodation' AND r.state = 'succeeded') AS refunded,
+       (SELECT coalesce(sum(amount), 0)::int FROM payments
+         WHERE booking_id = $1 AND purpose = 'asset_security' AND state = 'succeeded') AS "depositReceived",
+       (SELECT coalesce(sum(r.amount), 0)::int FROM refunds r JOIN payments p ON p.id = r.payment_id
+         WHERE p.booking_id = $1 AND p.purpose = 'asset_security' AND r.state = 'succeeded') AS "depositRefunded"`,
     [bookingId],
     db,
   );

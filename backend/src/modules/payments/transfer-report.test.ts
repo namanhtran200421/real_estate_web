@@ -47,6 +47,7 @@ const PNG = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a
 const fixture = (name: string) => readFile(new URL(`./fixtures/${name}`, import.meta.url));
 
 let server: Server;
+let pendingDeposit: NewBooking | undefined;
 let api: string;
 
 interface NewBooking {
@@ -100,11 +101,18 @@ async function book(daysAhead: number): Promise<NewBooking> {
   });
   assert.equal(response.status, 201, await response.clone().text());
   const { data } = await response.json();
-  return { reference: data.booking.reference, token: data.accessToken, deposit: data.booking.paymentOptions.deposit };
+  return { reference: data.booking.reference, token: data.accessToken, deposit: data.booking.paymentOptions.assetSecurity };
 }
 
-function report(booking: NewBooking, body: BodyInit, contentType = 'image/png', sendAnyway = false): Promise<Response> {
-  let query = 'option=deposit';
+function report(
+  booking: NewBooking,
+  body: BodyInit,
+  contentType = 'image/png',
+  sendAnyway = false,
+  acceptPolicy = true,
+): Promise<Response> {
+  let query = 'option=asset_security';
+  if (acceptPolicy) query += '&acceptPolicy=true';
   if (sendAnyway) query += '&sendAnyway=true';
   return call(`/bookings/${booking.reference}/transfer?${query}`, {
     method: 'POST',
@@ -174,14 +182,14 @@ describe('reporting a transfer with its screenshot', { skip: !databaseUrl && 'TE
   it('refuses a report without a screenshot, or with one too large to be a screenshot', async () => {
     const booking = await book(60);
 
-    const withoutImage = await report(booking, JSON.stringify({ option: 'deposit' }), 'application/json');
+    const withoutImage = await report(booking, JSON.stringify({ option: 'asset_security' }), 'application/json');
     assert.equal(withoutImage.status, 400);
     assert.equal((await withoutImage.json()).error.code, 'SCREENSHOT_REQUIRED');
 
     const tooLarge = await report(booking, Buffer.concat([PNG, Buffer.alloc(5 * 1024 * 1024)]));
     assert.equal(tooLarge.status, 413);
 
-    const withoutToken = await call(`/bookings/${booking.reference}/transfer?option=deposit`, {
+    const withoutToken = await call(`/bookings/${booking.reference}/transfer?option=asset_security&acceptPolicy=true`, {
       method: 'POST',
       headers: { 'Content-Type': 'image/png' },
       body: PNG,
@@ -274,6 +282,85 @@ describe('reporting a transfer with its screenshot', { skip: !databaseUrl && 'TE
     assert.equal(purged.payment.hasScreenshot, false);
     assert.equal(purged.payment.state, 'succeeded', 'the payment itself stays');
     assert.equal((await screenshotOf(waiting)).image.status, 200, 'the owner has yet to check it');
+  });
+
+  it('refuses a report until the guest accepts the policy, and stores nothing', async () => {
+    const booking = await book(130);
+
+    const response = await report(booking, PNG, 'image/png', false, false);
+
+    assert.equal(response.status, 422);
+    assert.equal((await response.json()).error.code, 'POLICY_NOT_ACCEPTED');
+    const view = await call(`/bookings/${booking.reference}`, { headers: { 'X-Booking-Token': booking.token } });
+    assert.equal((await view.json()).data.pendingTransfer, null);
+    pendingDeposit = booking;
+  });
+
+  it('confirms a deposit-first booking when the owner verifies the deposit, and not before', async () => {
+    const booking = pendingDeposit!;
+    const owner = { Authorization: `Bearer ${await signInAsOwner()}`, 'Content-Type': 'application/json' };
+
+    const manualRent = await call(`/admin/bookings/${booking.reference}/payments`, {
+      method: 'POST',
+      headers: owner,
+      body: JSON.stringify({ method: 'bank_transfer', purpose: 'accommodation', amount: 1_000_000 }),
+    });
+    assert.equal(manualRent.status, 422);
+    assert.equal((await manualRent.json()).error.code, 'DEPOSIT_REQUIRED_FIRST');
+
+    assert.equal((await report(booking, PNG)).status, 200);
+    const detail = await (await call(`/admin/bookings/${booking.reference}`, { headers: owner })).json();
+    const [payment] = detail.data.payments;
+    assert.equal(payment.purpose, 'asset_security');
+
+    const tooMuch = await call(`/admin/payments/${payment.id}/verify`, {
+      method: 'POST',
+      headers: owner,
+      body: JSON.stringify({ amount: booking.deposit + 1_000 }),
+    });
+    assert.equal(tooMuch.status, 422);
+    assert.equal((await tooMuch.json()).error.code, 'AMOUNT_ABOVE_DEPOSIT');
+
+    const verified = await call(`/admin/payments/${payment.id}/verify`, { method: 'POST', headers: owner, body: '{}' });
+    assert.equal(verified.status, 204);
+    const view = await (await call(`/bookings/${booking.reference}`, { headers: { 'X-Booking-Token': booking.token } })).json();
+    assert.equal(view.data.status, 'confirmed');
+    assert.equal(view.data.paymentStatus, 'deposit_paid');
+    assert.equal(view.data.depositFirst, true);
+    assert.deepEqual(view.data.paymentOptions, { deposit: null, full: null, assetSecurity: null, incident: null });
+    assert.equal(view.data.rentDueFrom, view.data.checkIn);
+  });
+
+  it('asks for the rent on check-in morning, once', async () => {
+    const booking = await book(140);
+    const owner = { Authorization: `Bearer ${await signInAsOwner()}`, 'Content-Type': 'application/json' };
+    const recorded = await call(`/admin/bookings/${booking.reference}/payments`, {
+      method: 'POST',
+      headers: owner,
+      body: JSON.stringify({ method: 'cash', purpose: 'asset_security', amount: booking.deposit }),
+    });
+    assert.equal(recorded.status, 201, await recorded.clone().text());
+    const { pool } = await import('../../db/pool.js');
+    await pool.query(
+      `UPDATE bookings
+       SET check_in = (now() AT TIME ZONE 'Asia/Ho_Chi_Minh')::date - 1,
+           check_out = (now() AT TIME ZONE 'Asia/Ho_Chi_Minh')::date + 1
+       WHERE reference = $1`,
+      [booking.reference],
+    );
+
+    const view = await (await call(`/bookings/${booking.reference}`, { headers: { 'X-Booking-Token': booking.token } })).json();
+    assert.equal(view.data.status, 'confirmed');
+    assert.equal(view.data.paymentOptions.full, view.data.quote.total);
+
+    const { bookingService } = await import('../bookings/booking.service.js');
+    // Check-in was yesterday (not today) so that 08:00 local time has passed whatever time the test runs.
+    assert.equal(await bookingService.sendRentRequests(), 1);
+    assert.equal(await bookingService.sendRentRequests(), 0);
+    const queued = await pool.query(`SELECT count(*)::int AS n FROM email_outbox WHERE subject LIKE $1`, [
+      `Thanh toán tiền phòng · ${booking.reference}`,
+    ]);
+    assert.equal(queued.rows[0].n, 1);
   });
 });
 

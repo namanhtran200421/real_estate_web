@@ -34,7 +34,14 @@ import { accessTokenFor, assertAccess } from './booking-access.js';
 import { assetIncidentRepository } from './asset-incident.repository.js';
 import { bookingRepository } from './booking.repository.js';
 import { guestIdentityRepository } from './guest-identity.repository.js';
-import { assertValidStay, MAX_ACTIVE_HOLDS, paymentOptions } from './booking.rules.js';
+import {
+  assertValidStay,
+  confirmingPurpose,
+  isDepositFirst,
+  MAX_ACTIVE_HOLDS,
+  paymentOptions,
+  rentDueFrom,
+} from './booking.rules.js';
 import type {
   AdminBookingDetail,
   AdminBookingFilters,
@@ -197,6 +204,8 @@ function toGuestBooking(
     amountDue: Math.max(booking.totalAmount - booking.amountPaid, 0),
     financials,
     paymentOptions: paymentOptions(booking, financials, new Date(), todayIn(env.timezone), pending !== undefined),
+    depositFirst: isDepositFirst(booking),
+    rentDueFrom: rentDueFrom(booking),
     holdExpiresAt: booking.holdExpiresAt?.toISOString() ?? null,
     pendingTransfer,
     createdAt: booking.createdAt.toISOString(),
@@ -273,7 +282,9 @@ async function createBooking(
             price,
             promoCodeId,
             holdMinutes: env.booking.holdMinutes,
-            assetSecurityAmount: price.nights >= 30 ? apartment.longStaySecurityAmount : 0,
+            // Deposit-first when the apartment asks a deposit; with 0% the rent is paid up front as before.
+            depositAmount: apartment.depositPercent > 0 ? 0 : price.deposit,
+            assetSecurityAmount: apartment.depositPercent > 0 ? price.deposit : 0,
             ip,
           },
           db,
@@ -287,7 +298,11 @@ async function createBooking(
         await guestIdentityRepository.insertAll(id, request.checkOut, request.guestIdentities, db);
         await bookingRepository.addEvent(id, 'created', 'guest', { total: price.total, promoCode: request.promoCode }, db);
         const context = await bookingRepository.emailContext(id, db);
-        await emailService.queueBookingHeld(context, transferNote(context.reference), db);
+        await emailService.queueBookingHeld(
+          context,
+          transferNote(context.reference, confirmingPurpose({ assetSecurityAmount: context.assetSecurityAmount })),
+          db,
+        );
         return id;
       }
     }
@@ -428,7 +443,16 @@ async function confirm(reference: string, admin: AdminIdentity): Promise<AdminBo
   return adminChange(reference, async (booking, db) => {
     if (booking.status !== 'pending') throw invalidStatus('Chỉ xác nhận được đặt phòng đang chờ xác nhận.');
     // A booking only counts once its money has arrived; that path confirms it automatically.
-    if (booking.amountPaid === 0) {
+    if (isDepositFirst(booking)) {
+      const { assetSecurityReceived, assetSecurityRefunded } = await assetIncidentRepository.financials(
+        booking.id,
+        booking.assetSecurityAmount,
+        db,
+      );
+      if (assetSecurityReceived - assetSecurityRefunded <= 0) {
+        throw invalidStatus('Chưa nhận tiền đặt cọc. Hãy xác nhận khoản chuyển khoản hoặc ghi nhận thanh toán, đặt phòng sẽ được xác nhận.');
+      }
+    } else if (booking.amountPaid === 0) {
       throw invalidStatus('Chưa nhận thanh toán. Hãy xác nhận khoản chuyển khoản hoặc ghi nhận thanh toán, đặt phòng sẽ được xác nhận.');
     }
     await bookingRepository.markConfirmed(booking.id, db);
@@ -472,7 +496,7 @@ async function addIncident(
     if (input.securityApplied > financials.assetSecurityHeld) {
       throw HttpError.unprocessable(
         'SECURITY_APPLIED_TOO_LARGE',
-        `Chỉ còn ${financials.assetSecurityHeld.toLocaleString('vi-VN')} ₫ tiền bảo đảm tài sản có thể cấn trừ.`,
+        `Chỉ còn ${financials.assetSecurityHeld.toLocaleString('vi-VN')} ₫ tiền đặt cọc có thể cấn trừ.`,
       );
     }
     await assetIncidentRepository.insert({ bookingId: booking.id, ...input, createdBy: admin.id }, db);
@@ -520,7 +544,11 @@ async function remindOwnerOfEndingHolds(): Promise<number> {
     const ids = await bookingRepository.claimHoldsEndingSoon(REMINDER_LEAD_MINUTES, db);
     for (const id of ids) {
       const context = await bookingRepository.emailContext(id, db);
-      await emailService.queueHoldEndingReminder(context, transferNote(context.reference), db);
+      await emailService.queueHoldEndingReminder(
+        context,
+        transferNote(context.reference, confirmingPurpose({ assetSecurityAmount: context.assetSecurityAmount })),
+        db,
+      );
     }
     return ids.length;
   });
@@ -548,6 +576,17 @@ async function sendCheckoutNotifications(): Promise<number> {
   });
 }
 
+/** Asks each confirmed deposit-first guest for the rent on check-in morning, once per booking. */
+async function sendRentRequests(): Promise<number> {
+  return withTransaction(async (db) => {
+    const ids = await bookingRepository.claimRentRequests(env.timezone, db);
+    for (const id of ids) {
+      await emailService.queueRentRequest(await bookingRepository.emailContext(id, db), db);
+    }
+    return ids.length;
+  });
+}
+
 async function purgeExpiredGuestIdentities(): Promise<number> {
   return guestIdentityRepository.purgeExpired();
 }
@@ -569,5 +608,6 @@ export const bookingService = {
   expireStaleHolds,
   remindOwnerOfEndingHolds,
   sendCheckoutNotifications,
+  sendRentRequests,
   purgeExpiredGuestIdentities,
 };

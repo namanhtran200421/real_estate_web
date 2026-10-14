@@ -41,7 +41,6 @@ interface ApartmentRow {
   price_monthly: number;
   long_stay_discounts: LongStayDiscount[];
   deposit_percent: number;
-  long_stay_security_amount: number;
   is_active: boolean;
   sort_order: number;
 }
@@ -52,7 +51,7 @@ const APARTMENT_COLUMNS = `
   to_char(check_in_time, 'HH24:MI')  AS check_in,
   to_char(check_out_time, 'HH24:MI') AS check_out,
   price_weekday, price_weekend, price_holiday, price_weekly, price_monthly,
-  long_stay_discounts, deposit_percent, long_stay_security_amount, is_active, sort_order
+  long_stay_discounts, deposit_percent, is_active, sort_order
 `;
 
 function toApartment(row: ApartmentRow): AdminApartment {
@@ -84,7 +83,6 @@ function toApartment(row: ApartmentRow): AdminApartment {
       longStayDiscounts: row.long_stay_discounts,
     },
     depositPercent: row.deposit_percent,
-    longStaySecurityAmount: row.long_stay_security_amount,
     nearby: row.nearby,
     isActive: row.is_active,
     sortOrder: row.sort_order,
@@ -119,7 +117,6 @@ function toParams(input: ApartmentInput): unknown[] {
     input.pricing.monthly,
     JSON.stringify(input.pricing.longStayDiscounts),
     input.depositPercent,
-    input.longStaySecurityAmount,
     input.isActive,
     input.sortOrder,
   ];
@@ -152,9 +149,9 @@ async function create(input: ApartmentInput): Promise<AdminApartment> {
        guests, bedrooms, beds, bathrooms, key_facilities, facilities, rules, nearby,
        check_in_time, check_out_time,
        price_weekday, price_weekend, price_holiday, price_weekly, price_monthly, long_stay_discounts,
-       deposit_percent, long_stay_security_amount, is_active, sort_order
+       deposit_percent, is_active, sort_order
      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18,
-               $19, $20, $21, $22, $23, $24, $25, $26, $27, $28)
+               $19, $20, $21, $22, $23, $24, $25, $26, $27)
      RETURNING slug`,
     toParams(input),
   );
@@ -170,8 +167,8 @@ async function update(currentSlug: string, input: ApartmentInput): Promise<Admin
        facilities = $14, rules = $15, nearby = $16, check_in_time = $17, check_out_time = $18,
        price_weekday = $19, price_weekend = $20, price_holiday = $21, price_weekly = $22,
        price_monthly = $23, long_stay_discounts = $24, deposit_percent = $25,
-       long_stay_security_amount = $26, is_active = $27, sort_order = $28
-     WHERE slug = $29
+       is_active = $26, sort_order = $27
+     WHERE slug = $28
      RETURNING slug`,
     [...toParams(input), currentSlug],
   );

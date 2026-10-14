@@ -109,6 +109,8 @@ export interface NewBooking {
   price: PriceBreakdown;
   promoCodeId: string | null;
   holdMinutes: number;
+  /** Legacy part-payment of the rent; 0 for a deposit-first booking. */
+  depositAmount: number;
   assetSecurityAmount: number;
   ip: string | undefined;
 }
@@ -142,7 +144,7 @@ async function insert(booking: NewBooking, db: Db): Promise<string | undefined> 
       booking.price.subtotal,
       booking.price.discountTotal,
       booking.price.total,
-      booking.price.deposit,
+      booking.depositAmount,
       booking.assetSecurityAmount,
       booking.promoCodeId,
       booking.holdMinutes,
@@ -326,6 +328,28 @@ async function claimCheckoutReminders(db: Db): Promise<string[]> {
   return rows.map((row) => row.id);
 }
 
+/**
+ * Claims, once, the confirmed deposit-first bookings whose rent is still owed on check-in morning
+ * (08:00 local time), unless the guest already reported a transfer for it or the stay is over.
+ */
+async function claimRentRequests(timezone: string, db: Db): Promise<string[]> {
+  const rows = await query<{ id: string }>(
+    `UPDATE bookings b SET rent_request_sent_at = now()
+     FROM apartments a
+     WHERE a.id = b.apartment_id AND b.status = 'confirmed' AND b.asset_security_amount > 0
+       AND b.total_amount - b.amount_paid >= 1000
+       AND NOT EXISTS (
+         SELECT 1 FROM payments p WHERE p.booking_id = b.id AND p.purpose = 'accommodation' AND p.state = 'pending')
+       AND b.rent_request_sent_at IS NULL
+       AND ((b.check_in + time '08:00') AT TIME ZONE $1) <= now()
+       AND ((b.check_out + a.check_out_time) AT TIME ZONE current_setting('TIMEZONE')) > now()
+     RETURNING b.id`,
+    [timezone],
+    db,
+  );
+  return rows.map((row) => row.id);
+}
+
 /** Claims check-outs at least 15 minutes late once, for an Owner alert. */
 async function claimLateCheckoutAlerts(db: Db): Promise<string[]> {
   const rows = await query<{ id: string }>(
@@ -361,6 +385,11 @@ async function emailContext(bookingId: string, db?: Db): Promise<BookingEmailCon
             b.check_in AS "checkIn", b.check_out AS "checkOut",
             to_char(a.check_in_time, 'HH24:MI') AS "checkInTime", to_char(a.check_out_time, 'HH24:MI') AS "checkOutTime",
             b.guests, (b.check_out - b.check_in) AS nights, b.total_amount AS total, b.deposit_amount AS deposit,
+            b.asset_security_amount AS "assetSecurityAmount",
+            (SELECT coalesce(sum(p.amount), 0)::int FROM payments p
+              WHERE p.booking_id = b.id AND p.purpose = 'asset_security' AND p.state = 'succeeded')
+            - (SELECT coalesce(sum(rf.amount), 0)::int FROM refunds rf JOIN payments p ON p.id = rf.payment_id
+                WHERE p.booking_id = b.id AND p.purpose = 'asset_security' AND rf.state = 'succeeded') AS "assetSecurityHeld",
             b.amount_paid AS "amountPaid", b.hold_expires_at AS "holdExpiresAt", b.status::text AS status, b.message
      FROM bookings b JOIN apartments a ON a.id = b.apartment_id
      WHERE b.id = $1`,
@@ -683,6 +712,7 @@ export const bookingRepository = {
   holdForMinutes,
   setPaymentProgress,
   claimCheckoutReminders,
+  claimRentRequests,
   claimLateCheckoutAlerts,
   nextArrival,
   emailContext,

@@ -2,14 +2,16 @@
  * Payments by bank transfer (VietQR), confirmed by the owner.
  *
  * Flow:
- *   1. The guest picks deposit or full payment; `transferInstructions` returns the account and a
+ *   1. The guest picks what to pay (deposit-first bookings: the 20% security deposit now, the rent from
+ *      check-in day; legacy bookings: part or all of the rent); `transferInstructions` returns the account and a
  *      VietQR code with the amount and the booking reference (as transfer note) filled in.
- *   2. Having paid, the guest reports the transfer with a screenshot from their bank app
- *      (`reportTransfer`). The report holds the dates and the owner is emailed.
+ *   2. Having paid, the guest accepts the stay policy and reports the transfer with a screenshot from
+ *      their bank app (`reportTransfer`). The report holds the dates and the owner is emailed.
  *   3. The owner finds the money in the bank app and verifies the report (the money counts and
  *      the booking is confirmed) or rejects it (the guest gets a fresh hold to pay or explain).
  * The site cannot see the bank account: a screenshot is evidence, and a booking is only
- * confirmed once its money has been confirmed by the owner (docs/adr/0001).
+ * confirmed once its money has been confirmed by the owner (docs/adr/0001). The money that confirms
+ * a booking is its security deposit (deposit-first) or its rent (legacy): `confirmingPurpose`.
  *
  * The owner can also record money that arrived without a report (`recordManualPayment`): cash,
  * or a guest who never reported. Money seen after the hold ran out still confirms the booking
@@ -25,7 +27,14 @@ import type { AdminIdentity } from '../admin-auth/admin-auth.types.js';
 import { assertAccess } from '../bookings/booking-access.js';
 import { assetIncidentRepository } from '../bookings/asset-incident.repository.js';
 import { bookingRepository } from '../bookings/booking.repository.js';
-import { derivePaymentStatus, isPayable, paymentOptions } from '../bookings/booking.rules.js';
+import {
+  confirmingPurpose,
+  derivePaymentStatus,
+  isDepositFirst,
+  isPayable,
+  paymentOptions,
+  POLICY_VERSION,
+} from '../bookings/booking.rules.js';
 import type { BookingRecord, PaymentProvider, PaymentPurpose, TransferInstructions } from '../bookings/booking.types.js';
 import { emailService } from '../notifications/email.service.js';
 import { paymentRepository } from './payment.repository.js';
@@ -51,11 +60,17 @@ function purposeFor(option: PaymentOption): PaymentPurpose {
 
 /** Recomputes the money received for a booking and its payment status. */
 async function recalculate(booking: BookingRecord, db: Db): Promise<void> {
-  const { received, refunded } = await paymentRepository.totals(booking.id, db);
+  const { received, refunded, depositReceived, depositRefunded } = await paymentRepository.totals(booking.id, db);
   await bookingRepository.setPaymentProgress(
     booking.id,
     received - refunded,
-    derivePaymentStatus({ total: booking.totalAmount, rentReceived: received, rentRefunded: refunded, depositReceived: 0, depositRefunded: 0 }),
+    derivePaymentStatus({
+      total: booking.totalAmount,
+      rentReceived: received,
+      rentRefunded: refunded,
+      depositReceived,
+      depositRefunded,
+    }),
     db,
   );
 }
@@ -86,6 +101,23 @@ async function bookingForGuest(reference: string, token: string | undefined, db?
   return booking;
 }
 
+/** 422: a transfer is only reported after the guest agrees to the stay policy. */
+export function policyNotAccepted(): HttpError {
+  return HttpError.unprocessable('POLICY_NOT_ACCEPTED', 'Vui lòng đồng ý với chính sách lưu trú trước khi gửi.');
+}
+
+/** A deposit above what is still due would be refunded later, though it was meant as rent. */
+async function assertDepositWithinDue(booking: BookingRecord, amount: number, db: Db): Promise<void> {
+  if (!isDepositFirst(booking)) return;
+  const { assetSecurityDue } = await assetIncidentRepository.financials(booking.id, booking.assetSecurityAmount, db);
+  if (amount > assetSecurityDue) {
+    throw HttpError.unprocessable(
+      'AMOUNT_ABOVE_DEPOSIT',
+      `Số tiền vượt tiền đặt cọc còn thiếu (${assetSecurityDue.toLocaleString('vi-VN')} ₫). Hãy xác nhận đúng tiền cọc và ghi nhận phần dư là tiền phòng.`,
+    );
+  }
+}
+
 function screenshotNotFound(): HttpError {
   return HttpError.notFound('Không tìm thấy ảnh chuyển khoản.');
 }
@@ -102,10 +134,20 @@ async function amountFor(booking: BookingRecord, option: PaymentOption, db?: Db)
   const key = option === 'asset_security' ? 'assetSecurity' : option;
   const amount = options[key];
   if (amount === null) {
-    if (!isPayable(booking, now)) {
+    const dead = booking.status === 'cancelled' || booking.status === 'expired';
+    const holdOver = booking.status === 'pending' && !isPayable(booking, now);
+    if (dead || holdOver || (!isDepositFirst(booking) && !isPayable(booking, now))) {
       throw HttpError.conflict(
         'BOOKING_NOT_PAYABLE',
         'Đặt phòng này đã hết thời gian giữ chỗ hoặc không thể thanh toán. Vui lòng đặt lại.',
+      );
+    }
+    const stayLive = booking.status === 'confirmed' || booking.status === 'completed';
+    if (isDepositFirst(booking) && stayLive && option === 'full' && todayIn(env.timezone) < booking.checkIn) {
+      const [year, month, day] = booking.checkIn.split('-');
+      throw HttpError.unprocessable(
+        'RENT_NOT_DUE_YET',
+        `Tiền phòng được thanh toán từ ngày nhận phòng (${day}/${month}/${year}).`,
       );
     }
     throw HttpError.unprocessable('PAYMENT_OPTION_UNAVAILABLE', 'Lựa chọn thanh toán này không còn áp dụng cho đặt phòng.');
@@ -154,6 +196,8 @@ async function checkScreenshot(screenshot: TransferScreenshot, expected: Expecte
  * the owner checks, and emails both. Reporting again while a report is being checked is refused,
  * so nothing is counted twice and the screenshot the owner is looking at cannot change.
  * @param sendAnyway the guest saw the "not a transfer screenshot" warning and sends it regardless
+ * @param acceptPolicy the guest agreed to the stay policy; recorded as an event
+ * @throws 422 POLICY_NOT_ACCEPTED without `acceptPolicy`
  * @throws 422 NOT_A_TRANSFER_SCREENSHOT when the image shows no transfer (unless `sendAnyway`)
  */
 async function reportTransfer(
@@ -162,7 +206,9 @@ async function reportTransfer(
   option: PaymentOption,
   screenshot: TransferScreenshot,
   sendAnyway: boolean,
+  acceptPolicy: boolean,
 ): Promise<void> {
+  if (!acceptPolicy) throw policyNotAccepted();
   // Read the image before taking any lock: OCR takes a moment. The checks repeat under the lock.
   const unlocked = await bookingForGuest(reference, token);
   const purpose = purposeFor(option);
@@ -182,7 +228,8 @@ async function reportTransfer(
 
     const paymentId = await paymentRepository.insertReported(booking.id, purpose, amount, note, db);
     await paymentRepository.insertScreenshot(paymentId, screenshot, shows, db);
-    if (purpose === 'accommodation') await bookingRepository.clearHold(booking.id, db);
+    if (purpose === confirmingPurpose(booking) && booking.status === 'pending') await bookingRepository.clearHold(booking.id, db);
+    await bookingRepository.addEvent(booking.id, 'policy_accepted', 'guest', { version: POLICY_VERSION, paymentId }, db);
     await bookingRepository.addEvent(booking.id, 'transfer_reported', 'guest', { amount, purpose, paymentId }, db);
 
     const context = await bookingRepository.emailContext(booking.id, db);
@@ -231,11 +278,12 @@ async function verifyTransfer(paymentId: string, amount: number | undefined, adm
   await withTransaction(async (db) => {
     const { payment, booking } = await lockedPendingTransfer(paymentId, db);
     const received = amount ?? payment.amount;
+    if (payment.purpose === 'asset_security') await assertDepositWithinDue(booking, received, db);
 
     await paymentRepository.markVerified(payment.id, received, admin.id, db);
     await bookingRepository.addEvent(booking.id, 'transfer_verified', admin.email, { amount: received, paymentId }, db);
     await recalculate(booking, db);
-    const newlyConfirmed = payment.purpose === 'accommodation' && (await confirmIfPending(booking, admin.email, db));
+    const newlyConfirmed = payment.purpose === confirmingPurpose(booking) && (await confirmIfPending(booking, admin.email, db));
     await queueOwnerPaymentResult(booking, received, newlyConfirmed, db);
   });
 }
@@ -250,15 +298,14 @@ async function rejectTransfer(paymentId: string, reason: string, admin: AdminIde
 
     await paymentRepository.markFailed(payment.id, reason, admin.id, db);
     await bookingRepository.addEvent(booking.id, 'transfer_rejected', admin.email, { amount: payment.amount, reason }, db);
-    if (payment.purpose === 'accommodation' && booking.status === 'pending' && booking.amountPaid === 0) {
-      await bookingRepository.holdForMinutes(booking.id, env.booking.holdMinutes, db);
-    }
+    const confirming = payment.purpose === confirmingPurpose(booking) && booking.status === 'pending' && booking.amountPaid === 0;
+    if (confirming) await bookingRepository.holdForMinutes(booking.id, env.booking.holdMinutes, db);
 
     const context = await bookingRepository.emailContext(booking.id, db);
     await emailService.queueTransferNotReceived(
       context,
       reason,
-      payment.purpose === 'accommodation' ? env.booking.holdMinutes : null,
+      confirming ? env.booking.holdMinutes : null,
       db,
     );
   });
@@ -281,9 +328,14 @@ async function recordManualPayment(
       throw HttpError.conflict('INVALID_STATUS', 'Không ghi nhận thanh toán cho đặt phòng đã huỷ.');
     }
 
+    if (isDepositFirst(booking) && (booking.status === 'pending' || booking.status === 'expired') && payment.purpose !== 'asset_security') {
+      throw HttpError.unprocessable('DEPOSIT_REQUIRED_FIRST', 'Đặt phòng này cần ghi nhận tiền đặt cọc trước.');
+    }
+    if (payment.purpose === 'asset_security') await assertDepositWithinDue(booking, payment.amount, db);
+
     // The money showed up after the hold ran out: the booking stands if its dates are still free.
     let current = booking;
-    if (payment.purpose === 'accommodation' && booking.status === 'expired') {
+    if (payment.purpose === confirmingPurpose(booking) && booking.status === 'expired') {
       if (!(await bookingRepository.reactivate(booking.id, db))) {
         throw HttpError.conflict(
           'DATES_TAKEN',
@@ -313,7 +365,7 @@ async function recordManualPayment(
       db,
     );
     await recalculate(current, db);
-    const newlyConfirmed = payment.purpose === 'accommodation' && (await confirmIfPending(current, admin.email, db));
+    const newlyConfirmed = payment.purpose === confirmingPurpose(booking) && (await confirmIfPending(current, admin.email, db));
     await queueOwnerPaymentResult(current, payment.amount, newlyConfirmed, db);
   });
 }

@@ -21,6 +21,7 @@ import {
   ownerTransferReportedEmail,
   paymentReceivedEmail,
   refundIssuedEmail,
+  rentRequestEmail,
   transferNotReceivedEmail,
   transferReportedEmail,
   type BookingEmailContext,
@@ -74,6 +75,10 @@ async function queueRefundIssued(booking: BookingEmailContext, amount: number, d
 
 async function queueCheckoutReminder(booking: BookingEmailContext, db: Db): Promise<void> {
   await emailRepository.enqueue({ to: booking.customerEmail, ...checkoutReminderEmail(booking) }, db);
+}
+
+async function queueRentRequest(booking: BookingEmailContext, db: Db): Promise<void> {
+  await emailRepository.enqueue({ to: booking.customerEmail, ...rentRequestEmail(booking) }, db);
 }
 
 async function queueLateCheckoutAlert(
@@ -135,6 +140,7 @@ export const emailService = {
   queueBookingCancelled,
   queueRefundIssued,
   queueCheckoutReminder,
+  queueRentRequest,
   queueLateCheckoutAlert,
   queueAdminPasswordChanged,
   queueContactMessage,

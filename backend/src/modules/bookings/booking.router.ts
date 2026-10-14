@@ -4,8 +4,9 @@
  * POST /                     → create a booking (holds the dates while the guest pays)
  * POST /lookup               → find a booking by reference + email/phone
  * GET  /:reference           → view a booking                                  (X-Booking-Token)
- * GET  /:reference/transfer  → bank account + VietQR for ?option=deposit|full   (X-Booking-Token)
- * POST /:reference/transfer  → ?option=deposit|full[&sendAnyway=true], body: transfer screenshot (X-Booking-Token)
+ * GET  /:reference/transfer  → bank account + VietQR for ?option=deposit|full|asset_security|incident (X-Booking-Token)
+ * POST /:reference/transfer  → ?option=…&acceptPolicy=true[&sendAnyway=true], body: transfer screenshot (X-Booking-Token);
+ *                               422 POLICY_NOT_ACCEPTED is returned before the body is read
  * GET  /:reference/transfer/screenshot → screenshot of the transfer being checked (X-Booking-Token)
  * GET  /:reference/review    → this booking's review, or null                    (X-Booking-Token)
  * POST /:reference/review    → submit { rating, comment } after a completed stay (X-Booking-Token)

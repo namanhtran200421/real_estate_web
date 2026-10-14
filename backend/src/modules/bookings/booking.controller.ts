@@ -7,7 +7,7 @@
 import type { NextFunction, Request, Response } from 'express';
 import { z } from 'zod';
 import { email, isoDate, optionalText, parse, phone, promoCode, slug, text } from '../../lib/validation.js';
-import { paymentService } from '../payments/payment.service.js';
+import { paymentService, policyNotAccepted } from '../payments/payment.service.js';
 import { readTransferScreenshot, sendScreenshot } from '../payments/transfer-screenshot.js';
 import { bookingService } from './booking.service.js';
 
@@ -64,6 +64,8 @@ const paymentOption = z.object({ option: z.enum(['deposit', 'full', 'asset_secur
 const reportQuery = paymentOption.extend({
   /** The guest saw the "not a transfer screenshot" warning and sends the image anyway. */
   sendAnyway: z.enum(['true', 'false']).optional(),
+  /** The guest agreed to the stay policy (/policy) before sending. */
+  acceptPolicy: z.enum(['true', 'false']).optional(),
 });
 
 function bookingToken(req: Request): string | undefined {
@@ -100,22 +102,27 @@ async function transferInstructions(req: Request<{ reference: string }>, res: Re
   res.json({ data: instructions });
 }
 
-/** Runs before an upload's body is read: only someone who can open the booking may send one. */
+/**
+ * Runs before an upload's body is read: only someone who can open the booking may send one, and
+ * only after accepting the policy (404 without a valid token comes first, then 422 POLICY_NOT_ACCEPTED).
+ */
 async function checkGuestAccess(req: Request<{ reference: string }>, _res: Response, next: NextFunction): Promise<void> {
   await paymentService.assertGuestAccess(parse(reference, req.params.reference), bookingToken(req));
+  if (parse(reportQuery, req.query).acceptPolicy !== 'true') throw policyNotAccepted();
   next();
 }
 
 /**
- * POST /bookings/:reference/transfer?option=deposit|full[&sendAnyway=true], body: the transfer
- * screenshot. "I have transferred, here is my screenshot"; returns the updated booking.
+ * POST /bookings/:reference/transfer?option=deposit|full|asset_security|incident&acceptPolicy=true
+ * [&sendAnyway=true], body: the transfer screenshot. "I have transferred, here is my screenshot"; returns the updated booking.
+ * 422 POLICY_NOT_ACCEPTED without `acceptPolicy=true`;
  * 422 NOT_A_TRANSFER_SCREENSHOT when the image shows no transfer and `sendAnyway` is not set.
  */
 async function reportTransfer(req: Request<{ reference: string }>, res: Response): Promise<void> {
-  const { option, sendAnyway } = parse(reportQuery, req.query);
+  const { option, sendAnyway, acceptPolicy } = parse(reportQuery, req.query);
   const ref = parse(reference, req.params.reference);
   const screenshot = readTransferScreenshot(req.body);
-  await paymentService.reportTransfer(ref, bookingToken(req), option, screenshot, sendAnyway === 'true');
+  await paymentService.reportTransfer(ref, bookingToken(req), option, screenshot, sendAnyway === 'true', acceptPolicy === 'true');
   res.json({ data: await bookingService.getForGuest(ref, bookingToken(req)) });
 }
 

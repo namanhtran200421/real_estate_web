@@ -53,8 +53,6 @@ export interface ApartmentContent {
   pricing: Pricing;
   /** Share of the total a guest can pay upfront to secure the booking. */
   depositPercent: number;
-  /** Refundable asset security requested for stays of 30 nights or longer. */
-  longStaySecurityAmount: number;
   nearby: NearbyPlace[];
 }
 
