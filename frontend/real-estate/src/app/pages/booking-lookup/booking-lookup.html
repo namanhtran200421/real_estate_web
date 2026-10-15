@@ -84,7 +84,7 @@
                 class="h-20 w-24 shrink-0 rounded-md bg-muted object-cover"
               />
               <div class="min-w-0">
-                <p class="small-caps text-[0.625rem] text-accent-deep">{{ apt.area }}</p>
+                <p class="small-caps text-xs text-accent-deep">{{ apt.area }}</p>
                 <p class="mt-1 font-serif text-xl">{{ apt.name }}</p>
                 <p class="mt-1 text-sm text-muted-foreground">
                   {{ b.checkIn | date: 'dd/MM/yyyy' }} – {{ b.checkOut | date: 'dd/MM/yyyy' }} ·
@@ -98,7 +98,7 @@
             <!-- Deposit-first: the deposit is held apart from the rent, so it is shown on its own. -->
             <dl class="mt-6 grid grid-cols-3 gap-4 text-center">
               <div>
-                <dt class="small-caps text-[0.625rem] text-muted-foreground">{{ 'lookup.deposit' | transloco }}</dt>
+                <dt class="small-caps text-xs text-muted-foreground">{{ 'lookup.deposit' | transloco }}</dt>
                 <dd class="mt-2 whitespace-nowrap font-serif text-lg text-accent-deep sm:text-xl">{{ money.assetSecurityRequired | number }} ₫</dd>
                 <dd class="mt-1 text-xs text-muted-foreground">
                   @if (money.assetSecurityRefunded > 0) {
@@ -111,11 +111,11 @@
                 </dd>
               </div>
               <div class="border-x border-border">
-                <dt class="small-caps text-[0.625rem] text-muted-foreground">{{ 'lookup.rentPaid' | transloco }}</dt>
+                <dt class="small-caps text-xs text-muted-foreground">{{ 'lookup.rentPaid' | transloco }}</dt>
                 <dd class="mt-2 whitespace-nowrap font-serif text-lg sm:text-xl">{{ b.amountPaid | number }} ₫</dd>
               </div>
               <div>
-                <dt class="small-caps text-[0.625rem] text-muted-foreground">{{ 'lookup.rentDue' | transloco }}</dt>
+                <dt class="small-caps text-xs text-muted-foreground">{{ 'lookup.rentDue' | transloco }}</dt>
                 <dd class="mt-2 whitespace-nowrap font-serif text-lg sm:text-xl">{{ b.amountDue | number }} ₫</dd>
                 @if (b.rentDueFrom) {
                   <dd class="mt-1 text-xs text-muted-foreground">
@@ -127,15 +127,15 @@
           } @else {
             <dl class="mt-6 grid grid-cols-3 gap-4 text-center">
               <div>
-                <dt class="small-caps text-[0.625rem] text-muted-foreground">{{ 'common.totalPrice' | transloco }}</dt>
+                <dt class="small-caps text-xs text-muted-foreground">{{ 'common.totalPrice' | transloco }}</dt>
                 <dd class="mt-2 whitespace-nowrap font-serif text-lg sm:text-xl">{{ b.quote.total | number }} ₫</dd>
               </div>
               <div class="border-x border-border">
-                <dt class="small-caps text-[0.625rem] text-muted-foreground">{{ 'lookup.paid' | transloco }}</dt>
+                <dt class="small-caps text-xs text-muted-foreground">{{ 'lookup.paid' | transloco }}</dt>
                 <dd class="mt-2 whitespace-nowrap font-serif text-lg text-accent-deep sm:text-xl">{{ b.amountPaid | number }} ₫</dd>
               </div>
               <div>
-                <dt class="small-caps text-[0.625rem] text-muted-foreground">{{ 'lookup.remaining' | transloco }}</dt>
+                <dt class="small-caps text-xs text-muted-foreground">{{ 'lookup.remaining' | transloco }}</dt>
                 <dd class="mt-2 whitespace-nowrap font-serif text-lg sm:text-xl">{{ b.amountDue | number }} ₫</dd>
               </div>
             </dl>

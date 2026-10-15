@@ -60,7 +60,7 @@
           <p class="flex h-11 items-center justify-center font-serif text-xl">{{ month.label }}</p>
           <div class="mt-3 grid grid-cols-7 gap-1 text-center" role="group" [attr.aria-label]="month.label">
             @for (day of weekdays; track day) {
-              <span class="small-caps pb-1 text-[0.625rem] text-muted-foreground" aria-hidden="true">{{ day | transloco }}</span>
+              <span class="small-caps pb-1 text-xs text-muted-foreground" aria-hidden="true">{{ day | transloco }}</span>
             }
             @for (blank of month.blanks; track blank) {
               <span></span>
