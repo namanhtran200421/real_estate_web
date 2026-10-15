@@ -1,6 +1,6 @@
 import { Component, computed, inject } from '@angular/core';
 import { DecimalPipe, NgOptimizedImage } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { NavigationCancel, NavigationEnd, NavigationError, NavigationSkipped, Router, RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { ApartmentCard } from '../../components/apartment-card/apartment-card';
 import { NavyBand } from '../../components/navy-band/navy-band';
@@ -49,10 +49,32 @@ export class Home {
 
   protected readonly promises = ['availability', 'prices', 'vietqr'].map((key) => `home.scenes.promises.${key}`);
 
-  /** Page transition: the clicked window's photo morphs into the apartment hero (named only now, never twice). */
+  private readonly router = inject(Router);
+  private morphed: HTMLElement | undefined;
+
+  /**
+   * Page transition: the clicked window's photo morphs into the apartment hero. The name is set
+   * only now and cleared as soon as the navigation settles (done, cancelled or failed), so two
+   * elements never share it. Modified clicks (new tab) do not navigate here, so they set nothing.
+   */
   protected morph(event: Event): void {
+    if (event instanceof MouseEvent && (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey)) return;
     const img = (event.currentTarget as Element).querySelector('img');
-    if (img) img.style.viewTransitionName = 'apt-photo';
+    if (!img) return;
+    this.clearMorph();
+    img.style.viewTransitionName = 'apt-photo';
+    this.morphed = img;
+    const settled = this.router.events.subscribe((e) => {
+      if (e instanceof NavigationEnd || e instanceof NavigationCancel || e instanceof NavigationError || e instanceof NavigationSkipped) {
+        settled.unsubscribe();
+        requestAnimationFrame(() => this.clearMorph());
+      }
+    });
+  }
+
+  private clearMorph(): void {
+    if (this.morphed) this.morphed.style.viewTransitionName = '';
+    this.morphed = undefined;
   }
 
   constructor() {

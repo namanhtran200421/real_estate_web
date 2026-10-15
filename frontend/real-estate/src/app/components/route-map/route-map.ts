@@ -10,7 +10,7 @@ export function layoutPlaces(count: number, width = 640, height = 420) {
     const slot = Math.floor(i / 2);
     const perSide = sides[i % 2];
     const y = 30 + ((height - 60) * (slot + 0.5)) / Math.max(perSide, 1);
-    const x = anchor === 'start' ? width * 0.78 : width * 0.22;
+    const x = anchor === 'start' ? width * 0.68 : width * 0.32;
     return { x, y, labelX: anchor === 'start' ? x + 14 : x - 14, anchor };
   });
 }

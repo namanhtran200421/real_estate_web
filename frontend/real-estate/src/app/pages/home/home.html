@@ -3,27 +3,27 @@
     <!-- 1 · Dawn -->
     <section class="relative -mt-[5.5rem] md:-mt-[6.5rem]">
       <div class="relative grid h-[100svh] min-h-[38rem] gap-1 bg-background lg:grid-cols-[1fr_1.25fr_1fr]">
-        <div class="hero-image relative hidden overflow-clip lg:block">
+        <div class="hero-image relative hidden overflow-clip lg:mt-24 lg:block">
           <img [ngSrc]="h.left.src" [alt]="h.left.alt" fill sizes="(min-width: 1024px) 32vw, 100vw" class="object-cover" />
         </div>
-        <div class="hero-image relative overflow-clip lg:mt-16 lg:rounded-t-[999px]">
+        <div class="hero-image relative overflow-clip lg:rounded-t-[999px]">
           <img [ngSrc]="h.centre.src" [alt]="h.centre.alt" fill priority sizes="(min-width: 1024px) 40vw, 100vw" class="object-cover" />
         </div>
-        <div class="hero-image relative hidden overflow-clip lg:block">
+        <div class="hero-image relative hidden overflow-clip lg:mt-24 lg:block">
           <img [ngSrc]="h.right.src" [alt]="h.right.alt" fill sizes="(min-width: 1024px) 32vw, 100vw" class="object-cover" />
         </div>
-        <div class="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgb(11_34_66/0.35)_0%,rgb(11_34_66/0)_28%,rgb(11_34_66/0.1)_55%,rgb(11_34_66/0.78)_100%)]"></div>
+        <div class="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgb(11_34_66/0.35)_0%,rgb(11_34_66/0)_25%,rgb(11_34_66/0.25)_38%,rgb(11_34_66/0.55)_55%,rgb(11_34_66/0.85)_100%)]"></div>
         <div class="hero-mist absolute inset-0 bg-background" aria-hidden="true"></div>
         <div class="absolute inset-x-0 bottom-0 z-10 px-6 pb-10 text-background md:px-12 md:pb-14">
           <div class="mx-auto flex max-w-7xl flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <p class="label-caps text-accent">{{ 'home.eyebrow' | transloco }}</p>
-              <h1 class="display mt-3 text-background">
+              <p class="label-caps text-background/90">{{ 'home.eyebrow' | transloco }}</p>
+              <h1 class="display mt-3 text-background [text-shadow:0_2px_24px_rgb(11_34_66/0.45)]">
                 <span class="hero-line block overflow-clip pb-[0.15em] pt-[0.15em] -my-[0.15em]" style="--line: 0"><span class="block">{{ 'home.titleStart' | transloco }}</span></span>
                 <span class="hero-line block overflow-clip pb-[0.15em] pt-[0.15em] -my-[0.15em]" style="--line: 1"><span class="block"><em class="text-accent">{{ 'home.titleEm' | transloco }}</em></span></span>
               </h1>
             </div>
-            <div class="flex flex-col items-start gap-4 lg:items-end">
+            <div class="flex flex-col items-start gap-4 lg:items-end lg:rounded-2xl lg:bg-[radial-gradient(ellipse_at_center,rgb(11_34_66/0.6),rgb(11_34_66/0)_72%)] lg:p-8 lg:-m-8">
               <p class="font-serif text-2xl">{{ 'home.scenes.perNight' | transloco: { price: (apt.pricing.weekday | number) } }}</p>
               <a data-hero-cta class="btn btn-primary" routerLink="/book" [queryParams]="{ apt: apt.slug }">{{ 'home.scenes.heroCta' | transloco }} →</a>
             </div>
@@ -71,9 +71,10 @@
       <div class="container-editorial max-w-7xl">
         <p class="label-caps text-accent-deep">{{ 'home.scenes.windowsEyebrow' | transloco }}</p>
         <h2 class="display-section mt-4"><app-split [text]="'home.scenes.windowsTitle' | transloco" /></h2>
+        @let oddRow = windows().length % 2 === 1;
         <ul class="mt-14 grid grid-cols-2 gap-4 md:grid-cols-5 md:gap-5" data-windows>
           @for (w of windows(); track w.chapter.id) {
-            <li data-window>
+            <li data-window [class]="oddRow && $last ? 'col-span-2 mx-auto w-1/2 md:col-span-1 md:w-full' : ''">
               <a class="group focus-photo block rounded-t-[999px]" routerLink="/apartment" [fragment]="w.chapter.id" [queryParams]="{ apt: apt.slug }" (click)="morph($event)">
                 <div class="arch relative aspect-[3/5]">
                   <img [ngSrc]="w.photo.src" [alt]="w.photo.alt" fill sizes="(min-width: 768px) 18vw, 45vw" class="media-zoom object-cover" />

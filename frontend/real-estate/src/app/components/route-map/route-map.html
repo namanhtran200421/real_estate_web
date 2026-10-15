@@ -1,5 +1,5 @@
 <figure class="relative">
-  <svg [attr.viewBox]="'0 0 ' + width + ' ' + height" class="hidden w-full overflow-visible sm:block" role="img" [attr.aria-label]="label()">
+  <svg [attr.viewBox]="'0 0 ' + width + ' ' + height" class="hidden w-full overflow-visible md:block" role="img" [attr.aria-label]="label()">
     @for (place of places(); track place.place; let i = $index) {
       @let p = points()[i];
       <path appDrawPath [drawDelay]="i * 0.08" [attr.d]="'M ' + width / 2 + ' ' + height / 2 + ' Q ' + (width / 2 + p.x) / 2 + ' ' + (p.y - 30) + ' ' + p.x + ' ' + p.y"
@@ -11,7 +11,7 @@
     <circle [attr.cx]="width / 2" [attr.cy]="height / 2" r="9" class="fill-accent stroke-foreground" stroke-width="2" />
   </svg>
   <!-- The same information as a list: visible on narrow screens, read aloud everywhere. -->
-  <ul class="divide-y divide-border sm:sr-only">
+  <ul class="divide-y divide-border md:sr-only">
     @for (place of places(); track place.place) {
       <li class="flex items-baseline justify-between gap-4 py-3">
         <span class="font-serif text-lg">{{ place.place }}</span>
