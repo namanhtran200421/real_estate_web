@@ -2,9 +2,9 @@
 
 <article
   class="group grid h-full overflow-hidden rounded-lg border border-border bg-card transition-[border-color,box-shadow] hover:border-border-hover"
-  [class]="featured() ? 'shadow-md hover:shadow-lg lg:grid-cols-[minmax(0,1fr)_26rem]' : 'grid-rows-[auto_1fr] shadow-sm hover:shadow-md'"
+  [class]="featured() ? 'shadow-md hover:shadow-lg lg:grid-cols-[minmax(0,1fr)_26rem]' : 'grid-rows-[auto_1fr] border-transparent bg-transparent shadow-none'"
 >
-  <div class="relative isolate aspect-[4/3] overflow-hidden bg-muted" [class]="featured() ? 'md:aspect-[16/10] lg:aspect-auto lg:min-h-[28rem]' : ''">
+  <div class="relative isolate overflow-hidden bg-muted" [class]="featured() ? 'aspect-[4/3] md:aspect-[16/10] lg:aspect-auto lg:min-h-[28rem]' : 'rounded-t-[999px] aspect-[3/4]'">
     @if (slides()) {
       <!-- Embla moves the track inside this viewport: swipe, drag, buttons or arrow keys -->
       <div
