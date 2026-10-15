@@ -22,7 +22,7 @@
           </div>
         </li>
       }
-      <li class="room-tour__chapter room-tour__cta">
+      <li class="room-tour__chapter room-tour__cta" id="tour-end" data-chapter>
         <h3 class="display-section">{{ 'rooms.seeDates' | transloco }}</h3>
         <a class="btn btn-primary mt-8" routerLink="/book" [queryParams]="{ apt: apartment().slug }">{{ 'apartment.bookBar.cta' | transloco }} →</a>
       </li>

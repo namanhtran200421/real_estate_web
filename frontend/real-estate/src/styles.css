@@ -816,24 +816,29 @@
     background: var(--color-navy-deep);
   }
 
-  /* Room tour, default (no JS, reduced motion, landscape phones, tablets): a vertical list. */
-  .room-tour__track { display: grid; gap: 4rem; padding-inline: 1.5rem; margin-top: 2rem; list-style: none; }
-  .room-tour__photos { display: grid; grid-template-columns: 1.3fr 1fr; gap: 0.75rem; }
+  /* Room tour, default (no JS, engine not loaded, reduced motion, landscape phones, tablets): a vertical list. */
+  .room-tour__track { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4rem; padding-inline: 1.5rem; margin-top: 2rem; list-style: none; }
+  .room-tour__chapter { min-width: 0; }
+  .room-tour__photos { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 0.75rem; }
   .room-tour__photos > div { aspect-ratio: 3 / 4; }
-  .room-tour__lead { grid-row: span 2; aspect-ratio: auto; }
+  .room-tour__photos > .room-tour__lead { grid-row: span 2; aspect-ratio: auto; }
+  /* Two photos: the second takes both rows (and sets the height); one photo: it fills the width. */
+  .room-tour__photos > .room-tour__lead + div:last-child { grid-row: span 2; }
+  .room-tour__photos > .room-tour__lead:only-child { grid-column: 1 / -1; aspect-ratio: 3 / 4; }
   .room-tour__text { margin-top: 1.5rem; }
   .room-tour__progress { display: none; }
 
-  /* Desktop motion: reserved height (about 250vh), sticky viewport, sideways track scrubbed by GSAP. */
+  /* Desktop motion, once the engine has taken over (.room-tour--live): reserved height (about 250vh),
+     sticky viewport, sideways track scrubbed by GSAP. Until then (or if it never loads) the list shows. */
   @media (prefers-reduced-motion: no-preference) and (hover: hover) and (pointer: fine) and (min-width: 1024px) and (min-height: 700px) {
-    html.motion .room-tour { height: 250vh; }
-    html.motion .room-tour__sticky { position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; justify-content: center; overflow-x: clip; }
-    html.motion .room-tour__track { display: flex; gap: 5vw; padding-inline: 6vw; width: max-content; margin-top: 3rem; }
-    html.motion .room-tour__chapter { width: min(68vw, 62rem); flex: none; display: grid; grid-template-columns: 1.4fr 1fr; gap: 3rem; align-items: end; }
-    html.motion .room-tour__photos { height: 62vh; }
-    html.motion .room-tour__photos > div { aspect-ratio: auto; }
-    html.motion .room-tour__cta { width: 36rem; align-self: center; display: block; }
-    html.motion .room-tour__progress { display: block; height: 1px; background: var(--color-accent); transform: scaleX(0); transform-origin: left; margin-top: 1rem; }
+    html.motion .room-tour--live { height: 250vh; }
+    html.motion .room-tour--live .room-tour__sticky { position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; justify-content: center; overflow-x: clip; }
+    html.motion .room-tour--live .room-tour__track { display: flex; gap: 5vw; padding-inline: 6vw; width: max-content; margin-top: 3rem; }
+    html.motion .room-tour--live .room-tour__chapter { width: min(68vw, 62rem); flex: none; display: grid; grid-template-columns: 1.4fr 1fr; gap: 3rem; align-items: end; }
+    html.motion .room-tour--live .room-tour__photos { height: 62vh; }
+    html.motion .room-tour--live .room-tour__photos > div { aspect-ratio: auto; }
+    html.motion .room-tour--live .room-tour__cta { width: 36rem; align-self: center; display: block; }
+    html.motion .room-tour--live .room-tour__progress { display: block; height: 1px; background: var(--color-accent); transform: scaleX(0); transform-origin: left; margin-top: 1rem; }
   }
 
   /* Portrait phones: full-screen chapters that stack (pure CSS). */

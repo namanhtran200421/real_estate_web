@@ -44,6 +44,9 @@ export class RoomTour {
       mm.add(MOTION_QUERIES.pinTour, () => {
         const section = this.section().nativeElement;
         const track = this.track().nativeElement;
+        // The horizontal layout is keyed to this class, so it only exists while the engine drives it
+        // (the server and pre-engine layout is the vertical list, and stays so if the engine never loads).
+        section.classList.add('room-tour--live');
         const shift = () => Math.max(track.scrollWidth - window.innerWidth, 0);
         const tween = engine.gsap.to(track, {
           x: () => -shift(),
@@ -60,12 +63,18 @@ export class RoomTour {
           const chapter = track.querySelector<HTMLElement>(`#${CSS.escape(id)}`);
           const st = tween.scrollTrigger;
           if (!chapter || !st) return;
-          engine.jumpTo(scrollForChapter(chapter.offsetLeft - track.offsetLeft, shift(), st.start, st.end));
+          // Land the chapter at the track's left padding, not flush at the viewport edge.
+          const padding = parseFloat(getComputedStyle(track).paddingLeft) || 0;
+          engine.jumpTo(scrollForChapter(chapter.offsetLeft - track.offsetLeft - padding, shift(), st.start, st.end));
         };
         // Deep links (#phong-ngu-2): after the router's own anchor scroll (which lands on chapter 1,
         // the sticky box's position), correct to the chapter. Keyboard focus does the same.
         const ids = new Set(this.chapters().map((c) => c.id));
-        if (ids.has(location.hash.slice(1))) requestAnimationFrame(() => goTo(location.hash.slice(1)));
+        // The section just grew from a list to the reserved height: recompute every trigger first.
+        const frame = requestAnimationFrame(() => {
+          engine.refresh();
+          if (ids.has(location.hash.slice(1))) requestAnimationFrame(() => goTo(location.hash.slice(1)));
+        });
         const routerScroll = this.router.events.subscribe((event) => {
           if (event instanceof Scroll && event.anchor && ids.has(event.anchor)) requestAnimationFrame(() => goTo(event.anchor!));
         });
@@ -75,6 +84,8 @@ export class RoomTour {
         };
         track.addEventListener('focusin', onFocus);
         return () => {
+          cancelAnimationFrame(frame);
+          section.classList.remove('room-tour--live');
           routerScroll.unsubscribe();
           track.removeEventListener('focusin', onFocus);
         };
