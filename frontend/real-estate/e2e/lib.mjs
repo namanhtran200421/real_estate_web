@@ -31,6 +31,8 @@ export function captureErrors(page) {
     const text = m.text();
     // Dev mode logs a skipped view transition (reduced motion, Tier 2, same page) as an error: expected.
     if (/Transition was skipped/.test(text)) return;
+    // The embedded Google map logs its own errors (Firefox and WebKit surface messages from that frame); not ours.
+    if (/^https:\/\/([^/]+\.)?(google\.com|googleapis\.com|gstatic\.com)\//.test(m.location().url)) return;
     if (m.type() === 'error' || /NG05\d\d/.test(text)) errors.push(text);
   });
   page.on('pageerror', (e) => errors.push(e.message));

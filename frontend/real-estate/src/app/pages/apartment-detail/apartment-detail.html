@@ -1,7 +1,7 @@
 @if (apartment(); as apt) {
   <div class="pb-24 md:pb-0">
     <section class="relative overflow-x-clip" data-apartment-hero>
-      <div class="container-editorial grid max-w-7xl items-end gap-10 pb-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:pb-0">
+      <div class="container-editorial grid max-w-7xl items-end gap-10 pb-12 lg:h-[86vh] lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)] lg:pb-0">
         <div class="order-2 pb-6 lg:order-1 lg:pb-24">
           <p class="label-caps text-accent-deep">{{ apt.area }}</p>
           <h1 class="display mt-4"><app-split [text]="apt.name" /></h1>
