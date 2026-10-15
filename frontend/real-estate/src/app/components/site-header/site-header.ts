@@ -19,7 +19,7 @@ export class SiteHeader {
   protected readonly site = SITE;
   protected readonly lang = inject(LANG);
   private readonly motion = inject(MotionService);
-  private readonly menu = viewChild.required<ElementRef<HTMLDialogElement>>('menu');
+  private readonly menu = viewChild<ElementRef<HTMLDialogElement>>('menu');
 
   /** `label` is a translation key. */
   protected readonly links = [
@@ -49,19 +49,20 @@ export class SiteHeader {
 
   constructor() {
     const destroyRef = inject(DestroyRef);
+    // Browser only: the server DOM has no <dialog> API (close() throws "NotYetImplemented").
+    if (!isPlatformBrowser(inject(PLATFORM_ID))) return;
     // Any navigation (links, browser back, iOS swipe-back) closes the menu; (close) then cleans up.
     this.router.events
       .pipe(
         filter((event) => event instanceof NavigationEnd),
         takeUntilDestroyed(),
       )
-      .subscribe(() => this.menu().nativeElement.close());
-    if (!isPlatformBrowser(inject(PLATFORM_ID))) return;
+      .subscribe(() => this.closeIfOpen());
     // The menu is phone/tablet only: close it when the viewport grows past the lg breakpoint.
     afterNextRender(() => {
       const wide = window.matchMedia('(min-width: 1024px)');
       const onChange = (e: MediaQueryListEvent) => {
-        if (e.matches) this.menu().nativeElement.close();
+        if (e.matches) this.closeIfOpen();
       };
       wide.addEventListener('change', onChange);
       destroyRef.onDestroy(() => wide.removeEventListener('change', onChange));
@@ -73,13 +74,21 @@ export class SiteHeader {
   }
 
   protected openMenu(): void {
-    this.menu().nativeElement.showModal();
+    const menu = this.menu()?.nativeElement;
+    if (!menu) return;
+    menu.showModal();
     document.documentElement.classList.add('has-dialog');
     this.motion.engine()?.pause();
   }
 
+  /** Closes the menu if it is open (the initial navigation can end before the view exists). */
+  private closeIfOpen(): void {
+    const menu = this.menu()?.nativeElement;
+    if (menu?.open) menu.close();
+  }
+
   protected closeMenu(): void {
-    this.menu().nativeElement.close();
+    this.closeIfOpen();
   }
 
   /** Skip links: focus the target in place (no navigation). */
