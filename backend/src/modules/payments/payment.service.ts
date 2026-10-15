@@ -371,7 +371,9 @@ async function recordManualPayment(
       current = { ...booking, status: 'pending' };
       await bookingRepository.addEvent(booking.id, 'reactivated', admin.email, { reason: 'late_payment' }, db);
       // The stay is back on: keep the guests' identities as for any stay, or ask for them again.
-      if ((await guestIdentityRepository.restoreRetention(booking.id, booking.checkOut, db)) === 0) {
+      // Bookings made before identities were collected have none to restore and none purged.
+      const restored = await guestIdentityRepository.restoreRetention(booking.id, booking.checkOut, db);
+      if (restored === 0 && (await bookingRepository.hasEvent(booking.id, 'identities_purged', db))) {
         await bookingRepository.addEvent(booking.id, 'identities_missing', 'system', { reason: 'purged_before_reactivation' }, db);
       }
     }
@@ -467,7 +469,7 @@ async function refundDeposit(reference: string, admin: AdminIdentity): Promise<v
     if (incidentAmountDue >= 1000) {
       throw HttpError.conflict(
         'INCIDENT_DUE',
-        'Khách còn nợ tiền bồi thường. Hãy ghi nhận khoản bồi thường hoặc cấn trừ từ tiền cọc trước khi hoàn cọc.',
+        'Khách còn nợ tiền bồi thường. Hãy ghi nhận khoản bồi thường trước khi hoàn cọc.',
       );
     }
 

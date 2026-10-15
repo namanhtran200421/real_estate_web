@@ -38,7 +38,7 @@ export function depositRefundBlocker(
   if (!booking.inspection) return 'Lưu kết quả kiểm tra trả phòng trước.';
   if (booking.incidents.some((incident) => incident.status === 'open')) return 'Còn khoản hư hỏng chưa đóng.';
   if (booking.financials.incidentAmountDue >= MIN_AMOUNT) {
-    return 'Khách còn nợ tiền bồi thường. Hãy ghi nhận khoản bồi thường hoặc cấn trừ từ tiền cọc trước khi hoàn cọc.';
+    return 'Khách còn nợ tiền bồi thường. Hãy ghi nhận khoản bồi thường trước khi hoàn cọc.';
   }
   if (booking.depositRefundable < MIN_AMOUNT) return 'Không còn tiền cọc để hoàn.';
   return undefined;

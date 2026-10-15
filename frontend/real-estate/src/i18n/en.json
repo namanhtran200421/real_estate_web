@@ -526,6 +526,7 @@
     "bookingRef": "Booking {{ reference }}",
     "unpaid": "Awaiting payment confirmation",
     "unpaidText": "Please transfer and send a screenshot of the successful transfer before {{ time }} to complete your booking.",
+    "unpaidTextNoHold": "Please transfer and send a screenshot of the successful transfer to complete your payment.",
     "screenshotTitle": "The transfer screenshot you sent",
     "screenshotAlt": "Your screenshot of the {{ amount }} ₫ transfer",
     "screenshotOpen": "View full size",

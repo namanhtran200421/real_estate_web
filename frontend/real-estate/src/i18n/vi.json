@@ -526,6 +526,7 @@
     "bookingRef": "Đặt phòng {{ reference }}",
     "unpaid": "Chờ xác nhận thanh toán",
     "unpaidText": "Vui lòng chuyển khoản và gửi ảnh chuyển khoản thành công trước {{ time }} để hoàn tất đặt phòng.",
+    "unpaidTextNoHold": "Vui lòng chuyển khoản và gửi ảnh chuyển khoản thành công để hoàn tất thanh toán.",
     "screenshotTitle": "Ảnh chuyển khoản bạn đã gửi",
     "screenshotAlt": "Ảnh chuyển khoản {{ amount }} ₫ bạn đã gửi",
     "screenshotOpen": "Xem ảnh đầy đủ",

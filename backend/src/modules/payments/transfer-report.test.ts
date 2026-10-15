@@ -830,6 +830,18 @@ describe('reporting a transfer with its screenshot', { skip: !databaseUrl && 'TE
     assert.deepEqual(detail.identities, []);
     assert.equal(detail.identitiesMissing, true, 'to be collected again at check-in');
     assert.ok(detail.events.some((event: { type: string }) => event.type === 'identities_missing'));
+
+    // A booking made before identities were collected had none to delete: not "missing" when paid late.
+    const older = await book(268);
+    await pool.query(`DELETE FROM booking_guest_identities WHERE booking_id = (SELECT id FROM bookings WHERE reference = $1)`, [
+      older.reference,
+    ]);
+    await expire(older.reference);
+    const paidOlder = await recordPayment(older.reference, { method: 'bank_transfer', purpose: 'asset_security', amount: older.deposit });
+    assert.equal(paidOlder.status, 201, await paidOlder.clone().text());
+    const olderDetail = await adminBooking(older.reference);
+    assert.equal(olderDetail.status, 'confirmed');
+    assert.equal(olderDetail.events.some((event: { type: string }) => event.type === 'identities_missing'), false);
   });
 
   it('takes a child with only name, date of birth and personal ID number, and refuses an adult without an issue date', async () => {
