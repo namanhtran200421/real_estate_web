@@ -310,6 +310,11 @@
     "placeEyebrow": "Midday",
     "placeTitle": "Room for the whole family",
     "cool": "Đà Lạt is cool all year; a ceiling fan is all you need.",
+    "hero": {
+      "region": "Apartment photos",
+      "slide": "Photo {{ n }}/{{ total }}",
+      "controls": "Change photo"
+    },
     "windowsEyebrow": "Dusk",
     "windowsTitle": "Five windows, five corners",
     "promisesEyebrow": "Book direct",

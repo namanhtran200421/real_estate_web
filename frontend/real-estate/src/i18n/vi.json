@@ -310,6 +310,11 @@
     "placeEyebrow": "Giữa ngày",
     "placeTitle": "Rộng rãi cho cả nhà",
     "cool": "Đà Lạt mát quanh năm, quạt trần là đủ.",
+    "hero": {
+      "region": "Ảnh căn hộ",
+      "slide": "Ảnh {{ n }}/{{ total }}",
+      "controls": "Chuyển ảnh"
+    },
     "windowsEyebrow": "Chiều buông",
     "windowsTitle": "Năm khung cửa, năm góc nhỏ",
     "promisesEyebrow": "Đặt trực tiếp",
