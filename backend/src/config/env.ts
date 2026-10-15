@@ -82,6 +82,36 @@ function list(name: string): string[] {
     .filter(Boolean);
 }
 
+/** Browser origins, normalized to scheme + host (+ optional port). */
+function origins(name: string, requireHttps: boolean): string[] {
+  const values = list(name);
+  const normalized = new Set<string>();
+
+  for (const value of values) {
+    if (!URL.canParse(value)) {
+      problems.push(`${name} contains an invalid URL ("${value}")`);
+      continue;
+    }
+
+    const parsed = new URL(value);
+    if (!['http:', 'https:'].includes(parsed.protocol)) {
+      problems.push(`${name} origins must use http:// or https:// (got "${value}")`);
+      continue;
+    }
+    if (requireHttps && parsed.protocol !== 'https:') {
+      problems.push(`${name} origins must use https:// in production (got "${value}")`);
+      continue;
+    }
+    if (parsed.username || parsed.password || parsed.pathname !== '/' || parsed.search || parsed.hash) {
+      problems.push(`${name} entries must be origins without credentials, paths, queries or fragments (got "${value}")`);
+      continue;
+    }
+    normalized.add(parsed.origin);
+  }
+
+  return [...normalized];
+}
+
 /** A required absolute URL, without trailing slash. HTTPS is enforced in production. */
 function url(name: string, requireHttps: boolean): string {
   const value = requiredString(name).replace(/\/+$/, '');
@@ -133,6 +163,8 @@ const isProduction = nodeEnv === 'production';
 
 const resendApiKey = read('RESEND_API_KEY');
 const captchaSecret = read('TURNSTILE_SECRET_KEY');
+const dbSsl = boolean('DB_SSL', false);
+const jobsEnabled = boolean('JOBS_ENABLED', true);
 const guestIdentityEncryptionKey = optionalSecret('GUEST_IDENTITY_ENCRYPTION_KEY', 32);
 const guestIdentityRetentionConfigured = read('GUEST_IDENTITY_RETENTION_DAYS') !== undefined;
 const turnstileTestSecrets = new Set([
@@ -165,7 +197,7 @@ export const env = Object.freeze({
   trustProxyHops: integer('TRUST_PROXY_HOPS', process.env.RENDER === 'true' ? 3 : 0, 0, 10),
 
   /** Browser origins allowed to call the API. Empty = only SITE_URL. */
-  corsOrigins: list('CORS_ORIGINS'),
+  corsOrigins: origins('CORS_ORIGINS', isProduction),
 
   /**
    * Shared secret the website's server sends as `X-Internal-Key` when it renders pages, so its
@@ -174,7 +206,7 @@ export const env = Object.freeze({
   internalApiKey: optionalSecret('INTERNAL_API_KEY', 32),
 
   /** Run background jobs (email sending, payment reconciliation, hold expiry) in this process. */
-  jobsEnabled: boolean('JOBS_ENABLED', true),
+  jobsEnabled,
 
   /**
    * Cloudflare Turnstile secret. When set, public forms (booking, lookup, contact, admin login)
@@ -195,7 +227,7 @@ export const env = Object.freeze({
     /** Queries running longer than this are cancelled by Postgres, so slow queries cannot pile up. */
     statementTimeoutMs: integer('DB_STATEMENT_TIMEOUT_MS', 5_000, 100, 300_000),
     /** Enable TLS for managed databases (Neon, RDS, Supabase, …). */
-    ssl: boolean('DB_SSL', false),
+    ssl: dbSsl,
   }),
 
   rateLimit: Object.freeze({
@@ -214,6 +246,8 @@ export const env = Object.freeze({
     holdMinutes: integer('BOOKING_HOLD_MINUTES', 180, 10, 24 * 60),
     /** Signs the per-booking access tokens guests use to view and pay their booking. */
     tokenSecret: secret('BOOKING_TOKEN_SECRET', 32),
+    /** A leaked guest access token stops opening its booking after this many days. */
+    accessTokenDays: integer('BOOKING_ACCESS_TOKEN_DAYS', 30, 1, 365),
     /** AES-256-GCM key material for temporary-stay identity documents. */
     identityEncryptionKey:
       guestIdentityEncryptionKey ?? 'development-only-guest-identity-key-change-before-production',
@@ -254,9 +288,12 @@ export const env = Object.freeze({
 
 if (isProduction) {
   if (!resendApiKey) problems.push('RESEND_API_KEY is required in production');
+  if (!captchaSecret) problems.push('TURNSTILE_SECRET_KEY is required in production');
   if (captchaSecret && turnstileTestSecrets.has(captchaSecret)) {
     problems.push('TURNSTILE_SECRET_KEY is a Cloudflare test key; use a real widget secret in production');
   }
+  if (!dbSsl) problems.push('DB_SSL must be true in production');
+  if (!jobsEnabled) problems.push('JOBS_ENABLED must be true in production so retention and delivery jobs run');
   if (!guestIdentityEncryptionKey) problems.push('GUEST_IDENTITY_ENCRYPTION_KEY is required in production');
   if (!guestIdentityRetentionConfigured) problems.push('GUEST_IDENTITY_RETENTION_DAYS is required in production');
 }

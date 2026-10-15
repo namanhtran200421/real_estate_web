@@ -41,7 +41,8 @@ The admin area is at http://localhost:4200/admin.
 Every setting is an environment variable; nothing is hard-coded. **`.env.example` documents
 each one.** Locally they come from `.env` (git-ignored); in production, set them in the hosting
 platform. `src/config/env.ts` validates everything at startup and refuses to start with a list
-of every problem. In production it additionally requires an HTTPS `SITE_URL` and a Resend key.
+of every problem. In production it additionally requires an HTTPS `SITE_URL`, TLS for Postgres,
+a real Turnstile secret and a Resend key.
 
 For Neon, use the pooled connection string as `DATABASE_URL` for the running API and set
 `DB_SSL=true`. Run migrations with a direct Neon connection string (the host has no `-pooler`
@@ -124,9 +125,13 @@ pending ──owner sees the money arrive──▶ confirmed ──check-out pas
   return `409 DUPLICATE_BOOKING` without exposing the existing booking reference.
 - A guest can hold at most 3 unpaid bookings at once (by email, phone or IP), so nobody can
   block the calendar.
-- Guests have no accounts. Creating a booking returns an **access token** (HMAC of the booking
-  id). The site stores it and sends it as `X-Booking-Token`. On another device, the guest looks
-  the booking up with its reference plus their email or phone.
+- Guests have no accounts. Creating a booking returns a fresh, signed **access token** scoped to
+  that booking. It expires after `BOOKING_ACCESS_TOKEN_DAYS` (30 by default), and the site keeps it
+  only in the current browser tab before sending it as `X-Booking-Token`. On another device, after
+  closing the tab, or after expiry, the guest looks the booking up with its reference plus their
+  email or phone; a successful CAPTCHA-protected lookup issues a fresh token.
+  Deploying this token format invalidates tokens issued by older releases; existing guests regain
+  access through that same lookup flow.
 
 ### Payments: bank transfer, confirmed by the owner
 
@@ -186,7 +191,8 @@ Hold runs out ──▶ booking expired, dates released. Money seen later still 
 Written to an **outbox table in the same transaction** as the change they announce, then sent by
 the `send-emails` job through Resend with retries (8 attempts, exponential backoff) and
 idempotency keys. A slow or failing email service never breaks a booking, and nothing is lost
-on restart. Without `RESEND_API_KEY` (development only), emails are written to the log.
+on restart. Without `RESEND_API_KEY` (development only), a content-free delivery marker is written
+to the log; recipient addresses, subjects and bodies are never logged.
 
 | Recipient | When                                                                  |
 | --------- | --------------------------------------------------------------------- |
@@ -206,8 +212,9 @@ on restart. Without `RESEND_API_KEY` (development only), emails are written to t
 | purge-screenshots      | 6 h    | Delete answered transfer screenshots 35 days after upload |
 
 Each run takes a transaction-scoped Postgres advisory lock (safe behind Neon's pooler), so with
-several instances only one runs each job. Set `JOBS_ENABLED=false` on instances that should not
-run them.
+several instances only one runs each job. Retention jobs also run once at startup, ensuring a
+restart cannot indefinitely postpone deletion. Production requires `JOBS_ENABLED=true`; disabling
+all jobs would also disable email delivery, hold expiry and deletion of retained personal data.
 
 ### Caching
 
@@ -251,7 +258,7 @@ contact inbox. Full list: `src/modules/admin/admin.router.ts`.
 | Threat                               | Mitigation                                                                              |
 | ------------------------------------ | --------------------------------------------------------------------------------------- |
 | Header-based attacks                 | helmet (HSTS, strict CSP, nosniff, frame blocking, no X-Powered-By)                       |
-| Other websites calling the API       | CORS allowlist (`SITE_URL` + `CORS_ORIGINS`)                                            |
+| Other websites calling the API       | Exact CORS allowlist (`SITE_URL` + `CORS_ORIGINS`; no wildcard preview domains)          |
 | One client flooding the API          | Per-IP limit on all `/api` requests (`RATE_LIMIT_MAX`), 429 + `Retry-After`              |
 | Bots and botnets (many IPs)          | Cloudflare Turnstile CAPTCHA on booking, lookup, contact and admin login (`TURNSTILE_SECRET_KEY`); fails closed |
 | Floods that saturate the process     | Load shedding: 503 + `Retry-After` while the event loop lags over `OVERLOAD_LAG_MS`      |
@@ -261,6 +268,7 @@ contact inbox. Full list: `src/modules/admin/admin.router.ts`.
 | Password guessing                    | CAPTCHA; 10 failed logins / 15 min per IP **and** per account; scrypt hashes; constant-time checks; no account enumeration |
 | Promo code guessing                  | 30 quotes with a code / 15 min per IP                                                    |
 | Booking enumeration                  | CAPTCHA; random references, lookup needs email/phone, 20 lookups / 15 min per IP, 404 on bad token |
+| Leaked guest booking token           | Random, booking-scoped signed tokens expire after `BOOKING_ACCESS_TOKEN_DAYS`; browser cache is tab-scoped |
 | Fake "I have transferred" reports    | Nothing is confirmed until the owner sees the money; one open report per booking        |
 | Spoofed client IPs                   | `trust proxy` = exact proxy count (`TRUST_PROXY_HOPS`)                                   |
 | Large bodies / slow clients          | 100 kB JSON limit (5 MB image on the transfer-screenshot route, read only after the booking token is checked); 10 s headers, 30 s request timeouts |
@@ -272,8 +280,8 @@ contact inbox. Full list: `src/modules/admin/admin.router.ts`.
 | Stolen or forgotten admin sign-in    | Sessions end after `ADMIN_IDLE_MINUTES` (120) without use and `ADMIN_SESSION_HOURS` (12) in all; the account page lists every signed-in device to sign out; a password change signs out all other devices and emails the admin |
 | Weak admin passwords                 | scrypt hashing; new passwords need 12+ characters, not a common password, not the email name, not the current one (`admin-auth/password.ts`, unit-tested) |
 
-In production the API logs a warning at startup when `TURNSTILE_SECRET_KEY`, `TRUST_PROXY_HOPS`
-or `INTERNAL_API_KEY` is missing.
+Production startup fails closed when Turnstile or database TLS is missing. The API logs a warning
+when `TRUST_PROXY_HOPS` or `INTERNAL_API_KEY` is missing.
 
 **In front of the app (required in production):** a CDN/WAF with DDoS protection (Cloudflare,
 AWS CloudFront + Shield/WAF, …). Only that layer absorbs network floods.

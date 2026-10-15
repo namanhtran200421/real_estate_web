@@ -30,9 +30,11 @@ describe('contentSecurityPolicy', () => {
     const csp = contentSecurityPolicy('N0NCE', 'https://api.example.com', true);
     expect(csp).toContain("script-src 'self' 'nonce-N0NCE' https://challenges.cloudflare.com");
     expect(csp).not.toMatch(/script-src[^;]*'unsafe-(inline|eval)'/);
+    expect(csp).toContain("script-src-attr 'none'");
     expect(csp).toContain("connect-src 'self' https://api.example.com");
     expect(csp).toContain("frame-ancestors 'none'");
     expect(csp).toContain("object-src 'none'");
+    expect(csp).toContain("worker-src 'none'");
     expect(csp).toContain('upgrade-insecure-requests');
   });
 

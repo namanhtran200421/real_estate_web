@@ -1,7 +1,10 @@
 import { RenderMode, ServerRoute } from '@angular/ssr';
 
 // Private booking pages: rendered in the browser only, and kept out of search engines.
-const PRIVATE = { renderMode: RenderMode.Client, headers: { 'X-Robots-Tag': 'noindex, nofollow' } } as const;
+const PRIVATE = {
+  renderMode: RenderMode.Client,
+  headers: { 'X-Robots-Tag': 'noindex, nofollow', 'Cache-Control': 'private, no-store' },
+} as const;
 
 export const serverRoutes: ServerRoute[] = [
   { path: 'book', ...PRIVATE },

@@ -20,12 +20,13 @@ fresh clone.
 
 ## Configuration
 
-| Variable           | When           | Purpose                                                                 |
-| ------------------ | -------------- | ----------------------------------------------------------------------- |
-| `API_URL`          | Build          | Public URL of the API. Bundled into browser code. Vercel defaults to the Render API; other CI builds require it. |
-| `TURNSTILE_SITE_KEY` | Build        | Cloudflare Turnstile site key (public). Shows the "not a robot" check on booking, lookup, contact and admin login. Pairs with the API's `TURNSTILE_SECRET_KEY`; set both or neither. |
-| `INTERNAL_API_KEY` | Runtime (SSR)  | Same value as the API's; server rendering is then not rate limited per IP. Never sent to browsers. |
-| `SERVER_API_URL`   | Runtime (SSR)  | Optional private address the renderer uses to reach the API.            |
+| Variable             | When          | Purpose                                                                                                                                                                              |
+| -------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `API_URL`            | Build         | Public URL of the API. Bundled into browser code. Vercel defaults to the Render API; other CI builds require it.                                                                     |
+| `TURNSTILE_SITE_KEY` | Build         | Cloudflare Turnstile site key (public). Shows the "not a robot" check on booking, lookup, contact and admin login. Pairs with the API's `TURNSTILE_SECRET_KEY`; set both or neither. |
+| `INTERNAL_API_KEY`   | Runtime (SSR) | Same value as the API's; server rendering is then not rate limited per IP. Never sent to browsers.                                                                                   |
+| `SERVER_API_URL`     | Runtime (SSR) | Optional private address the renderer uses to reach the API.                                                                                                                         |
+| `PUBLIC_SITE_URL`    | Runtime (SSR) | Canonical site origin used in metadata and sitemaps. Vercel supplies its production URL automatically; set this for a custom domain or another host.                                 |
 
 ## Security
 
@@ -37,7 +38,7 @@ fresh clone.
   from Vercel's CDN get theirs from `vercel.json`.
 - **CAPTCHA** (`components/captcha`): Turnstile widget; each token works once and is reset
   after every submit.
-- The admin token is sent only to this site's own API (`admin-auth.service.ts`).
+- The admin token is kept in tab-scoped session storage and sent only to this site's own API (`admin-auth.service.ts`).
 - If the CSP ever blocks something new (e.g. another embed), add its origin to the matching
   directive in `src/csp.ts`; never add `'unsafe-inline'` to `script-src`.
 
@@ -70,6 +71,7 @@ so the browser does not fetch them again. Booking and admin pages render in the 
 
 1. The build uses the Render API by default. Set `API_URL` to override it, and optionally set `INTERNAL_API_KEY` at runtime to match the API.
    Set `TURNSTILE_SITE_KEY` (with the API's `TURNSTILE_SECRET_KEY`) to turn the CAPTCHA on.
+   Set `PUBLIC_SITE_URL` when the canonical site uses a custom domain.
    Under Firewall, turn on Attack Challenge Mode during an attack and add a rate-limit rule for
    page requests: every uncached page render calls the API.
 2. **Add your domain to `security.allowedHosts` in `angular.json`** (e.g. `"vnbookinghub.vn"`,

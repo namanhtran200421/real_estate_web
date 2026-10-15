@@ -4,6 +4,17 @@ import { CAPTCHA_ENABLED, Captcha } from '../../../components/captcha/captcha';
 import { toApiError } from '../../../core/api';
 import { AdminAuthService } from '../../admin-auth.service';
 
+/**
+ * Accepts only this app's owner area as a post-login destination. Treat the query parameter as
+ * hostile input: encoded separators, backslashes and look-alike prefixes do not qualify.
+ */
+export function adminReturnUrl(next?: string): string {
+  if (!next || /[\\\u0000-\u001f\u007f]/.test(next)) return '/admin';
+  if (!/^\/admin(?:[/?#]|$)/.test(next) || /^\/admin\/login(?:[/?#;]|$)/.test(next))
+    return '/admin';
+  return next;
+}
+
 @Component({
   selector: 'app-admin-login',
   styleUrl: '../../admin-theme.css',
@@ -77,11 +88,7 @@ export class AdminLogin {
     this.error.set(undefined);
     try {
       await this.auth.login(this.email().trim(), this.password(), this.captchaToken());
-      let target = '/admin';
-      // Only follow in-app admin paths, never an arbitrary URL.
-      const next = this.next();
-      if (next?.startsWith('/admin') && !next.startsWith('/admin/login')) target = next;
-      void this.router.navigateByUrl(target);
+      void this.router.navigateByUrl(adminReturnUrl(this.next()));
     } catch (error) {
       this.error.set(toApiError(error).message);
       this.password.set('');

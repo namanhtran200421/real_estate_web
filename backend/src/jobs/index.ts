@@ -32,7 +32,17 @@ export const jobs: Job[] = [
   { name: 'complete-stays', intervalMs: 15 * MINUTE, run: () => bookingService.completeFinishedStays() },
   { name: 'rent-requests', intervalMs: 15 * MINUTE, run: bookingService.sendRentRequests },
   { name: 'purge-admin-sessions', intervalMs: HOUR, run: adminAuthService.purgeExpiredSessions },
-  { name: 'purge-emails', intervalMs: 6 * HOUR, run: emailService.purgeOldEmails },
-  { name: 'purge-screenshots', intervalMs: 6 * HOUR, run: () => paymentService.purgeOldTransferScreenshots() },
-  { name: 'purge-guest-identities', intervalMs: 6 * HOUR, run: () => bookingService.purgeExpiredGuestIdentities() },
+  { name: 'purge-emails', intervalMs: 6 * HOUR, runOnStart: true, run: emailService.purgeOldEmails },
+  {
+    name: 'purge-screenshots',
+    intervalMs: 6 * HOUR,
+    runOnStart: true,
+    run: () => paymentService.purgeOldTransferScreenshots(),
+  },
+  {
+    name: 'purge-guest-identities',
+    intervalMs: 6 * HOUR,
+    runOnStart: true,
+    run: () => bookingService.purgeExpiredGuestIdentities(),
+  },
 ];

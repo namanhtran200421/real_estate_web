@@ -1,0 +1,51 @@
+name: Supply-chain security
+
+on:
+  pull_request:
+    paths:
+      - 'backend/package.json'
+      - 'backend/package-lock.json'
+      - 'frontend/real-estate/package.json'
+      - 'frontend/real-estate/package-lock.json'
+      - '.github/workflows/supply-chain.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'backend/package.json'
+      - 'backend/package-lock.json'
+      - 'frontend/real-estate/package.json'
+      - 'frontend/real-estate/package-lock.json'
+      - '.github/workflows/supply-chain.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: Audit ${{ matrix.project }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - project: backend
+            directory: backend
+          - project: frontend
+            directory: frontend/real-estate
+    defaults:
+      run:
+        working-directory: ${{ matrix.directory }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11bd71901bbe5b1634ceea73d27597364c9af683 # v4.2.2
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22.23.3
+          cache: npm
+          cache-dependency-path: ${{ matrix.directory }}/package-lock.json
+      - name: Install locked dependencies without lifecycle scripts
+        run: npm ci --ignore-scripts
+      - name: Audit all dependencies
+        run: npm audit --audit-level=high

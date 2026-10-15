@@ -50,6 +50,14 @@ export type PaymentOption = 'deposit' | 'full' | 'asset_security' | 'incident';
 /** Transfer screenshots are deleted this long after upload (docs/adr/0002). */
 const SCREENSHOT_RETENTION_DAYS = 35;
 
+/**
+ * OCR is CPU- and memory-heavy and the underlying worker reads one image at a time. Keep its
+ * queue bounded, and never let replays for one booking fill that queue before the transaction's
+ * pending-payment check can run.
+ */
+const MAX_CONCURRENT_SCREENSHOT_CHECKS = 2;
+const screenshotChecksInProgress = new Set<string>();
+
 export { transferNote };
 
 function purposeFor(option: PaymentOption): PaymentPurpose {
@@ -213,6 +221,23 @@ async function checkScreenshot(screenshot: TransferScreenshot, expected: Expecte
   return showsTransfer(text, expected);
 }
 
+function beginScreenshotCheck(bookingId: string): void {
+  if (screenshotChecksInProgress.has(bookingId)) {
+    throw HttpError.conflict('TRANSFER_REPORT_IN_PROGRESS', 'Ảnh chuyển khoản này đang được xử lý. Vui lòng chờ trong giây lát.');
+  }
+  if (screenshotChecksInProgress.size >= MAX_CONCURRENT_SCREENSHOT_CHECKS) {
+    throw new HttpError(503, 'SCREENSHOT_CHECK_BUSY', 'Hệ thống đang kiểm tra ảnh chuyển khoản khác. Vui lòng thử lại sau ít phút.');
+  }
+  screenshotChecksInProgress.add(bookingId);
+}
+
+/** A deposit-first booking is confirmed only after the whole required deposit has arrived. */
+async function confirmationRequirementMet(booking: BookingRecord, purpose: PaymentPurpose, db: Db): Promise<boolean> {
+  if (purpose !== confirmingPurpose(booking)) return false;
+  if (!isDepositFirst(booking)) return true;
+  return (await assetIncidentRepository.financials(booking.id, booking.assetSecurityAmount, db)).assetSecurityDue === 0;
+}
+
 /**
  * The guest has transferred and sends the screenshot from their bank app. Holds the dates until
  * the owner checks, and emails both. Reporting again while a report is being checked is refused,
@@ -235,32 +260,37 @@ async function reportTransfer(
   const unlocked = await bookingForGuest(reference, token);
   const purpose = purposeFor(option);
   const expected = { note: transferNote(unlocked.reference, purpose), amount: await amountFor(unlocked, option) };
-  const shows = await checkScreenshot(screenshot, expected);
-  if (shows === false && !sendAnyway) {
-    throw HttpError.unprocessable(
-      'NOT_A_TRANSFER_SCREENSHOT',
-      'Ảnh này không giống ảnh chuyển khoản. Vui lòng chọn ảnh chụp màn hình giao dịch thành công trong ứng dụng ngân hàng.',
-    );
+  beginScreenshotCheck(unlocked.id);
+  try {
+    const shows = await checkScreenshot(screenshot, expected);
+    if (shows === false && !sendAnyway) {
+      throw HttpError.unprocessable(
+        'NOT_A_TRANSFER_SCREENSHOT',
+        'Ảnh này không giống ảnh chuyển khoản. Vui lòng chọn ảnh chụp màn hình giao dịch thành công trong ứng dụng ngân hàng.',
+      );
+    }
+
+    await withTransaction(async (db) => {
+      const booking = await bookingForGuest(reference, token, db, true);
+      const amount = await amountFor(booking, option, db);
+      const note = transferNote(booking.reference, purpose);
+
+      const paymentId = await paymentRepository.insertReported(booking.id, purpose, amount, note, db);
+      await paymentRepository.insertScreenshot(paymentId, screenshot, shows, db);
+      if (purpose === confirmingPurpose(booking) && booking.status === 'pending') await bookingRepository.clearHold(booking.id, db);
+      await bookingRepository.addEvent(booking.id, 'policy_accepted', 'guest', { version: POLICY_VERSION, paymentId }, db);
+      await bookingRepository.addEvent(booking.id, 'transfer_reported', 'guest', { amount, purpose, paymentId }, db);
+
+      const context = await bookingRepository.emailContext(booking.id, db);
+      await emailService.queueTransferReported(
+        context,
+        { amount, purpose, note, bankName: env.bank.name, accountNumber: env.bank.accountNumber },
+        db,
+      );
+    });
+  } finally {
+    screenshotChecksInProgress.delete(unlocked.id);
   }
-
-  await withTransaction(async (db) => {
-    const booking = await bookingForGuest(reference, token, db, true);
-    const amount = await amountFor(booking, option, db);
-    const note = transferNote(booking.reference, purpose);
-
-    const paymentId = await paymentRepository.insertReported(booking.id, purpose, amount, note, db);
-    await paymentRepository.insertScreenshot(paymentId, screenshot, shows, db);
-    if (purpose === confirmingPurpose(booking) && booking.status === 'pending') await bookingRepository.clearHold(booking.id, db);
-    await bookingRepository.addEvent(booking.id, 'policy_accepted', 'guest', { version: POLICY_VERSION, paymentId }, db);
-    await bookingRepository.addEvent(booking.id, 'transfer_reported', 'guest', { amount, purpose, paymentId }, db);
-
-    const context = await bookingRepository.emailContext(booking.id, db);
-    await emailService.queueTransferReported(
-      context,
-      { amount, purpose, note, bankName: env.bank.name, accountNumber: env.bank.accountNumber },
-      db,
-    );
-  });
 }
 
 /**
@@ -306,7 +336,11 @@ async function verifyTransfer(paymentId: string, amount: number | undefined, adm
     await paymentRepository.markVerified(payment.id, received, admin.id, db);
     await bookingRepository.addEvent(booking.id, 'transfer_verified', admin.email, { amount: received, paymentId }, db);
     await recalculate(booking, db);
-    const newlyConfirmed = payment.purpose === confirmingPurpose(booking) && (await confirmIfPending(booking, admin.email, db));
+    const requirementMet = await confirmationRequirementMet(booking, payment.purpose, db);
+    const newlyConfirmed = requirementMet && (await confirmIfPending(booking, admin.email, db));
+    if (!requirementMet && payment.purpose === confirmingPurpose(booking) && booking.status === 'pending') {
+      await bookingRepository.holdForMinutes(booking.id, env.booking.holdMinutes, db);
+    }
     await queueOwnerPaymentResult(booking, received, payment.purpose, newlyConfirmed, db);
   });
 }
@@ -368,7 +402,7 @@ async function recordManualPayment(
           'Ngày của đặt phòng này đã có khách khác đặt. Hãy liên hệ khách để đổi ngày hoặc hoàn tiền.',
         );
       }
-      current = { ...booking, status: 'pending' };
+      current = { ...booking, status: 'pending', holdExpiresAt: null };
       await bookingRepository.addEvent(booking.id, 'reactivated', admin.email, { reason: 'late_payment' }, db);
       // The stay is back on: keep the guests' identities as for any stay, or ask for them again.
       // Bookings made before identities were collected have none to restore and none purged.
@@ -397,7 +431,11 @@ async function recordManualPayment(
       db,
     );
     await recalculate(current, db);
-    const newlyConfirmed = payment.purpose === confirmingPurpose(booking) && (await confirmIfPending(current, admin.email, db));
+    const requirementMet = await confirmationRequirementMet(current, payment.purpose, db);
+    const newlyConfirmed = requirementMet && (await confirmIfPending(current, admin.email, db));
+    if (!requirementMet && payment.purpose === confirmingPurpose(current) && current.status === 'pending' && current.holdExpiresAt === null) {
+      await bookingRepository.holdForMinutes(current.id, env.booking.holdMinutes, db);
+    }
     await queueOwnerPaymentResult(current, payment.amount, payment.purpose, newlyConfirmed, db);
   });
 }

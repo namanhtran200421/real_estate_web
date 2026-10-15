@@ -11,6 +11,7 @@ import { join } from 'node:path';
 import { LANGS, Lang, RenderContext, splitLangPrefix, withLangPrefix } from './app/i18n/lang';
 import { contentSecurityPolicy, stampScriptNonces } from './csp';
 import { environment } from './environments/environment';
+import { deploymentOrigin } from './deployment-origin';
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
 
@@ -27,7 +28,17 @@ app.disable('x-powered-by');
 app.set('trust proxy', onVercel ? true : 'loopback');
 app.use(securityHeaders);
 
-const origin = (req: Request) => `${req.protocol}://${req.get('host')}`;
+// The generated CSR shell contains an inline bootstrap script without a response nonce. It is an
+// implementation detail, not a public page; all real routes pass through Angular below and receive
+// a fresh nonce-bearing CSP. Do not let an explicit artifact URL bypass that policy.
+app.get(['/index.html', '/index.csr.html'], (_req, res) => {
+  res.set('Cache-Control', 'no-store').redirect(308, '/');
+});
+
+// Never put an untrusted Host header into cached sitemaps or canonical metadata in production.
+// Vercel supplies its deployment domains automatically; other hosts should set PUBLIC_SITE_URL.
+const siteOrigin = deploymentOrigin(process.env);
+const origin = (req: Request) => siteOrigin ?? `${req.protocol}://${req.get('host')}`;
 
 const apiUrl = (process.env['SERVER_API_URL'] || environment.apiUrl).replace(/\/+$/, '');
 const internalApiKey = process.env['INTERNAL_API_KEY'] ?? '';

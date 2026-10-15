@@ -10,6 +10,11 @@
   },
   "routes": [
     { "src": "/", "dest": "/api" },
+    {
+      "src": "/index(?:\\.csr)?\\.html",
+      "status": 308,
+      "headers": { "Location": "/", "Cache-Control": "no-store" }
+    },
     { "handle": "filesystem" },
     { "src": "/(.*)", "dest": "/api" }
   ],

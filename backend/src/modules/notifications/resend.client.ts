@@ -3,8 +3,8 @@
  *
  * The outbox row id is passed as Resend's `Idempotency-Key`, so if a send times out after
  * Resend accepted it, the retry does not deliver a second copy.
- * Without RESEND_API_KEY (development only; production refuses to start) the email is
- * written to the log instead of being sent.
+ * Without RESEND_API_KEY (development only; production refuses to start), a delivery marker is
+ * written to the log instead of sending. Recipient addresses and message content are never logged.
  */
 import { env } from '../../config/env.js';
 import { postJson } from '../../lib/http-client.js';
@@ -17,7 +17,7 @@ const TIMEOUT_MS = 15_000;
 /** @returns Resend's message id */
 export async function sendEmail(email: OutgoingEmail, idempotencyKey: string): Promise<string> {
   if (!env.email.resendApiKey) {
-    logger.info('Email (not sent: RESEND_API_KEY is not set)', { to: email.to, subject: email.subject, text: email.text });
+    logger.info('Email not sent: RESEND_API_KEY is not set', { emailId: idempotencyKey });
     return 'logged';
   }
 

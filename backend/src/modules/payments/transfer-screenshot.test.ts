@@ -1,12 +1,17 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { readTransferScreenshot, showsTransfer } from './transfer-screenshot.js';
+import { MAX_SCREENSHOT_BYTES, readTransferScreenshot, showsTransfer } from './transfer-screenshot.js';
 
-// The first bytes of each format, as their specifications define them.
-const JPEG = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46]);
-const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d]);
-// "RIFF", little-endian size, "WEBP", "VP8 "
-const WEBP = Buffer.from('RIFF\x24\x00\x00\x00WEBPVP8 ', 'latin1');
+// Decodable 1 × 1 images. Validation must go beyond each format's first few magic bytes.
+const JPEG = Buffer.from(
+  '/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////2wBDAf//////////////////////////////////////////////////////////////////////////////////////wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAf/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIQAxAAAAF//8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABBQJ//8QAFBEBAAAAAAAAAAAAAAAAAAAAAP/aAAgBAwEBPwF//8QAFBEBAAAAAAAAAAAAAAAAAAAAAP/aAAgBAgEBPwF//8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQAGPwJ//8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPyF//9oADAMBAAIAAwAAABD/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oACAEDAQE/EH//xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oACAECAQE/EH//xAAUEAEAAAAAAAAAAAAAAAAAAAAA/9oACAEBAAE/EH//2Q==',
+  'base64',
+);
+const PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+  'base64',
+);
+const WEBP = Buffer.from('UklGRiIAAABXRUJQVlA4IBYAAAAwAQCdASoBAAEAAUAmJaQAA3AA/vuU', 'base64');
 
 describe('readTransferScreenshot', () => {
   it('accepts a JPEG from the guest’s phone', () => {
@@ -28,6 +33,14 @@ describe('readTransferScreenshot', () => {
       Buffer.from('GIF89a\x01\x00\x01\x00', 'latin1'),
       // RIFF container that is not WebP (a WAV file)
       Buffer.from('RIFF\x24\x00\x00\x00WAVEfmt ', 'latin1'),
+      // Magic bytes without a complete, structurally valid image.
+      Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46]),
+      Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d]),
+      Buffer.from('RIFF\x24\x00\x00\x00WEBPVP8 ', 'latin1'),
+      // Do not store a valid image with an executable or other payload appended.
+      Buffer.concat([PNG, Buffer.from('<script>alert(1)</script>')]),
+      Buffer.concat([JPEG, Buffer.from('<script>alert(1)</script>')]),
+      Buffer.concat([WEBP, Buffer.from('<script>alert(1)</script>')]),
     ];
     for (const body of notScreenshots) {
       assert.throws(() => readTransferScreenshot(body), { status: 415, code: 'SCREENSHOT_NOT_IMAGE' });
@@ -39,6 +52,23 @@ describe('readTransferScreenshot', () => {
     for (const body of [undefined, Buffer.alloc(0), { option: 'deposit' }]) {
       assert.throws(() => readTransferScreenshot(body), { status: 400, code: 'SCREENSHOT_REQUIRED' });
     }
+  });
+
+  it('enforces the byte limit even when called without the HTTP body parser', () => {
+    assert.throws(() => readTransferScreenshot(Buffer.alloc(MAX_SCREENSHOT_BYTES + 1)), {
+      status: 413,
+      code: 'PAYLOAD_TOO_LARGE',
+    });
+  });
+
+  it('refuses compressed images whose decoded dimensions could exhaust memory', () => {
+    const enormous = Buffer.from(PNG);
+    enormous.writeUInt32BE(8_192, 16);
+    enormous.writeUInt32BE(8_192, 20);
+    assert.throws(() => readTransferScreenshot(enormous), {
+      status: 422,
+      code: 'SCREENSHOT_DIMENSIONS_TOO_LARGE',
+    });
   });
 });
 

@@ -15,6 +15,8 @@ import { logger } from '../lib/logger.js';
 export interface Job {
   name: string;
   intervalMs: number;
+  /** Run once as soon as the process starts, then on the normal interval. */
+  runOnStart?: boolean;
   run: () => Promise<unknown>;
 }
 
@@ -59,7 +61,7 @@ async function runOnce(job: Job): Promise<void> {
   }
 }
 
-function schedule(job: Job): void {
+function schedule(job: Job, delayMs = job.intervalMs): void {
   const timer = setTimeout(async () => {
     timers.delete(timer);
     const run = runOnce(job);
@@ -67,13 +69,13 @@ function schedule(job: Job): void {
     await run;
     running.delete(run);
     if (!stopped) schedule(job);
-  }, job.intervalMs);
+  }, delayMs);
   timers.add(timer);
 }
 
 export function startJobs(jobs: Job[]): void {
   stopped = false;
-  for (const job of jobs) schedule(job);
+  for (const job of jobs) schedule(job, job.runOnStart ? 0 : job.intervalMs);
   logger.info('Background jobs started', { jobs: jobs.map((job) => job.name) });
 }
 

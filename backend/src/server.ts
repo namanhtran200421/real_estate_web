@@ -87,9 +87,6 @@ server.on('error', (error) => {
 /** Settings that production can run without, but only with weaker protection. */
 function warnAboutWeakSettings(): void {
   if (!env.isProduction) return;
-  if (!env.captchaSecret) {
-    logger.warn('TURNSTILE_SECRET_KEY is not set: public forms accept requests without a CAPTCHA');
-  }
   if (env.trustProxyHops === 0) {
     logger.warn('TRUST_PROXY_HOPS is 0: behind a proxy or CDN every visitor shares one rate-limit bucket');
   }

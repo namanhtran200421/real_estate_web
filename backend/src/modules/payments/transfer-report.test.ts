@@ -43,8 +43,11 @@ const TEST_ENV = {
 };
 
 const APARTMENT = 'sun-garden-a04-12';
-// A PNG signature followed by bytes no decoder can read: passes the type check, defeats OCR.
-const PNG = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.alloc(64, 7)]);
+// A structurally valid 1 × 1 PNG with no readable text.
+const PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+  'base64',
+);
 const fixture = (name: string) => readFile(new URL(`./fixtures/${name}`, import.meta.url));
 
 let server: Server;
@@ -121,7 +124,7 @@ function report(
   booking: NewBooking,
   body: BodyInit,
   contentType = 'image/png',
-  sendAnyway = false,
+  sendAnyway = true,
   acceptPolicy = true,
 ): Promise<Response> {
   let query = 'option=asset_security';
@@ -178,6 +181,9 @@ describe('reporting a transfer with its screenshot', { skip: !databaseUrl && 'TE
     assert.equal(response.status, 200);
     assert.equal(response.headers.get('content-type'), 'image/png');
     assert.equal(response.headers.get('cache-control'), 'private, no-store');
+    assert.equal(response.headers.get('x-content-type-options'), 'nosniff');
+    assert.equal(response.headers.get('cross-origin-resource-policy'), 'same-site');
+    assert.equal(response.headers.get('content-disposition'), 'inline; filename="transfer-screenshot.png"');
     assert.deepEqual(Buffer.from(await response.arrayBuffer()), PNG);
     assert.equal((await call(path)).status, 404, 'no token, no screenshot');
   });
@@ -186,10 +192,20 @@ describe('reporting a transfer with its screenshot', { skip: !databaseUrl && 'TE
     const booking = await book(50);
     await report(booking, PNG);
 
-    const again = await report(booking, Buffer.concat([PNG, Buffer.from('another')]));
+    const again = await report(booking, PNG);
 
     assert.equal(again.status, 409);
     assert.equal((await again.json()).error.code, 'TRANSFER_BEING_CHECKED');
+  });
+
+  it('rejects a concurrent replay before it can queue another screenshot check', async () => {
+    const booking = await book(55);
+
+    const responses = await Promise.all([report(booking, PNG), report(booking, PNG)]);
+    const statuses = responses.map((response) => response.status).sort();
+    assert.deepEqual(statuses, [200, 409]);
+    const conflict = responses.find((response) => response.status === 409)!;
+    assert.equal((await conflict.json()).error.code, 'TRANSFER_REPORT_IN_PROGRESS');
   });
 
   it('refuses a report without a screenshot, or with one too large to be a screenshot', async () => {
@@ -222,7 +238,7 @@ describe('reporting a transfer with its screenshot', { skip: !databaseUrl && 'TE
     const [payment] = detail.data.payments;
     assert.equal(payment.state, 'pending');
     assert.equal(payment.hasScreenshot, true);
-    assert.equal(payment.screenshotShowsTransfer, null, 'an image OCR cannot read is stored unchecked');
+    assert.equal(payment.screenshotShowsTransfer, false, 'the guest explicitly sent the unrelated image anyway');
 
     const image = await call(`/admin/payments/${payment.id}/screenshot`, { headers: owner });
     assert.equal(image.status, 200);
@@ -234,7 +250,7 @@ describe('reporting a transfer with its screenshot', { skip: !databaseUrl && 'TE
   it('warns the guest when the image shows no transfer, and stores nothing', async () => {
     const booking = await book(100);
 
-    const response = await report(booking, await fixture('unrelated-photo.png'));
+    const response = await report(booking, await fixture('unrelated-photo.png'), 'image/png', false);
 
     assert.equal(response.status, 422);
     assert.equal((await response.json()).error.code, 'NOT_A_TRANSFER_SCREENSHOT');
@@ -353,6 +369,33 @@ describe('reporting a transfer with its screenshot', { skip: !databaseUrl && 'TE
     assert.equal(view.data.depositFirst, true);
     assert.deepEqual(view.data.paymentOptions, { deposit: null, full: null, assetSecurity: null, incident: null });
     assert.equal(view.data.rentDueFrom, view.data.checkIn);
+  });
+
+  it('does not confirm a booking when only part of the required deposit arrived', async () => {
+    const booking = await book(135);
+    const owner = { Authorization: `Bearer ${await signInAsOwner()}`, 'Content-Type': 'application/json' };
+    assert.equal((await report(booking, PNG)).status, 200);
+    let detail = await (await call(`/admin/bookings/${booking.reference}`, { headers: owner })).json();
+    const first = detail.data.payments.find((payment: { state: string }) => payment.state === 'pending');
+    const firstAmount = Math.floor(booking.deposit / 2);
+
+    const verifiedPart = await call(`/admin/payments/${first.id}/verify`, {
+      method: 'POST',
+      headers: owner,
+      body: JSON.stringify({ amount: firstAmount }),
+    });
+    assert.equal(verifiedPart.status, 204);
+    let view = await (await call(`/bookings/${booking.reference}`, { headers: { 'X-Booking-Token': booking.token } })).json();
+    assert.equal(view.data.status, 'pending');
+    assert.equal(view.data.paymentOptions.assetSecurity, booking.deposit - firstAmount);
+    assert.ok(view.data.holdExpiresAt, 'the guest gets a new hold to finish the deposit');
+
+    assert.equal((await report(booking, PNG)).status, 200);
+    detail = await (await call(`/admin/bookings/${booking.reference}`, { headers: owner })).json();
+    const second = detail.data.payments.find((payment: { state: string }) => payment.state === 'pending');
+    assert.equal((await call(`/admin/payments/${second.id}/verify`, { method: 'POST', headers: owner, body: '{}' })).status, 204);
+    view = await (await call(`/bookings/${booking.reference}`, { headers: { 'X-Booking-Token': booking.token } })).json();
+    assert.equal(view.data.status, 'confirmed');
   });
 
   it('asks for the rent on check-in morning, once', async () => {

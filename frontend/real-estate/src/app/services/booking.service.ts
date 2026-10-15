@@ -2,8 +2,14 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { API_URL, ApiResponse, captchaHeaders } from '../core/api';
-import { Booking, GuestIdentity, PaymentOption, Quote, TransferInstructions } from '../models/booking';
-import { readJson, writeJson } from './browser-storage';
+import {
+  Booking,
+  GuestIdentity,
+  PaymentOption,
+  Quote,
+  TransferInstructions,
+} from '../models/booking';
+import { readJson, removeItem, writeJson } from './browser-storage';
 
 export interface StayRequest {
   apartmentSlug: string;
@@ -27,8 +33,8 @@ const MAX_TOKENS = 10;
  * Guest side of the booking API.
  *
  * Guests have no accounts: each booking comes with an access token, remembered in this
- * browser. On another device the guest looks the booking up with its reference and their
- * email or phone, which returns the token again.
+ * browser tab. On another device or after closing the tab, the guest looks the booking up with
+ * its reference and their email or phone, which returns a fresh time-limited token.
  */
 @Injectable({ providedIn: 'root' })
 export class BookingService {
@@ -42,7 +48,10 @@ export class BookingService {
       .set('checkOut', stay.checkOut)
       .set('guests', stay.guests);
     if (stay.promoCode) params = params.set('promoCode', stay.promoCode);
-    return { url: `${this.api}/apartments/${encodeURIComponent(stay.apartmentSlug)}/quote`, params };
+    return {
+      url: `${this.api}/apartments/${encodeURIComponent(stay.apartmentSlug)}/quote`,
+      params,
+    };
   }
 
   async quote(stay: StayRequest): Promise<Quote> {
@@ -53,9 +62,13 @@ export class BookingService {
 
   async create(booking: NewBooking, captchaToken?: string): Promise<Booking> {
     const response = await firstValueFrom(
-      this.http.post<ApiResponse<{ booking: Booking; accessToken: string }>>(`${this.api}/bookings`, booking, {
-        headers: captchaHeaders(captchaToken),
-      }),
+      this.http.post<ApiResponse<{ booking: Booking; accessToken: string }>>(
+        `${this.api}/bookings`,
+        booking,
+        {
+          headers: captchaHeaders(captchaToken),
+        },
+      ),
     );
     this.rememberToken(response.data.booking.reference, response.data.accessToken);
     return response.data.booking;
@@ -84,12 +97,18 @@ export class BookingService {
   }
 
   /** Bank account and VietQR code for paying `option` (deposit or full / remaining). */
-  async transferInstructions(reference: string, option: PaymentOption): Promise<TransferInstructions> {
+  async transferInstructions(
+    reference: string,
+    option: PaymentOption,
+  ): Promise<TransferInstructions> {
     const response = await firstValueFrom(
-      this.http.get<ApiResponse<TransferInstructions>>(`${this.api}/bookings/${encodeURIComponent(reference)}/transfer`, {
-        params: { option },
-        headers: this.tokenHeaders(reference),
-      }),
+      this.http.get<ApiResponse<TransferInstructions>>(
+        `${this.api}/bookings/${encodeURIComponent(reference)}/transfer`,
+        {
+          params: { option },
+          headers: this.tokenHeaders(reference),
+        },
+      ),
     );
     return response.data;
   }
@@ -110,10 +129,17 @@ export class BookingService {
     if (acceptPolicy) params = params.set('acceptPolicy', 'true');
     if (sendAnyway) params = params.set('sendAnyway', 'true');
     const response = await firstValueFrom(
-      this.http.post<ApiResponse<Booking>>(`${this.api}/bookings/${encodeURIComponent(reference)}/transfer`, screenshot, {
-        params,
-        headers: this.tokenHeaders(reference).set('Content-Type', screenshot.type || 'application/octet-stream'),
-      }),
+      this.http.post<ApiResponse<Booking>>(
+        `${this.api}/bookings/${encodeURIComponent(reference)}/transfer`,
+        screenshot,
+        {
+          params,
+          headers: this.tokenHeaders(reference).set(
+            'Content-Type',
+            screenshot.type || 'application/octet-stream',
+          ),
+        },
+      ),
     );
     return response.data;
   }
@@ -139,13 +165,13 @@ export class BookingService {
   }
 
   private tokens(): Record<string, string> {
-    return readJson<Record<string, string>>('local', TOKENS_KEY) ?? {};
+    return loadBookingAccessTokens();
   }
 
   private rememberToken(reference: string, token: string): void {
     const entries = Object.entries(this.tokens()).filter(([ref]) => ref !== reference);
     entries.push([reference, token]);
-    writeJson('local', TOKENS_KEY, Object.fromEntries(entries.slice(-MAX_TOKENS)));
+    writeJson('session', TOKENS_KEY, Object.fromEntries(entries.slice(-MAX_TOKENS)));
   }
 
   private tokenHeaders(reference: string): HttpHeaders {
@@ -153,4 +179,37 @@ export class BookingService {
     if (!token) return new HttpHeaders();
     return new HttpHeaders({ 'X-Booking-Token': token });
   }
+}
+
+/** Only accept the versioned, expiring token shape before using attacker-controlled storage. */
+function liveAccessToken(value: unknown, now: number): value is string {
+  if (typeof value !== 'string' || value.length > 256) return false;
+  const match = /^v1\.([0-9a-z]{1,10})\.[A-Za-z0-9_-]{22}\.[A-Za-z0-9_-]{43}$/.exec(value);
+  if (!match) return false;
+  const expirySeconds = Number.parseInt(match[1], 36);
+  return Number.isSafeInteger(expirySeconds) && expirySeconds > Math.floor(now / 1_000);
+}
+
+function sanitizedTokens(value: unknown, now: number): Record<string, string> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  return Object.fromEntries(
+    Object.entries(value)
+      .filter(([reference, token]) => reference.length <= 128 && liveAccessToken(token, now))
+      .slice(-MAX_TOKENS),
+  );
+}
+
+/**
+ * Guest tokens contain private-booking authority. Keep them for this tab only and remove the
+ * persistent copy created by older releases. A valid token found during rollout is migrated once.
+ */
+export function loadBookingAccessTokens(now = Date.now()): Record<string, string> {
+  const legacy = sanitizedTokens(readJson<unknown>('local', TOKENS_KEY), now);
+  const current = sanitizedTokens(readJson<unknown>('session', TOKENS_KEY), now);
+  removeItem('local', TOKENS_KEY);
+
+  const tokens = Object.fromEntries(Object.entries({ ...legacy, ...current }).slice(-MAX_TOKENS));
+  if (Object.keys(tokens).length > 0) writeJson('session', TOKENS_KEY, tokens);
+  else removeItem('session', TOKENS_KEY);
+  return tokens;
 }

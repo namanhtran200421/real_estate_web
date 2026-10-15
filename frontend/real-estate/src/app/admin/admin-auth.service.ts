@@ -20,30 +20,70 @@ interface AdminSession {
 
 const STORAGE_KEY = 'admin-session';
 
-function storedSession(): AdminSession | undefined {
-  const session = readJson<AdminSession>('local', STORAGE_KEY);
-  if (!session || Date.parse(session.expiresAt) <= Date.now()) return undefined;
-  return session;
+/** Browser storage is attacker-controlled input, even though only this app normally writes it. */
+export function isAdminSession(value: unknown, now = Date.now()): value is AdminSession {
+  if (!value || typeof value !== 'object') return false;
+  const session = value as Partial<AdminSession>;
+  const admin = session.admin as Partial<AdminIdentity> | undefined;
+  const expiresAt =
+    typeof session.expiresAt === 'string' ? Date.parse(session.expiresAt) : Number.NaN;
+  return (
+    typeof session.token === 'string' &&
+    session.token.length > 0 &&
+    session.token.length <= 4096 &&
+    typeof session.expiresAt === 'string' &&
+    session.expiresAt.length <= 64 &&
+    Number.isFinite(expiresAt) &&
+    expiresAt > now &&
+    !!admin &&
+    typeof admin.id === 'string' &&
+    admin.id.length <= 256 &&
+    typeof admin.email === 'string' &&
+    admin.email.length <= 254 &&
+    typeof admin.name === 'string' &&
+    admin.name.length <= 256
+  );
+}
+
+export function loadStoredAdminSession(): AdminSession | undefined {
+  const session = readJson<unknown>('session', STORAGE_KEY);
+  if (isAdminSession(session)) {
+    // Version migration cleanup: a privileged bearer token must not remain across browser restarts.
+    removeItem('local', STORAGE_KEY);
+    return session;
+  }
+  removeItem('session', STORAGE_KEY);
+
+  // Migrate a still-valid pre-hardening session once, then delete the persistent copy.
+  const legacy = readJson<unknown>('local', STORAGE_KEY);
+  removeItem('local', STORAGE_KEY);
+  if (!isAdminSession(legacy)) return undefined;
+  writeJson('session', STORAGE_KEY, legacy);
+  return legacy;
 }
 
 /**
  * Owner/staff sign-in. The API issues a bearer token that ends after a while without use or a
- * few hours in all; it is kept in this browser until then or until sign-out. The API is the
- * judge: any 401 drops the local copy and returns to the sign-in page.
+ * few hours in all; it is kept only for this browser tab. The API is the judge: any 401 drops the
+ * local copy and returns to the sign-in page.
  */
 @Injectable({ providedIn: 'root' })
 export class AdminAuthService {
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
   private readonly api = `${inject(API_URL)}/api/v1/admin/auth`;
-  private readonly session = signal<AdminSession | undefined>(storedSession());
+  private readonly session = signal<AdminSession | undefined>(loadStoredAdminSession());
 
   readonly admin = computed(() => this.session()?.admin);
   readonly signedIn = computed(() => this.session() !== undefined);
 
   token(): string | undefined {
     const session = this.session();
-    if (!session || Date.parse(session.expiresAt) <= Date.now()) return undefined;
+    if (!session) return undefined;
+    if (Date.parse(session.expiresAt) <= Date.now()) {
+      this.forget();
+      return undefined;
+    }
     return session.token;
   }
 
@@ -56,7 +96,7 @@ export class AdminAuthService {
       ),
     );
     this.session.set(response.data);
-    writeJson('local', STORAGE_KEY, response.data);
+    writeJson('session', STORAGE_KEY, response.data);
   }
 
   async logout(): Promise<void> {
@@ -96,6 +136,8 @@ export class AdminAuthService {
   /** Drops the local session (after logout or when the API says it expired). */
   forget(): void {
     this.session.set(undefined);
+    removeItem('session', STORAGE_KEY);
+    // Also clear copies created by older releases.
     removeItem('local', STORAGE_KEY);
   }
 }

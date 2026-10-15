@@ -21,16 +21,7 @@ import { HttpError } from '../lib/http-error.js';
  */
 export const securityHeaders = helmet();
 
-export const configuredOrigins = new Set([
-  env.siteUrl,
-  ...env.corsOrigins,
-  'https://real-estate-web-one-gamma.vercel.app',
-  'https://real-estate-web-hobby213123213.vercel.app',
-  'https://real-estate-web-git-main-hobby213123213.vercel.app',
-]);
-
-// Each production deploy gets a new URL under this project and Vercel team.
-const vercelDeploymentOrigin = /^https:\/\/real-estate-[a-z0-9]+-hobby213123213\.vercel\.app$/;
+export const configuredOrigins = new Set([new URL(env.siteUrl).origin, ...env.corsOrigins]);
 
 /**
  * Lets only the website's origin(s) call the API from a browser.
@@ -38,7 +29,7 @@ const vercelDeploymentOrigin = /^https:\/\/real-estate-[a-z0-9]+-hobby213123213\
  */
 export const corsPolicy = cors({
   origin: (origin, callback) => {
-    const allowed = !origin || configuredOrigins.has(origin) || vercelDeploymentOrigin.test(origin);
+    const allowed = !origin || configuredOrigins.has(origin);
     callback(null, allowed);
   },
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],

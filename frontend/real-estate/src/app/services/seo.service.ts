@@ -1,4 +1,4 @@
-import { DOCUMENT, Injectable, LOCALE_ID, REQUEST, inject } from '@angular/core';
+import { DOCUMENT, Injectable, InjectionToken, LOCALE_ID, REQUEST, inject } from '@angular/core';
 import { formatNumber } from '@angular/common';
 import { Meta, Title } from '@angular/platform-browser';
 import { TranslocoService } from '@jsverse/transloco';
@@ -7,6 +7,12 @@ import { LANG } from '../i18n/i18n';
 import { LANGS, withLangPrefix } from '../i18n/lang';
 import { socialImage } from '../image-loader';
 import { Apartment } from '../models/apartment';
+
+/** Canonical public origin supplied by the server in production; empty in the browser by default. */
+export const SITE_ORIGIN = new InjectionToken<string>('SITE_ORIGIN', {
+  providedIn: 'root',
+  factory: () => '',
+});
 
 export interface SeoData {
   title: string;
@@ -30,6 +36,7 @@ export class SeoService {
   private readonly meta = inject(Meta);
   private readonly document = inject(DOCUMENT);
   private readonly request = inject(REQUEST, { optional: true });
+  private readonly siteOrigin = inject(SITE_ORIGIN);
   private readonly transloco = inject(TranslocoService);
   private readonly lang = inject(LANG);
   private readonly locale = inject(LOCALE_ID);
@@ -105,7 +112,7 @@ export class SeoService {
   }
 
   private origin(): string {
-    return this.request ? new URL(this.request.url).origin : this.document.location.origin;
+    return this.siteOrigin || (this.request ? new URL(this.request.url).origin : this.document.location.origin);
   }
 
   private setCanonical(url: string): void {

@@ -16,6 +16,9 @@
   },
   "private": true,
   "packageManager": "npm@10.9.9",
+  "overrides": {
+    "source-map-js": "1.2.2"
+  },
   "dependencies": {
     "@angular/common": "^22.0.0",
     "@angular/compiler": "^22.0.0",

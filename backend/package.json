@@ -4,6 +4,7 @@
   "description": "REST API for the real-estate booking site: apartments, availability and bookings.",
   "private": true,
   "type": "module",
+  "packageManager": "npm@10.9.9",
   "engines": {
     "node": ">=22"
   },
