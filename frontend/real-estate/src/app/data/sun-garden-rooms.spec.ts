@@ -1,5 +1,5 @@
 import { Apartment } from '../models/apartment';
-import { roomChapters, roomPhoto } from './sun-garden-rooms';
+import { galleryChapters, roomChapters, roomPhoto } from './sun-garden-rooms';
 
 const photo = (n: string) => ({ src: `/apartments/sun-garden-a04-12/${n}.jpg`, alt: `Ảnh ${n}` });
 const sunGarden = {
@@ -33,5 +33,22 @@ describe('room chapters', () => {
   it('finds a photo by file number', () => {
     expect(roomPhoto(sunGarden, '05')?.src).toBe('/apartments/sun-garden-a04-12/05.jpg');
     expect(roomPhoto(sunGarden, '99')).toBeUndefined();
+  });
+});
+
+describe('gallery chapters', () => {
+  it('adds the uncast photos as a last chapter, so every Sun Garden photo shows exactly once', () => {
+    const chapters = galleryChapters(sunGarden);
+    expect(chapters.map((c) => c.id)).toEqual(['phong-khach', 'bep', 'phong-tam', 'phong-ngu-1', 'phong-ngu-2', 'them-anh']);
+    const last = chapters[chapters.length - 1];
+    expect(last.key).toBe('photos');
+    expect(last.photos.map((p) => p.src.slice(-6, -4))).toEqual(['04', '05', '07']);
+    const shown = chapters.flatMap((c) => c.photos).map((p) => p.src).sort();
+    expect(shown).toEqual(sunGarden.photos.map((p) => p.src).sort());
+  });
+
+  it('adds no extra chapter when every photo is already in one', () => {
+    const other = { slug: 'other', photos: [photo('a'), photo('b')] } as Apartment;
+    expect(galleryChapters(other)).toEqual(roomChapters(other));
   });
 });

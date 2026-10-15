@@ -5,7 +5,7 @@ import { TranslocoPipe } from '@jsverse/transloco';
 import { ApartmentHeader } from '../../components/apartment-header/apartment-header';
 import { ApartmentNotFound } from '../../components/apartment-not-found/apartment-not-found';
 import { Lightbox } from '../../components/lightbox/lightbox';
-import { roomChapters } from '../../data/sun-garden-rooms';
+import { galleryChapters } from '../../data/sun-garden-rooms';
 import { Photo } from '../../models/apartment';
 import { FadeInDirective } from '../../motion/fade-in.directive';
 import { ApartmentService } from '../../services/apartment.service';
@@ -25,7 +25,7 @@ export class Gallery {
   protected readonly apartment = computed(() => this.apartments.resolve(this.slug()));
   protected readonly chapters = computed(() => {
     const apt = this.apartment();
-    return apt ? roomChapters(apt) : [];
+    return apt ? galleryChapters(apt) : [];
   });
   /** Photos in the order they appear on the page (chapter by chapter): the lightbox steps through these. */
   protected readonly ordered = computed(() => this.chapters().flatMap((c) => c.photos));

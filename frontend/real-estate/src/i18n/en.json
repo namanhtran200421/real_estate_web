@@ -377,9 +377,7 @@
     "next": "Next photo",
     "close": "Close"
   },
-    "count": "{{ count }} [[ plural({{ count }}, photo, photos) ]]",
-    "viewAll": "View all {{ count }} [[ plural({{ count }}, photo, photos) ]]",
-    "like": "Like this apartment?"
+    "viewAll": "View all {{ count }} [[ plural({{ count }}, photo, photos) ]]"
   },
   "availability": {
     "note": "The calendar is kept up to date with confirmed bookings.",

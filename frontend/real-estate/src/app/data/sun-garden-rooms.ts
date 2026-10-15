@@ -32,3 +32,11 @@ export function roomChapters(apartment: Apartment): RoomChapter[] {
     photos: files.map((f) => roomPhoto(apartment, f)).filter((p): p is Photo => !!p),
   })).filter((chapter) => chapter.photos.length > 0);
 }
+
+/** The room chapters plus a last one for the photos no room claims (the page heroes), in listing order. */
+export function galleryChapters(apartment: Apartment): RoomChapter[] {
+  const chapters = roomChapters(apartment);
+  const cast = new Set(chapters.flatMap((c) => c.photos));
+  const rest = apartment.photos.filter((p) => !cast.has(p));
+  return rest.length ? [...chapters, { id: 'them-anh', key: 'photos', photos: rest }] : chapters;
+}

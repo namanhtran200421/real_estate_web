@@ -6,10 +6,10 @@ export default async function check({ browser, site, assert, lib }) {
   const first = page.locator('main button[data-cursor="view"]').first();
   await first.click();
   await page.waitForTimeout(500);
-  assert.match(await page.locator('.lightbox-pos').textContent(), /1\/13|1 of 13/);
+  assert.match(await page.locator('.lightbox-pos').textContent(), /1\/16|1 of 16/);
   await page.keyboard.press('ArrowRight');
-  await page.waitForTimeout(150);
-  assert.match(await page.locator('.lightbox-pos').textContent(), /2\/13|2 of 13/);
+  await page.waitForFunction(() => /2\/16|2 of 16/.test(document.querySelector('.lightbox-pos')?.textContent ?? ''));
+  assert.match(await page.locator('.lightbox-pos').textContent(), /2\/16|2 of 16/);
   await page.keyboard.press('Escape');
   await page.waitForTimeout(300);
   assert.equal(await page.evaluate(() => document.activeElement?.matches('button[data-cursor="view"]')), true, 'focus returned');

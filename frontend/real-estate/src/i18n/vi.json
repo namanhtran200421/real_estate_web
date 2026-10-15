@@ -377,9 +377,7 @@
     "next": "Ảnh tiếp",
     "close": "Đóng"
   },
-    "count": "{{ count }} ảnh",
-    "viewAll": "Xem tất cả {{ count }} ảnh",
-    "like": "Thích căn hộ này?"
+    "viewAll": "Xem tất cả {{ count }} ảnh"
   },
   "availability": {
     "note": "Lịch được cập nhật liên tục theo các đặt phòng đã xác nhận.",
