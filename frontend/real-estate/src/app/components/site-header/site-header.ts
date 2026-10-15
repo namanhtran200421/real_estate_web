@@ -1,6 +1,6 @@
-import { Component, ElementRef, inject, viewChild } from '@angular/core';
-import { NgTemplateOutlet } from '@angular/common';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { Component, DestroyRef, ElementRef, PLATFORM_ID, afterNextRender, inject, viewChild } from '@angular/core';
+import { NgTemplateOutlet, isPlatformBrowser } from '@angular/common';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { IsActiveMatchOptions, NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { filter, map } from 'rxjs';
@@ -46,6 +46,27 @@ export class SiteHeader {
     ),
     { initialValue: this.languageLinks() },
   );
+
+  constructor() {
+    const destroyRef = inject(DestroyRef);
+    // Any navigation (links, browser back, iOS swipe-back) closes the menu; (close) then cleans up.
+    this.router.events
+      .pipe(
+        filter((event) => event instanceof NavigationEnd),
+        takeUntilDestroyed(),
+      )
+      .subscribe(() => this.menu().nativeElement.close());
+    if (!isPlatformBrowser(inject(PLATFORM_ID))) return;
+    // The menu is phone/tablet only: close it when the viewport grows past the lg breakpoint.
+    afterNextRender(() => {
+      const wide = window.matchMedia('(min-width: 1024px)');
+      const onChange = (e: MediaQueryListEvent) => {
+        if (e.matches) this.menu().nativeElement.close();
+      };
+      wide.addEventListener('change', onChange);
+      destroyRef.onDestroy(() => wide.removeEventListener('change', onChange));
+    });
+  }
 
   private languageLinks() {
     return LANGS.map((lang) => ({ lang, href: withLangPrefix(lang, this.router.url) }));

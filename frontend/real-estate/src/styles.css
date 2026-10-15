@@ -181,6 +181,10 @@
     line-height: 1.25;
   }
 
+  .guest main:focus-visible {
+    outline: none;
+  }
+
   .guest p,
   .guest li {
     font-weight: 400;
