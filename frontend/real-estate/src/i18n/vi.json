@@ -138,6 +138,10 @@
     }
   },
   "apartment": {
+  "bookBar": {
+    "label": "Đặt căn hộ này",
+    "cta": "Đặt lịch"
+  },
     "capacity": "{{ guests }} khách · {{ bedrooms }} phòng ngủ · {{ beds }} giường · {{ bathrooms }} phòng tắm",
     "viewDetails": "Xem chi tiết",
     "previousPhoto": "Ảnh trước",
@@ -255,7 +259,67 @@
     "asset_security": "Tiền đặt cọc",
     "incident": "Bồi thường"
   },
+  "rooms": {
+    "living": {
+      "title": "Phòng khách & ăn",
+      "line": "Sofa, TV màn hình phẳng và ban công nhìn về Xóm Lèo."
+    },
+    "kitchen": {
+      "title": "Bếp",
+      "line": "Bếp từ đôi, máy hút mùi, tủ lạnh: đủ cho một bữa tối tự nấu."
+    },
+    "bathrooms": {
+      "title": "Hai phòng tắm",
+      "line": "Mỗi phòng tắm có nước nóng, không ai phải chờ."
+    },
+    "bedroom1": {
+      "title": "Phòng ngủ 1",
+      "line": "Giường đôi lớn, chăn ga gối êm và tủ quần áo."
+    },
+    "bedroom2": {
+      "title": "Phòng ngủ 2",
+      "line": "Giường đôi, tủ quần áo và giá treo đồ, yên tĩnh cho giấc ngủ dài."
+    },
+    "photos": {
+      "title": "Hình ảnh",
+      "line": "Ảnh thực tế của căn hộ."
+    },
+    "tourEyebrow": "Đi một vòng căn hộ",
+    "skipTour": "Bỏ qua phần tham quan",
+    "chapter": "Phần {{ n }}/{{ total }}",
+    "seeDates": "Xem lịch trống"
+  },
   "home": {
+  "scenes": {
+    "heroCta": "Xem lịch & đặt",
+    "perNight": "từ {{ price }} ₫ / đêm",
+    "statement": "Một căn góc tầng bốn, nắng sớm qua rèm, gỗ ấm và một tách cà phê trước khi phố núi thức dậy.",
+    "placeEyebrow": "Giữa ngày",
+    "placeTitle": "Rộng rãi cho cả nhà",
+    "cool": "Đà Lạt mát quanh năm, quạt trần là đủ.",
+    "windowsEyebrow": "Chiều buông",
+    "windowsTitle": "Năm khung cửa, năm góc nhỏ",
+    "promisesEyebrow": "Đặt trực tiếp",
+    "promisesTitle": "Đêm Đà Lạt, đặt phòng thật nhẹ nhàng",
+    "promises": {
+      "availability": {
+        "title": "Lịch trống, thấy ngay",
+        "text": "Chọn ngày và đặt luôn, không cần nhắn hỏi trước."
+      },
+      "prices": {
+        "title": "Giá rõ từng đêm",
+        "text": "Giá tính theo ngày, hiện đủ trước khi bạn thanh toán."
+      },
+      "vietqr": {
+        "title": "Chuyển khoản VietQR",
+        "text": "Quét mã để đặt cọc giữ lịch; tiền phòng thanh toán khi nhận phòng."
+      }
+    },
+    "aroundEyebrow": "Đèn lên",
+    "aroundTitle": "Quanh Sun Garden",
+    "closingTitle": "Một góc Đà Lạt đang chờ bạn",
+    "closingCta": "Đặt lịch"
+  },
     "eyebrow": "Sun Garden · Đà Lạt",
     "titleStart": "Một góc Đà\u00a0Lạt",
     "titleEm": "của riêng bạn",
@@ -306,6 +370,13 @@
     "contactUs": "Liên hệ với chúng tôi"
   },
   "gallery": {
+  "lightbox": {
+    "label": "Xem ảnh",
+    "position": "Ảnh {{ n }}/{{ total }}",
+    "previous": "Ảnh trước",
+    "next": "Ảnh tiếp",
+    "close": "Đóng"
+  },
     "count": "{{ count }} ảnh",
     "viewAll": "Xem tất cả {{ count }} ảnh",
     "like": "Thích căn hộ này?"

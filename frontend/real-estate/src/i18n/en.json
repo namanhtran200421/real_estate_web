@@ -138,6 +138,10 @@
     }
   },
   "apartment": {
+  "bookBar": {
+    "label": "Book this apartment",
+    "cta": "Book"
+  },
     "capacity": "{{ guests }} [[ plural({{ guests }}, guest, guests) ]] · {{ bedrooms }} [[ plural({{ bedrooms }}, bedroom, bedrooms) ]] · {{ beds }} [[ plural({{ beds }}, bed, beds) ]] · {{ bathrooms }} [[ plural({{ bathrooms }}, bathroom, bathrooms) ]]",
     "viewDetails": "View details",
     "previousPhoto": "Previous photo",
@@ -255,7 +259,67 @@
     "asset_security": "Deposit",
     "incident": "Damage charges"
   },
+  "rooms": {
+    "living": {
+      "title": "Living & dining",
+      "line": "A sofa, a flat-screen TV and a balcony toward Xóm Lèo."
+    },
+    "kitchen": {
+      "title": "Kitchen",
+      "line": "A two-zone induction hob, cooker hood and fridge: enough for a home-cooked dinner."
+    },
+    "bathrooms": {
+      "title": "Two bathrooms",
+      "line": "Hot water in both; nobody waits."
+    },
+    "bedroom1": {
+      "title": "Bedroom 1",
+      "line": "A large double bed, soft bedding and a wardrobe."
+    },
+    "bedroom2": {
+      "title": "Bedroom 2",
+      "line": "A double bed, a wardrobe and a clothes rail, quiet for a long sleep."
+    },
+    "photos": {
+      "title": "Photos",
+      "line": "Real photos of the apartment."
+    },
+    "tourEyebrow": "Walk through",
+    "skipTour": "Skip the tour",
+    "chapter": "Part {{ n }}/{{ total }}",
+    "seeDates": "See free dates"
+  },
   "home": {
+  "scenes": {
+    "heroCta": "See dates & book",
+    "perNight": "from {{ price }} ₫ / night",
+    "statement": "A fourth-floor corner flat: early sun through the curtains, warm wood, and a coffee before the hill town wakes.",
+    "placeEyebrow": "Midday",
+    "placeTitle": "Room for the whole family",
+    "cool": "Đà Lạt is cool all year; a ceiling fan is all you need.",
+    "windowsEyebrow": "Dusk",
+    "windowsTitle": "Five windows, five corners",
+    "promisesEyebrow": "Book direct",
+    "promisesTitle": "Đà Lạt nights, booked without fuss",
+    "promises": {
+      "availability": {
+        "title": "Free dates at a glance",
+        "text": "Pick your dates and book; no need to message first."
+      },
+      "prices": {
+        "title": "Clear prices, night by night",
+        "text": "Prices by date, shown in full before you pay."
+      },
+      "vietqr": {
+        "title": "Pay by VietQR",
+        "text": "Scan to pay the deposit that holds your dates; the rent is paid at check-in."
+      }
+    },
+    "aroundEyebrow": "Lamps on",
+    "aroundTitle": "Around Sun Garden",
+    "closingTitle": "A corner of Đà Lạt is waiting",
+    "closingCta": "Book"
+  },
     "eyebrow": "Sun Garden · Da Lat",
     "titleStart": "A corner of Da\u00a0Lat",
     "titleEm": "all your own",
@@ -306,6 +370,13 @@
     "contactUs": "Contact us"
   },
   "gallery": {
+  "lightbox": {
+    "label": "Photo viewer",
+    "position": "Photo {{ n }} of {{ total }}",
+    "previous": "Previous photo",
+    "next": "Next photo",
+    "close": "Close"
+  },
     "count": "{{ count }} [[ plural({{ count }}, photo, photos) ]]",
     "viewAll": "View all {{ count }} [[ plural({{ count }}, photo, photos) ]]",
     "like": "Like this apartment?"
