@@ -53,7 +53,7 @@
 
     @if (item.nationalityChoice === 'VN') {
       <div>
-        <label class="label" [for]="'identity-document-' + i">{{ 'booking.identity.cccd' | transloco }}</label>
+        <label class="label" [for]="'identity-document-' + i">{{ (child() ? 'booking.identity.personalId' : 'booking.identity.cccd') | transloco }}</label>
         <input
           [id]="'identity-document-' + i"
           class="input font-mono"
@@ -70,7 +70,12 @@
         }
       </div>
       <div class="sm:col-span-2">
-        <label class="label" [for]="'identity-address-' + i">{{ 'booking.identity.address' | transloco }}</label>
+        <label class="label" [for]="'identity-address-' + i">
+          {{ 'booking.identity.address' | transloco }}
+          @if (child()) {
+            <span class="font-normal text-muted-foreground">{{ 'booking.identity.optionalForChild' | transloco }}</span>
+          }
+        </label>
         <input
           [id]="'identity-address-' + i"
           class="input"
@@ -149,7 +154,12 @@
     }
 
     <div>
-      <label class="label" [for]="'identity-issued-' + i">{{ 'booking.identity.issueDate' | transloco }}</label>
+      <label class="label" [for]="'identity-issued-' + i">
+        {{ 'booking.identity.issueDate' | transloco }}
+        @if (child()) {
+          <span class="font-normal text-muted-foreground">{{ 'booking.identity.optionalForChild' | transloco }}</span>
+        }
+      </label>
       <input
         [id]="'identity-issued-' + i"
         class="input"
@@ -165,7 +175,12 @@
       }
     </div>
     <div>
-      <label class="label" [for]="'identity-expiry-' + i">{{ 'booking.identity.expiryDate' | transloco }}</label>
+      <label class="label" [for]="'identity-expiry-' + i">
+        {{ 'booking.identity.expiryDate' | transloco }}
+        @if (child()) {
+          <span class="font-normal text-muted-foreground">{{ 'booking.identity.optionalForChild' | transloco }}</span>
+        }
+      </label>
       <input
         [id]="'identity-expiry-' + i"
         class="input"

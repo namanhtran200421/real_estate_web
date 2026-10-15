@@ -4,7 +4,7 @@ import localeVi from '@angular/common/locales/vi';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { provideI18n } from '../../i18n/i18n';
-import { Booking } from '../../models/booking';
+import { Booking, BookingFinancials } from '../../models/booking';
 import { ApartmentService } from '../../services/apartment.service';
 import { BookingDraftService } from '../../services/booking-draft.service';
 import { BookingService } from '../../services/booking.service';
@@ -15,6 +15,18 @@ registerLocaleData(localeVi);
 function day(offset: number): string {
   return new Date(Date.now() + offset * 86_400_000).toISOString().slice(0, 10);
 }
+
+const FINANCIALS: BookingFinancials = {
+  assetSecurityRequired: 400_000,
+  assetSecurityReceived: 0,
+  assetSecurityRefunded: 0,
+  assetSecurityApplied: 0,
+  assetSecurityHeld: 0,
+  assetSecurityDue: 400_000,
+  incidentCharges: 0,
+  incidentPayments: 0,
+  incidentAmountDue: 0,
+};
 
 function makeBooking(overrides: Partial<Booking> = {}): Booking {
   return {
@@ -42,17 +54,7 @@ function makeBooking(overrides: Partial<Booking> = {}): Booking {
     amountDue: 2_000_000,
     depositFirst: true,
     rentDueFrom: day(10),
-    financials: {
-      assetSecurityRequired: 400_000,
-      assetSecurityReceived: 0,
-      assetSecurityRefunded: 0,
-      assetSecurityApplied: 0,
-      assetSecurityHeld: 0,
-      assetSecurityDue: 400_000,
-      incidentCharges: 0,
-      incidentPayments: 0,
-      incidentAmountDue: 0,
-    },
+    financials: FINANCIALS,
     paymentOptions: { deposit: null, full: null, assetSecurity: 400_000, incident: null },
     holdExpiresAt: new Date(Date.now() + 3_600_000).toISOString(),
     pendingTransfer: null,
@@ -98,7 +100,7 @@ describe('BookingConfirmation (deposit-first)', () => {
         status: 'confirmed',
         paymentStatus: 'deposit_paid',
         amountPaid: 400_000,
-        financials: { ...makeBooking().financials, assetSecurityReceived: 400_000, assetSecurityHeld: 400_000, assetSecurityDue: 0 },
+        financials: { ...FINANCIALS, assetSecurityReceived: 400_000, assetSecurityHeld: 400_000, assetSecurityDue: 0 },
         paymentOptions: { deposit: null, full: null, assetSecurity: null, incident: null },
       }),
     );
@@ -131,5 +133,61 @@ describe('BookingConfirmation (deposit-first)', () => {
     );
     expect(el.textContent).toContain('Tiền đặt cọc và bồi thường');
     expect(el.textContent).not.toContain('Hoàn cọc');
+  });
+
+  it('adds up for a deposit-first guest: the rent block counts only rent, the deposit has its own line', async () => {
+    const el = await render(
+      makeBooking({
+        status: 'confirmed',
+        paymentStatus: 'deposit_paid',
+        amountPaid: 1_500_000,
+        amountDue: 500_000,
+        financials: { ...FINANCIALS, assetSecurityReceived: 400_000, assetSecurityHeld: 400_000, assetSecurityDue: 0 },
+        paymentOptions: { deposit: null, full: 500_000, assetSecurity: null, incident: null },
+        payments: [
+          { id: 'p1', provider: 'bank_transfer', purpose: 'asset_security', amount: 400_000, state: 'succeeded', paidAt: day(-5), createdAt: day(-5) },
+          { id: 'p2', provider: 'cash', purpose: 'accommodation', amount: 1_500_000, state: 'succeeded', paidAt: day(0), createdAt: day(0) },
+        ],
+      }),
+    );
+
+    const rent = el.querySelector('[data-summary="rent"]')!;
+    expect(rent.textContent).toContain('Tiền phòng · ');
+    expect(rent.textContent).toContain('1.500.000');
+    expect(rent.textContent).toContain('500.000');
+    expect(rent.textContent).not.toContain('400.000');
+    expect(rent.textContent).not.toContain('Tiền đặt cọc');
+    const other = el.querySelector('[data-summary="other"]')!;
+    expect(other.textContent).toContain('Tiền đặt cọc · ');
+    expect(other.textContent).toContain('400.000');
+  });
+
+  it('labels a damage payment, and offers damage charges by their name', async () => {
+    const el = await render(
+      makeBooking({
+        status: 'completed',
+        amountPaid: 2_000_000,
+        amountDue: 0,
+        financials: { ...FINANCIALS, incidentCharges: 150_000, incidentPayments: 50_000, incidentAmountDue: 100_000 },
+        paymentOptions: { deposit: null, full: null, assetSecurity: null, incident: 100_000 },
+        payments: [
+          { id: 'p3', provider: 'cash', purpose: 'incident', amount: 50_000, state: 'succeeded', paidAt: day(0), createdAt: day(0) },
+        ],
+      }),
+    );
+
+    expect(el.querySelector('[data-summary="other"]')!.textContent).toContain('Bồi thường · ');
+    expect(el.textContent).toContain('Thanh toán tiền bồi thường');
+    expect(el.textContent).not.toContain('khoản tài sản');
+  });
+
+  it('renders a booking from an API older than deposit-first payments', async () => {
+    const older = makeBooking({ depositFirst: false, paymentOptions: { deposit: 400_000, full: 2_000_000 } as Booking['paymentOptions'] });
+    for (const field of ['financials', 'incidents', 'depositFirst', 'rentDueFrom'] as const) delete older[field];
+
+    const el = await render(older);
+
+    expect(el.textContent).toContain('Thanh toán và gửi ảnh');
+    expect(el.textContent).not.toContain('Tiền đặt cọc và bồi thường');
   });
 });

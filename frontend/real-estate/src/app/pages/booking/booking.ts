@@ -113,6 +113,8 @@ export class BookingPage {
     effect(() => {
       const draft = this.draft();
       this.identityDrafts.resize(draft.guests, draft.name);
+      // A child's documents and a document's validity are judged on the check-in date.
+      this.identityDrafts.forStay(draft.checkIn);
     });
 
     // Someone else just booked some of these dates: refresh the calendar so it shows them.

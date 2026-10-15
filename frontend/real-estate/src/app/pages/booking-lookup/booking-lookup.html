@@ -94,9 +94,8 @@
             </div>
           }
 
-          @if (b.depositFirst) {
+          @if (b.depositFirst && b.financials; as money) {
             <!-- Deposit-first: the deposit is held apart from the rent, so it is shown on its own. -->
-            @let money = b.financials;
             <dl class="mt-6 grid grid-cols-3 gap-4 text-center">
               <div>
                 <dt class="small-caps text-[0.625rem] text-muted-foreground">{{ 'lookup.deposit' | transloco }}</dt>
@@ -153,10 +152,10 @@
 
           <div class="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-end">
             @if (
-              b.paymentOptions.deposit !== null ||
-              b.paymentOptions.full !== null ||
-              b.paymentOptions.assetSecurity !== null ||
-              b.paymentOptions.incident !== null
+              b.paymentOptions.deposit != null ||
+              b.paymentOptions.full != null ||
+              b.paymentOptions.assetSecurity != null ||
+              b.paymentOptions.incident != null
             ) {
               <a routerLink="/book/payment" [queryParams]="{ ref: b.reference }" class="btn btn-primary">
                 {{ payLabel(b) | transloco }}

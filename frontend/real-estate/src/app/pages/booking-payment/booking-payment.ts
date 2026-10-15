@@ -68,7 +68,10 @@ export class BookingPayment {
 
   protected readonly option = signal<PaymentOption>('deposit');
 
-  /** The selected payable purpose, falling back to the first currently available option. */
+  /**
+   * The selected payable purpose, falling back to the first currently available option. Options
+   * compare with `!= null`: an older API leaves `assetSecurity` and `incident` out.
+   */
   private readonly effectiveOption = computed<PaymentOption | undefined>(() => {
     const options = this.b()?.paymentOptions;
     if (!options) return undefined;
@@ -79,11 +82,11 @@ export class BookingPayment {
         : selected === 'incident'
           ? options.incident
           : options[selected];
-    if (amount !== null) return selected;
-    if (options.deposit !== null) return 'deposit';
-    if (options.full !== null) return 'full';
-    if (options.assetSecurity !== null) return 'asset_security';
-    if (options.incident !== null) return 'incident';
+    if (amount != null) return selected;
+    if (options.deposit != null) return 'deposit';
+    if (options.full != null) return 'full';
+    if (options.assetSecurity != null) return 'asset_security';
+    if (options.incident != null) return 'incident';
     return undefined;
   });
 
@@ -130,10 +133,10 @@ export class BookingPayment {
     return (
       booking.status === 'pending' &&
       !booking.pendingTransfer &&
-      options.deposit === null &&
-      options.full === null &&
-      options.assetSecurity === null &&
-      options.incident === null
+      options.deposit == null &&
+      options.full == null &&
+      options.assetSecurity == null &&
+      options.incident == null
     );
   });
 
@@ -304,8 +307,8 @@ export class BookingPayment {
         fresh.holdExpiresAt !== current.holdExpiresAt ||
         fresh.pendingTransfer?.reportedAt !== current.pendingTransfer?.reportedAt ||
         fresh.paymentOptions.full !== current.paymentOptions.full ||
-        fresh.paymentOptions.assetSecurity !== current.paymentOptions.assetSecurity ||
-        fresh.paymentOptions.incident !== current.paymentOptions.incident
+        (fresh.paymentOptions.assetSecurity ?? null) !== (current.paymentOptions.assetSecurity ?? null) ||
+        (fresh.paymentOptions.incident ?? null) !== (current.paymentOptions.incident ?? null)
       ) {
         this.booking.set(fresh);
       }

@@ -165,4 +165,15 @@ describe('BookingPayment', () => {
     expect(el.textContent).toContain('Thanh toán toàn bộ');
     expect(el.textContent).not.toContain('Tiền đặt cọc (20%)');
   });
+
+  it('offers only what an API older than deposit-first payments returns', async () => {
+    const older = makeBooking({ paymentOptions: { deposit: 400_000, full: 2_000_000 } as Booking['paymentOptions'] });
+    for (const field of ['financials', 'incidents', 'depositFirst', 'rentDueFrom'] as const) delete older[field];
+
+    const { el } = await render(older);
+
+    expect(el.querySelectorAll('input[name="amount"]').length).toBe(2);
+    expect(el.textContent).toContain('Đặt cọc 20%');
+    expect(el.textContent).not.toContain('Tiền đặt cọc (20%)');
+  });
 });

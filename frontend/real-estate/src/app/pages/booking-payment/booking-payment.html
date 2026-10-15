@@ -33,10 +33,10 @@
           </a>
         </div>
       } @else if (
-        options.full === null &&
-        options.deposit === null &&
-        options.assetSecurity === null &&
-        options.incident === null
+        options.full == null &&
+        options.deposit == null &&
+        options.assetSecurity == null &&
+        options.incident == null
       ) {
         <!-- Nothing to pay: cancelled or already paid -->
         <div class="card mt-10 max-w-2xl">
@@ -89,7 +89,7 @@
             <fieldset>
               <legend class="font-serif text-2xl">{{ 'payment.amountLegend' | transloco }}</legend>
               <div class="mt-6 grid gap-4 sm:grid-cols-2">
-                @if (options.deposit !== null) {
+                @if (options.deposit != null) {
                   <label
                     class="card flex cursor-pointer gap-4 p-6 has-[:checked]:border-accent-deep has-[:checked]:bg-accent-muted md:p-6"
                   >
@@ -110,7 +110,7 @@
                     </span>
                   </label>
                 }
-                @if (options.full !== null) {
+                @if (options.full != null) {
                   <label
                     class="card flex cursor-pointer gap-4 p-6 has-[:checked]:border-accent-deep has-[:checked]:bg-accent-muted md:p-6"
                   >
@@ -137,7 +137,7 @@
                     </span>
                   </label>
                 }
-                @if (options.assetSecurity !== null) {
+                @if (options.assetSecurity != null) {
                   <label
                     class="card flex cursor-pointer gap-4 p-6 has-[:checked]:border-accent-deep has-[:checked]:bg-accent-muted md:p-6"
                   >
@@ -166,7 +166,7 @@
                     </span>
                   </label>
                 }
-                @if (options.incident !== null) {
+                @if (options.incident != null) {
                   <label
                     class="card flex cursor-pointer gap-4 p-6 has-[:checked]:border-accent-deep has-[:checked]:bg-accent-muted md:p-6"
                   >

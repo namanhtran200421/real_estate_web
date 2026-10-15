@@ -4,6 +4,7 @@ import {
   AssetIncident,
   AssetIncidentStatus,
   Booking,
+  BookingFinancials,
   BookingPayment,
   BookingStatus,
   GuestIdentity,
@@ -65,7 +66,12 @@ export interface AdminAssetIncident extends AssetIncident {
   resolvedAt: string | null;
 }
 
-export interface AdminBookingDetail extends Omit<Booking, 'payments' | 'incidents'> {
+/** The admin API: the fields an older guest API may leave out are always present here. */
+export interface AdminBookingDetail
+  extends Omit<Booking, 'payments' | 'incidents' | 'financials' | 'depositFirst' | 'rentDueFrom'> {
+  financials: BookingFinancials;
+  depositFirst: boolean;
+  rentDueFrom: string | null;
   apartmentName: string;
   promoCode: string | null;
   createdIp: string | null;

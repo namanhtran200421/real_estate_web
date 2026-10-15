@@ -246,6 +246,11 @@
     "bank_transfer": "Chuyển khoản",
     "cash": "Tiền mặt"
   },
+  "purposes": {
+    "accommodation": "Tiền phòng",
+    "asset_security": "Tiền đặt cọc",
+    "incident": "Bồi thường"
+  },
   "home": {
     "eyebrow": "Sun Garden · Đà Lạt",
     "titleStart": "Một góc Đà\u00a0Lạt",
@@ -335,6 +340,8 @@
       "nationality": "Quốc tịch",
       "dateOfBirth": "Ngày sinh",
       "cccd": "Số CCCD",
+      "personalId": "Mã định danh cá nhân (12 chữ số)",
+      "optionalForChild": "(không bắt buộc với trẻ dưới 14 tuổi)",
       "passport": "Passport ID / Số hộ chiếu",
       "address": "Địa chỉ cư trú trên CCCD",
       "country": "Quốc tịch (ghi rõ quốc gia)",
@@ -346,9 +353,11 @@
       "stayReasonPlaceholder": "Du lịch, công tác, thăm thân…",
       "errors": {
         "required": "Vui lòng điền mục này.",
-        "cccd": "Số CCCD phải có đúng 12 chữ số.",
+        "cccd": "Số CCCD / mã định danh cá nhân phải có đúng 12 chữ số.",
         "passport": "Số hộ chiếu phải có ít nhất 5 ký tự.",
-        "expiryBeforeIssue": "Thời hạn phải sau ngày cấp."
+        "expiryBeforeIssue": "Thời hạn phải sau ngày cấp.",
+        "dateOfBirthPast": "Ngày sinh phải trước hôm nay.",
+        "documentExpired": "Giấy tờ đã hết hạn trước ngày nhận phòng."
       }
     },
     "errors": {
@@ -482,7 +491,7 @@
     "securityRequired": "Tiền đặt cọc yêu cầu",
     "securityHeld": "Đang được giữ",
     "securityApplied": "Đã cấn trừ {{ amount }} ₫ tiền đặt cọc",
-    "payAssets": "Thanh toán khoản tài sản",
+    "payAssets": "Thanh toán tiền bồi thường",
     "payDeposit": "Thanh toán tiền đặt cọc",
     "payRent": "Thanh toán tiền phòng",
     "timeline": {

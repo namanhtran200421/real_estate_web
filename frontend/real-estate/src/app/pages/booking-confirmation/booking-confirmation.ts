@@ -54,6 +54,20 @@ export class BookingConfirmation {
     return this.errorMessages.message(toApiError(this.booking.error()));
   });
 
+  /** Rent payments received: what the rent total counts (an older API sends no purpose: rent). */
+  protected readonly rentPayments = computed(() =>
+    (this.b()?.payments ?? []).filter(
+      (p) => p.state === 'succeeded' && p.purpose !== 'asset_security' && p.purpose !== 'incident',
+    ),
+  );
+
+  /** Deposit and damage payments received, listed apart from the rent with their names. */
+  protected readonly otherPayments = computed(() =>
+    (this.b()?.payments ?? []).filter(
+      (p) => p.state === 'succeeded' && (p.purpose === 'asset_security' || p.purpose === 'incident'),
+    ),
+  );
+
   protected readonly apartment = computed(() => {
     const booking = this.b();
     if (!booking) return undefined;

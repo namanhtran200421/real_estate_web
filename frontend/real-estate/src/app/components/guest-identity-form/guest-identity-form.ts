@@ -32,6 +32,8 @@ export class GuestIdentityForm {
     { value: 'other', label: 'Khác / Other' },
   ];
   private readonly errors = computed(() => (this.submitted() ? this.drafts.errors()[this.index()] : undefined));
+  /** A Vietnamese guest under 14 on check-in day: the issue date, expiry date and address are optional. */
+  protected readonly child = computed(() => this.drafts.children()[this.index()] ?? false);
 
   protected set<K extends keyof GuestIdentityDraft>(field: K, value: GuestIdentityDraft[K]): void {
     this.drafts.update(this.index(), { [field]: value } as Partial<GuestIdentityDraft>);

@@ -246,6 +246,11 @@
     "bank_transfer": "bank transfer",
     "cash": "cash"
   },
+  "purposes": {
+    "accommodation": "Rent",
+    "asset_security": "Deposit",
+    "incident": "Damage charges"
+  },
   "home": {
     "eyebrow": "Sun Garden · Da Lat",
     "titleStart": "A corner of Da\u00a0Lat",
@@ -335,6 +340,8 @@
       "nationality": "Nationality",
       "dateOfBirth": "Date of birth",
       "cccd": "Citizen ID number (CCCD)",
+      "personalId": "Personal ID number (12 digits)",
+      "optionalForChild": "(optional for children under 14)",
       "passport": "Passport ID / number",
       "address": "Address shown on the citizen ID",
       "country": "Nationality (country)",
@@ -346,9 +353,11 @@
       "stayReasonPlaceholder": "Holiday, business, visiting family…",
       "errors": {
         "required": "Please complete this field.",
-        "cccd": "A citizen ID must contain exactly 12 digits.",
+        "cccd": "A citizen ID / personal ID number must contain exactly 12 digits.",
         "passport": "A passport number must contain at least 5 characters.",
-        "expiryBeforeIssue": "The expiry date must be after the issue date."
+        "expiryBeforeIssue": "The expiry date must be after the issue date.",
+        "dateOfBirthPast": "The date of birth must be before today.",
+        "documentExpired": "The document expires before check-in day."
       }
     },
     "errors": {
@@ -482,7 +491,7 @@
     "securityRequired": "Deposit required",
     "securityHeld": "Currently held",
     "securityApplied": "{{ amount }} ₫ of the deposit applied",
-    "payAssets": "Pay asset-related amount",
+    "payAssets": "Pay damage charges",
     "payDeposit": "Pay the deposit",
     "payRent": "Pay the rent",
     "timeline": {

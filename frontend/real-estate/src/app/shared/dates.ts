@@ -22,6 +22,15 @@ export function nightsBetween(checkIn: string, checkOut: string): number {
   return Math.round((Date.parse(`${checkOut}T00:00:00Z`) - Date.parse(`${checkIn}T00:00:00Z`)) / 86_400_000);
 }
 
+/**
+ * Whole years from `dateOfBirth` to `date` (both yyyy-mm-dd), as the API counts them; born on 29/02,
+ * one turns a year older on 01/03 in other years.
+ */
+export function ageOn(dateOfBirth: string, date: string): number {
+  const years = Number(date.slice(0, 4)) - Number(dateOfBirth.slice(0, 4));
+  return date.slice(5) < dateOfBirth.slice(5) ? years - 1 : years;
+}
+
 /** "2026-11-12" → "12/11". */
 export function shortDate(date: string): string {
   return `${date.slice(8, 10)}/${date.slice(5, 7)}`;

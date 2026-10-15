@@ -35,6 +35,8 @@
         <button type="button" class="btn btn-outline mt-6" (click)="booking.reload()">{{ 'common.retry' | transloco }}</button>
       </div>
     } @else if (b(); as b) {
+      <!-- An API older than deposit-first payments leaves incidents and financials out. -->
+      @let incidents = b.incidents ?? [];
       <div class="mt-14 text-center">
         @if (b.pendingTransfer; as pending) {
           <span class="mx-auto grid h-16 w-16 place-items-center rounded-full border border-accent bg-accent-muted text-accent-deep">
@@ -137,7 +139,7 @@
           <a routerLink="/book" [queryParams]="{ apt: b.apartmentSlug }" class="btn btn-primary mt-8">
             {{ 'payment.bookAgain' | transloco }}
           </a>
-        } @else if (b.paymentOptions.full !== null || b.paymentOptions.assetSecurity !== null) {
+        } @else if (b.paymentOptions.full != null || b.paymentOptions.assetSecurity != null) {
           <p class="small-caps text-accent-deep" role="status">{{ 'confirmation.unpaid' | transloco }}</p>
           <h1 class="mt-3 text-4xl md:text-5xl">{{ 'confirmation.bookingRef' | transloco: { reference: b.reference } }}</h1>
           <p class="mx-auto mt-4 max-w-lg text-muted-foreground">
@@ -211,23 +213,24 @@
           </div>
         </dl>
 
-        <div class="mt-8 space-y-3 rounded-md bg-muted p-5">
+        <!-- The rent: its total, the rent paid, and what is left, so the lines add up. Deposit and
+             damage payments are listed apart, each named. -->
+        <div class="mt-8 space-y-3 rounded-md bg-muted p-5" data-summary="rent">
           <div class="flex justify-between gap-4">
-            <span class="text-muted-foreground">{{ 'common.totalPrice' | transloco }}</span>
+            <span class="text-muted-foreground">{{ (b.depositFirst ? 'purposes.accommodation' : 'common.totalPrice') | transloco }}</span>
             <span>{{ b.quote.total | number }} ₫</span>
           </div>
-          @for (p of b.payments; track p.id) {
-            @if (p.state === 'succeeded') {
-              <div class="flex justify-between gap-4 text-sm">
-                <span class="text-muted-foreground">
-                  {{
-                    'confirmation.paidVia'
-                      | transloco: { provider: ('providers.' + p.provider | transloco), date: (p.paidAt | date: 'dd/MM HH:mm') }
-                  }}
-                </span>
-                <span class="text-accent-deep">{{ p.amount | number }} ₫</span>
-              </div>
-            }
+          @for (p of rentPayments(); track p.id) {
+            <div class="flex justify-between gap-4 text-sm">
+              <span class="text-muted-foreground">
+                {{ 'purposes.accommodation' | transloco }} ·
+                {{
+                  'confirmation.paidVia'
+                    | transloco: { provider: ('providers.' + p.provider | transloco), date: (p.paidAt | date: 'dd/MM HH:mm') }
+                }}
+              </span>
+              <span class="text-accent-deep">{{ p.amount | number }} ₫</span>
+            </div>
           }
           <div class="flex items-baseline justify-between gap-4 border-t border-border pt-3">
             <span class="font-medium">
@@ -242,18 +245,34 @@
             <span class="font-serif text-2xl">{{ b.amountDue | number }} ₫</span>
           </div>
         </div>
+        @if (otherPayments().length) {
+          <div class="mt-3 space-y-3 rounded-md border border-border p-5 text-sm" data-summary="other">
+            @for (p of otherPayments(); track p.id) {
+              <div class="flex justify-between gap-4">
+                <span class="text-muted-foreground">
+                  {{ 'purposes.' + p.purpose | transloco }} ·
+                  {{
+                    'confirmation.paidVia'
+                      | transloco: { provider: ('providers.' + p.provider | transloco), date: (p.paidAt | date: 'dd/MM HH:mm') }
+                  }}
+                </span>
+                <span>{{ p.amount | number }} ₫</span>
+              </div>
+            }
+          </div>
+        }
 
-        @if (b.depositFirst) {
+        @if (b.depositFirst && b.financials; as money) {
           <section class="mt-6 rounded-md border border-border bg-card p-5" aria-labelledby="money-timeline-heading">
             <h2 id="money-timeline-heading" class="text-xl">{{ 'confirmation.timeline.title' | transloco }}</h2>
             <ol class="mt-4 divide-y divide-border border-y border-border text-sm">
               <li class="py-4">
                 <div class="flex justify-between gap-4">
                   <span class="font-medium">{{ 'confirmation.timeline.deposit' | transloco }}</span>
-                  <span>{{ b.financials.assetSecurityRequired | number }} ₫</span>
+                  <span>{{ money.assetSecurityRequired | number }} ₫</span>
                 </div>
                 <p class="mt-1 text-muted-foreground">
-                  @if (b.financials.assetSecurityReceived >= b.financials.assetSecurityRequired) {
+                  @if (money.assetSecurityReceived >= money.assetSecurityRequired) {
                     {{ 'confirmation.timeline.received' | transloco }}
                   } @else if (b.pendingTransfer?.purpose === 'asset_security') {
                     {{ 'confirmation.timeline.checking' | transloco }}
@@ -262,8 +281,8 @@
                   }
                 </p>
                 @if (
-                  b.paymentOptions.assetSecurity !== null &&
-                  b.financials.assetSecurityReceived < b.financials.assetSecurityRequired &&
+                  b.paymentOptions.assetSecurity != null &&
+                  money.assetSecurityReceived < money.assetSecurityRequired &&
                   b.pendingTransfer?.purpose !== 'asset_security'
                 ) {
                   <a routerLink="/book/payment" [queryParams]="{ ref: b.reference }" class="btn btn-primary mt-3">
@@ -283,7 +302,7 @@
                     {{ 'confirmation.timeline.rentFrom' | transloco: { date: (b.rentDueFrom | date: 'dd/MM/yyyy') } }}
                   }
                 </p>
-                @if (b.paymentOptions.full !== null) {
+                @if (b.paymentOptions.full != null) {
                   <a routerLink="/book/payment" [queryParams]="{ ref: b.reference }" class="btn btn-primary mt-3">
                     {{ 'confirmation.payRent' | transloco }}
                   </a>
@@ -294,15 +313,15 @@
                   <span class="font-medium">{{ 'confirmation.timeline.refund' | transloco }}</span>
                 </div>
                 <p class="mt-1 text-muted-foreground">
-                  @if (b.financials.assetSecurityRefunded > 0) {
-                    {{ 'confirmation.timeline.refunded' | transloco: { amount: (b.financials.assetSecurityRefunded | number) } }}
+                  @if (money.assetSecurityRefunded > 0) {
+                    {{ 'confirmation.timeline.refunded' | transloco: { amount: (money.assetSecurityRefunded | number) } }}
                   } @else {
                     {{ 'confirmation.timeline.refundLater' | transloco }}
                   }
                 </p>
-                @if (b.incidents.length) {
+                @if (incidents.length) {
                   <ul class="mt-3 divide-y divide-border border-y border-border">
-                    @for (incident of b.incidents; track incident.id) {
+                    @for (incident of incidents; track incident.id) {
                       <li class="flex justify-between gap-4 py-3">
                         <span>
                           <span class="block">{{ incident.description }}</span>
@@ -317,7 +336,7 @@
                     }
                   </ul>
                 }
-                @if (b.paymentOptions.incident !== null) {
+                @if (b.paymentOptions.incident != null) {
                   <a routerLink="/book/payment" [queryParams]="{ ref: b.reference }" class="btn btn-outline mt-3">
                     {{ 'confirmation.payAssets' | transloco }}
                   </a>
@@ -325,7 +344,7 @@
               </li>
             </ol>
           </section>
-        } @else if (b.financials.assetSecurityRequired > 0 || b.incidents.length) {
+        } @else if (b.financials && (b.financials.assetSecurityRequired > 0 || incidents.length)) {
           <section class="mt-6 rounded-md border border-border p-5" aria-labelledby="asset-financials-heading">
             <h2 id="asset-financials-heading" class="text-xl">{{ 'confirmation.assetsTitle' | transloco }}</h2>
             @if (b.financials.assetSecurityRequired > 0) {
@@ -340,9 +359,9 @@
                 </div>
               </dl>
             }
-            @if (b.incidents.length) {
+            @if (incidents.length) {
               <ul class="mt-4 divide-y divide-border border-y border-border text-sm">
-                @for (incident of b.incidents; track incident.id) {
+                @for (incident of incidents; track incident.id) {
                   <li class="flex justify-between gap-4 py-3">
                     <span>
                       <span class="block">{{ incident.description }}</span>
@@ -355,7 +374,7 @@
                 }
               </ul>
             }
-            @if (b.paymentOptions.assetSecurity !== null || b.paymentOptions.incident !== null) {
+            @if (b.paymentOptions.assetSecurity != null || b.paymentOptions.incident != null) {
               <a routerLink="/book/payment" [queryParams]="{ ref: b.reference }" class="btn btn-outline mt-5">
                 {{ 'confirmation.payAssets' | transloco }}
               </a>

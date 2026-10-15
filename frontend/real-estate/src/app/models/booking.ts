@@ -1,4 +1,10 @@
-/** Booking shapes as returned by the API (backend: src/modules/bookings/booking.types.ts). */
+/**
+ * Booking shapes as returned by the API (backend: src/modules/bookings/booking.types.ts).
+ *
+ * Fields that came with deposit-first payments are optional on `Booking`: an API deployed before
+ * them (version skew while main is deployed) leaves them out. Compare with `!= null` / `== null`
+ * so a missing field reads as absent, and treat a missing `depositFirst` as false.
+ */
 
 export type BookingStatus = 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'expired';
 export type PaymentStatus = 'unpaid' | 'deposit_paid' | 'fully_paid' | 'refunded';
@@ -80,21 +86,27 @@ interface IdentityBase {
   fullName: string;
   dateOfBirth: string;
   documentNumber: string;
-  issueDate: string;
-  expiryDate: string;
   stayReason: string;
 }
 
+/**
+ * CCCD, or for a child the personal ID number (mã định danh cá nhân). The dates and address may be
+ * left out only for a guest under 14 on check-in day.
+ */
 export interface VietnameseIdentity extends IdentityBase {
   documentType: 'cccd';
   nationality: 'VN';
-  addressOnDocument: string;
+  addressOnDocument?: string;
+  issueDate?: string;
+  expiryDate?: string;
 }
 
 export interface ForeignIdentity extends IdentityBase {
   documentType: 'passport';
   nationality: string;
   gender: 'female' | 'male' | 'other';
+  issueDate: string;
+  expiryDate: string;
   temporaryStayExpiry: string;
 }
 
@@ -123,17 +135,18 @@ export interface Booking {
   paymentStatus: PaymentStatus;
   amountPaid: number;
   amountDue: number;
-  financials: BookingFinancials;
-  /** Deposit-first: a security deposit confirms the booking and the rent is paid from check-in day. */
-  depositFirst: boolean;
-  /** First day the rent can be paid (YYYY-MM-DD); null when not deposit-first. */
-  rentDueFrom: string | null;
-  /** What can be paid now; null = not available. */
+  /** Absent from an older API. */
+  financials?: BookingFinancials;
+  /** Deposit-first: a security deposit confirms the booking and the rent is paid from check-in day. Absent (false) from an older API. */
+  depositFirst?: boolean;
+  /** First day the rent can be paid (YYYY-MM-DD); null when not deposit-first. Absent from an older API. */
+  rentDueFrom?: string | null;
+  /** What can be paid now; null (or absent, from an older API) = not available. */
   paymentOptions: {
     deposit: number | null;
     full: number | null;
-    assetSecurity: number | null;
-    incident: number | null;
+    assetSecurity?: number | null;
+    incident?: number | null;
   };
   /** An unpaid booking is released at this time. */
   holdExpiresAt: string | null;
@@ -142,7 +155,8 @@ export interface Booking {
   createdAt: string; // ISO timestamp
   /** Money that has arrived. */
   payments: BookingPayment[];
-  incidents: AssetIncident[];
+  /** Absent from an older API. */
+  incidents?: AssetIncident[];
 }
 
 export interface BookingFinancials {
