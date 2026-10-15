@@ -370,13 +370,14 @@
     "contactUs": "Contact us"
   },
   "gallery": {
-  "lightbox": {
-    "label": "Photo viewer",
-    "position": "Photo {{ n }} of {{ total }}",
-    "previous": "Previous photo",
-    "next": "Next photo",
-    "close": "Close"
-  },
+    "chapters": "Rooms",
+    "lightbox": {
+      "label": "Photo viewer",
+      "position": "Photo {{ n }} of {{ total }}",
+      "previous": "Previous photo",
+      "next": "Next photo",
+      "close": "Close"
+    },
     "viewAll": "View all {{ count }} [[ plural({{ count }}, photo, photos) ]]"
   },
   "availability": {

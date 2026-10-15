@@ -1,6 +1,6 @@
 @if (apartment(); as apt) {
   <app-apartment-header [apartment]="apt" />
-  <nav class="container-editorial mt-10 max-w-7xl" [attr.aria-label]="'apartment.tabs.gallery' | transloco">
+  <nav class="container-editorial mt-10 max-w-6xl" [attr.aria-label]="'gallery.chapters' | transloco">
     <ul class="flex flex-wrap gap-2">
       @for (chapter of chapters(); track chapter.id) {
         <li><a class="inline-flex min-h-11 items-center rounded-full border border-border bg-card px-4 text-sm" [routerLink]="[]" [fragment]="'g-' + chapter.id" queryParamsHandling="preserve">{{ 'rooms.' + chapter.key + '.title' | transloco }}</a></li>
@@ -8,14 +8,15 @@
     </ul>
   </nav>
   @for (chapter of chapters(); track chapter.id; let last = $last) {
-    <section class="container-editorial mt-16 max-w-7xl" [class.mb-24]="last" [id]="'g-' + chapter.id">
+    <section class="container-editorial mt-16 max-w-6xl" [class.mb-24]="last" [id]="'g-' + chapter.id">
       <h2 class="display-section">{{ 'rooms.' + chapter.key + '.title' | transloco }}</h2>
-      <ul class="mt-8 columns-2 gap-3 md:columns-3 md:gap-5">
-        @for (photo of chapter.photos; track photo.src; let first = $first) {
-          <li class="mb-3 break-inside-avoid md:mb-5" appFadeIn>
-            <button type="button" class="focus-photo group block w-full" (click)="lightbox.open(indexOf(photo), $any($event.currentTarget).querySelector('img'))" data-cursor="view">
-              <span class="relative block overflow-clip" [class.arch]="first" [class.aspect-[3/4]]="true">
-                <img [ngSrc]="photo.src" [alt]="photo.alt" fill [priority]="photo === ordered()[0]" sizes="(min-width: 768px) 30vw, 48vw" class="media-zoom object-cover" />
+      <ul class="mt-8 grid grid-cols-2 gap-3 md:grid-cols-6 md:gap-5" data-chapter-grid>
+        @for (photo of chapter.photos; track photo.src; let first = $first; let i = $index; let n = $count) {
+          @let t = tile(n, i);
+          <li [class]="t.item" appFadeIn>
+            <button type="button" class="focus-photo group block h-full w-full" (click)="lightbox.open(indexOf(photo), $any($event.currentTarget).querySelector('img'))" data-cursor="view">
+              <span class="relative block overflow-clip" [class]="t.box" [class.arch]="first && n > 1">
+                <img [ngSrc]="photo.src" [alt]="photo.alt" fill [priority]="photo === ordered()[0]" sizes="(min-width: 768px) 45vw, 48vw" class="media-zoom object-cover" />
               </span>
             </button>
           </li>

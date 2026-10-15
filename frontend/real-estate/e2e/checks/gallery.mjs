@@ -3,6 +3,14 @@ export default async function check({ browser, site, assert, lib }) {
   const page = await lib.openPage(browser);
   const { errors } = lib.captureErrors(page);
   await page.goto(site + '/gallery', { waitUntil: 'networkidle' });
+  // Every chapter fills the width: its rightmost tile ends at the list's right edge.
+  const gaps = await page.evaluate(() =>
+    [...document.querySelectorAll('[data-chapter-grid]')].map((ul) => {
+      const edge = ul.getBoundingClientRect().right;
+      return Math.round(edge - Math.max(...[...ul.children].map((li) => li.getBoundingClientRect().right)));
+    }),
+  );
+  assert.ok(gaps.length >= 5 && gaps.every((g) => g >= -1 && g <= 24), `chapter right gaps ${gaps}`);
   const first = page.locator('main button[data-cursor="view"]').first();
   await first.click();
   await page.waitForTimeout(500);

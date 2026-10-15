@@ -370,13 +370,14 @@
     "contactUs": "Liên hệ với chúng tôi"
   },
   "gallery": {
-  "lightbox": {
-    "label": "Xem ảnh",
-    "position": "Ảnh {{ n }}/{{ total }}",
-    "previous": "Ảnh trước",
-    "next": "Ảnh tiếp",
-    "close": "Đóng"
-  },
+    "chapters": "Các phòng",
+    "lightbox": {
+      "label": "Xem ảnh",
+      "position": "Ảnh {{ n }}/{{ total }}",
+      "previous": "Ảnh trước",
+      "next": "Ảnh tiếp",
+      "close": "Đóng"
+    },
     "viewAll": "Xem tất cả {{ count }} ảnh"
   },
   "availability": {
