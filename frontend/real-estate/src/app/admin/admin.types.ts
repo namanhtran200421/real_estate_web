@@ -66,6 +66,11 @@ export interface AdminAssetIncident extends AssetIncident {
   resolvedAt: string | null;
 }
 
+/** A stored identity, by guest (0-based); `unreadable` when it could not be decrypted (wrong or lost key). */
+export type AdminGuestIdentity =
+  | (GuestIdentity & { guestIndex: number; unreadable?: undefined })
+  | { guestIndex: number; unreadable: true };
+
 /** The admin API: the fields an older guest API may leave out are always present here. */
 export interface AdminBookingDetail
   extends Omit<Booking, 'payments' | 'incidents' | 'financials' | 'depositFirst' | 'rentDueFrom'> {
@@ -79,8 +84,11 @@ export interface AdminBookingDetail
   cancelledAt: string | null;
   cancellationReason: string | null;
   completedAt: string | null;
-  identities: GuestIdentity[];
+  identities: AdminGuestIdentity[];
+  /** No identities left because they were deleted after their retention date (not: never collected). */
   identitiesPurged: boolean;
+  /** The booking came back after its identities were deleted: collect them again at check-in. */
+  identitiesMissing: boolean;
   incidents: AdminAssetIncident[];
   lateCheckout: {
     state: 'not_due' | 'due' | 'late' | 'urgent' | 'checked_out';

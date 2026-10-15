@@ -5,27 +5,18 @@ import { Select, SelectOption } from '../../../components/select/select';
 import { StatusBadge } from '../../../components/status-badge/status-badge';
 import { toApiError } from '../../../core/api';
 import { NIGHT_RATE_LABELS, PAYMENT_PROVIDER_LABELS, PaymentPurpose } from '../../../models/booking';
+import { todayIso } from '../../../shared/dates';
 import { AdminApiService } from '../../admin-api.service';
 import { AdminBookingDetail, AdminPayment, BookingEvent } from '../../admin.types';
+import {
+  depositRefundBlocker,
+  eventDetails,
+  eventLabel,
+  inspectionLock,
+  manualPurposes,
+  transferNote,
+} from '../../booking-detail-rules';
 import { InspectionResult } from '../../inspection-checklist';
-
-const EVENT_LABELS: Record<string, string> = {
-  created: 'Khách tạo đặt phòng',
-  transfer_reported: 'Khách báo đã chuyển khoản',
-  transfer_verified: 'Xác nhận đã nhận tiền',
-  transfer_rejected: 'Báo chưa nhận được tiền',
-  payment_recorded: 'Ghi nhận thanh toán',
-  confirmed: 'Xác nhận đặt phòng',
-  cancelled: 'Huỷ đặt phòng',
-  completed: 'Hoàn thành',
-  expired: 'Hết hạn giữ chỗ',
-  reactivated: 'Mở lại đặt phòng (tiền về sau khi hết hạn giữ chỗ)',
-  refund_recorded: 'Ghi nhận hoàn tiền',
-  checked_out: 'Ghi nhận khách đã trả phòng',
-  asset_incident_recorded: 'Ghi nhận hư hỏng / thất lạc',
-  asset_incident_settled: 'Đóng khoản bồi thường',
-  asset_incident_waived: 'Miễn khoản bồi thường',
-};
 
 /** A guest's transfer screenshot on this page: being fetched, shown (as a local URL), or failed. */
 type ScreenshotView = { state: 'loading' } | { state: 'shown'; url: string } | { state: 'failed' };
@@ -41,12 +32,6 @@ const PAYMENT_PURPOSE_LABELS: Record<PaymentPurpose, string> = {
   asset_security: 'Tiền đặt cọc',
   incident: 'Bồi thường',
 };
-
-/** Today in the browser, "2026-10-14" (the owner works in Vietnam time). */
-function todayIso(): string {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-}
 
 /** One line of the check-out inspection while the owner fills it in. */
 interface InspectionRow {
@@ -86,11 +71,12 @@ export class AdminBookingDetailPage {
     { value: 'cash', label: 'Tiền mặt' },
     { value: 'bank_transfer', label: 'Chuyển khoản' },
   ];
-  protected readonly paymentPurposeOptions: SelectOption[] = [
-    { value: 'accommodation', label: 'Tiền phòng' },
-    { value: 'asset_security', label: 'Tiền đặt cọc' },
-    { value: 'incident', label: 'Bồi thường' },
-  ];
+  /** Only the money this booking can take now (the API refuses the rest). */
+  protected readonly paymentPurposeOptions = computed<SelectOption[]>(() => {
+    const booking = this.b();
+    if (!booking) return [];
+    return manualPurposes(booking).map((purpose) => ({ value: purpose, label: PAYMENT_PURPOSE_LABELS[purpose] }));
+  });
 
   protected readonly booking = resource({
     params: () => this.reference(),
@@ -133,7 +119,7 @@ export class AdminBookingDetailPage {
     return booking.amountDue || undefined;
   });
 
-  /** The inspection is done from check-in day on, while the stay is confirmed or after it. */
+  /** The inspection is done from check-in day on (business time zone), while the stay is confirmed or after it. */
   protected readonly canInspect = computed(() => {
     const booking = this.b();
     if (!booking) return false;
@@ -147,13 +133,13 @@ export class AdminBookingDetailPage {
   /** Why "Hoàn cọc" cannot be pressed yet; undefined when it can. */
   protected readonly depositRefundBlocker = computed(() => {
     const booking = this.b();
-    if (!booking) return undefined;
-    if (booking.status !== 'completed') return 'Ghi nhận khách đã trả phòng trước.';
-    if (!booking.inspection) return 'Lưu kết quả kiểm tra trả phòng trước.';
-    if (booking.incidents.some((incident) => incident.status === 'open')) return 'Còn khoản hư hỏng chưa đóng.';
-    if (booking.amountDue >= 1000) return 'Khách chưa thanh toán đủ tiền phòng.';
-    if (booking.depositRefundable < 1000) return 'Không còn tiền cọc để hoàn.';
-    return undefined;
+    return booking ? depositRefundBlocker(booking) : undefined;
+  });
+
+  /** Why the inspection can no longer be saved (the deposit was refunded on it); undefined when it can. */
+  protected readonly inspectionLock = computed(() => {
+    const booking = this.b();
+    return booking ? inspectionLock(booking) : undefined;
   });
 
   /** The guests' transfer screenshots on this page, by payment id. */
@@ -167,12 +153,15 @@ export class AdminBookingDetailPage {
     effect(() => {
       const booking = this.b();
       if (!booking) return;
-      // A deposit-first booking waiting for money is paid with the deposit first; set only when
-      // the booking or its status changes, so the owner's later choice is kept.
+      // The first money this booking can take (the deposit, for a deposit-first booking waiting for
+      // it); reset only when the booking or its status changes, or the choice no longer applies, so
+      // the owner's later choice is kept.
+      const purposes = manualPurposes(booking);
       const nextPurposeKey = `${booking.reference}|${booking.status}`;
-      if (nextPurposeKey !== purposeKey) {
+      const current = untracked(() => this.manualPurpose());
+      if (purposes.length && (nextPurposeKey !== purposeKey || !purposes.includes(current))) {
         purposeKey = nextPurposeKey;
-        this.manualPurpose.set(booking.depositFirst && (booking.status === 'pending' || booking.status === 'expired') ? 'asset_security' : 'accommodation');
+        this.manualPurpose.set(purposes[0]);
       }
       const key = `${booking.reference}|${booking.inspection?.inspectedAt ?? ''}|${JSON.stringify(booking.checklist)}`;
       if (key === rowsKey) return;
@@ -224,21 +213,12 @@ export class AdminBookingDetailPage {
     this.screenshots.update((views) => ({ ...views, [paymentId]: view }));
   }
 
-  protected eventLabel(type: string): string {
-    return EVENT_LABELS[type] ?? type;
+  protected eventLabel(event: BookingEvent): string {
+    return eventLabel(event);
   }
 
-  /** The parts of an event's data worth showing: amount, payment method, reason. */
   protected eventDetails(event: BookingEvent): { amount?: number; method?: string; reason?: string } {
-    const { amount, provider, method, reason } = event.data;
-    const details: { amount?: number; method?: string; reason?: string } = {};
-    if (typeof amount === 'number') details.amount = amount;
-    const payment = provider ?? method;
-    if (typeof payment === 'string' && payment in PAYMENT_PROVIDER_LABELS) {
-      details.method = PAYMENT_PROVIDER_LABELS[payment as keyof typeof PAYMENT_PROVIDER_LABELS];
-    }
-    if (typeof reason === 'string') details.reason = reason;
-    return details;
+    return eventDetails(event);
   }
 
   protected value(event: Event): string {
@@ -281,9 +261,9 @@ export class AdminBookingDetailPage {
     if (done) this.cancelling.set(false);
   }
 
-  /** The transfer note the guest's banking app filled in: the reference without dashes ("TS" for a deposit). */
+  /** The transfer note the guest's banking app filled in ("TS" for a deposit, "BT" for damage). */
   protected transferNote(reference: string, purpose: PaymentPurpose = 'accommodation'): string {
-    return `${reference.replaceAll('-', '')}${purpose === 'asset_security' ? 'TS' : ''}`;
+    return transferNote(reference, purpose);
   }
 
   protected setRowOk(roomIndex: number, rowIndex: number, ok: boolean): void {
@@ -303,6 +283,7 @@ export class AdminBookingDetailPage {
   }
 
   protected saveInspection(): void {
+    if (this.inspectionLock()) return;
     const results: InspectionResult[] = this.inspectionRooms().flatMap((room) =>
       room.rows.map((row) => ({ room: room.room, item: row.item, ok: row.ok, note: row.ok ? null : row.note.trim() || null })),
     );
