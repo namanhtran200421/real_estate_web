@@ -6,7 +6,7 @@ export default async function check({ browser, site, assert, lib }) {
   await page.mouse.wheel(0, 2400);
   await page.waitForTimeout(1200);
   const before = await page.evaluate(() => window.scrollY);
-  await page.click('[data-window] a');
+  await page.click('[data-room] a');
   await page.waitForURL(/apartment/);
   await page.waitForTimeout(800);
   await page.goBack();

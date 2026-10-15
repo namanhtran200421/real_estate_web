@@ -12,7 +12,9 @@ export default async function check({ browser, site, assert, lib }) {
   assert.match(guest.h1, /Fraunces/);
   assert.equal(guest.guest, true);
 
-  await page.goto(site + '/admin/login', { waitUntil: 'networkidle' });
+  // The captcha (Cloudflare) keeps requests open on forms, so wait for load, not network idle.
+  await page.goto(site + '/admin/login', { waitUntil: 'load' });
+  await page.waitForTimeout(1500);
   const admin = await page.evaluate(() => {
     const host = document.querySelector('app-admin-login');
     const s = getComputedStyle(host);

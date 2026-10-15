@@ -1,4 +1,5 @@
 // Every guest page loads at both sizes without console errors.
+// Forms load the Cloudflare captcha, whose requests never settle: pages wait for load + 1.5 s, not network idle.
 const PAGES = ['/', '/apartment', '/gallery', '/location', '/about', '/availability', '/contact', '/book'];
 
 export default async function check({ browser, site, assert, lib }) {
@@ -7,7 +8,7 @@ export default async function check({ browser, site, assert, lib }) {
     for (const path of PAGES) {
       const page = await lib.openPage(browser, { viewport });
       const { errors } = lib.captureErrors(page);
-      await page.goto(site + path, { waitUntil: 'networkidle' });
+      await page.goto(site + path, { waitUntil: 'load' }).then(async (r) => { await page.waitForTimeout(1500); return r; });
       await page.waitForTimeout(1500);
       assert.deepEqual(errors.filter((e) => /NG02955/.test(e)), [], `${label} ${path}: LCP image not marked priority`);
       await page.context().close();
@@ -18,7 +19,7 @@ export default async function check({ browser, site, assert, lib }) {
     const page = await lib.openPage(browser, { viewport });
     const { errors } = lib.captureErrors(page);
     for (const path of PAGES) {
-      const response = await page.goto(site + path, { waitUntil: 'networkidle' });
+      const response = await page.goto(site + path, { waitUntil: 'load' }).then(async (r) => { await page.waitForTimeout(1500); return r; });
       assert.ok(response && response.status() < 400, `${path} answered ${response?.status()}`);
       await lib.scrollThrough(page);
       await lib.shot(page, `smoke-${label}${path.replaceAll('/', '_') || '_home'}`);
