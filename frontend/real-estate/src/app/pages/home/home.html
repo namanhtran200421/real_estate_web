@@ -4,15 +4,15 @@
     <section class="relative -mt-[5.5rem] md:-mt-[6.5rem]">
       <app-hero-carousel [photos]="h.slides">
         <div class="hero-mist absolute inset-0 bg-background" aria-hidden="true"></div>
-        <div data-hero-copy class="pointer-events-none absolute inset-x-0 bottom-0 z-10 px-6 pb-24 text-background md:px-12 md:pb-16">
+        <div data-hero-copy class="pointer-events-none absolute inset-x-0 bottom-0 z-10 px-6 pb-20 text-center text-background [text-shadow:0_1px_3px_rgb(0_0_0/0.45),0_2px_24px_rgb(0_0_0/0.5)] md:px-12 md:pb-16 md:text-left">
           <div class="mx-auto max-w-7xl">
-            <div class="pointer-events-auto max-w-fit">
+            <div class="pointer-events-auto mx-auto max-w-fit md:mx-0">
               <p class="label-caps text-background">{{ 'home.eyebrow' | transloco }}</p>
-              <h1 class="display mt-3 text-[clamp(3rem,6.2vw,5.75rem)] text-background [text-shadow:0_2px_24px_rgb(11_34_66/0.45)]">
+              <h1 class="display mt-3 text-[clamp(3rem,6.2vw,5.75rem)] text-background">
                 <span class="hero-line block overflow-clip pb-[0.15em] pt-[0.15em] -my-[0.15em] md:whitespace-nowrap" style="--line: 0"><span class="block">{{ 'home.titleStart' | transloco }}</span></span>
                 <span class="hero-line block overflow-clip pb-[0.15em] pt-[0.15em] -my-[0.15em] md:whitespace-nowrap" style="--line: 1"><span class="block"><em class="text-accent">{{ 'home.titleEm' | transloco }}</em></span></span>
               </h1>
-              <div class="mt-8 flex flex-col items-start gap-5 sm:flex-row sm:items-center sm:gap-8">
+              <div class="mt-8 flex flex-col items-center gap-5 md:flex-row md:items-center md:gap-8">
                 <p class="font-serif text-2xl text-background" data-hero-price>{{ 'home.scenes.perNight' | transloco: { price: (apt.pricing.weekday | number) } }}</p>
                 <a data-hero-cta class="btn btn-primary" routerLink="/book" [queryParams]="{ apt: apt.slug }">{{ 'home.scenes.heroCta' | transloco }} →</a>
               </div>
@@ -59,9 +59,9 @@
     <!-- 4 · Dusk: the room index -->
     <section class="section">
       <div class="container-editorial max-w-7xl">
-        <p class="label-caps text-accent-deep">{{ 'home.scenes.windowsEyebrow' | transloco }}</p>
-        <h2 class="display-section mt-4"><app-split [text]="'home.scenes.windowsTitle' | transloco" /></h2>
-        <div class="mt-14"><app-room-index [chapters]="chapters()" [apartmentSlug]="apt.slug" /></div>
+        <!-- The owner removed the visible eyebrow and title (16/10/2026); the section keeps a heading for screen readers. -->
+        <h2 class="sr-only">{{ 'home.scenes.windowsTitle' | transloco }}</h2>
+        <div><app-room-index [chapters]="chapters()" [apartmentSlug]="apt.slug" /></div>
       </div>
     </section>
 

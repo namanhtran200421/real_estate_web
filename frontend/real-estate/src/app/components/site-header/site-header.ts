@@ -1,4 +1,4 @@
-import { Component, DestroyRef, ElementRef, PLATFORM_ID, afterNextRender, inject, viewChild } from '@angular/core';
+import { Component, DestroyRef, ElementRef, PLATFORM_ID, afterNextRender, inject, signal, viewChild } from '@angular/core';
 import { NgTemplateOutlet, isPlatformBrowser } from '@angular/common';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { IsActiveMatchOptions, NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
@@ -20,6 +20,9 @@ export class SiteHeader {
   protected readonly lang = inject(LANG);
   private readonly motion = inject(MotionService);
   private readonly menu = viewChild<ElementRef<HTMLDialogElement>>('menu');
+  private readonly bar = viewChild<ElementRef<HTMLElement>>('bar');
+  /** Scrolling down hides the header; scrolling up (or reaching the top) brings it back. */
+  protected readonly hidden = signal(false);
 
   /** `label` is a translation key. */
   protected readonly links = [
@@ -66,6 +69,28 @@ export class SiteHeader {
       };
       wide.addEventListener('change', onChange);
       destroyRef.onDestroy(() => wide.removeEventListener('change', onChange));
+
+      // Hide on the way down, show on the way up. Stays visible near the top, while a dialog is open
+      // and while keyboard focus is inside the header. Lenis scrolls the window, so this sees it too.
+      let last = window.scrollY;
+      const onScroll = () => {
+        const y = window.scrollY;
+        const delta = y - last;
+        if (Math.abs(delta) < 6) return;
+        last = y;
+        const pinned =
+          y < 120 ||
+          document.documentElement.classList.contains('has-dialog') ||
+          !!this.bar()?.nativeElement.contains(document.activeElement);
+        this.hidden.set(!pinned && delta > 0);
+      };
+      const onFocus = () => this.hidden.set(false);
+      window.addEventListener('scroll', onScroll, { passive: true });
+      this.bar()?.nativeElement.addEventListener('focusin', onFocus);
+      destroyRef.onDestroy(() => {
+        window.removeEventListener('scroll', onScroll);
+        this.bar()?.nativeElement.removeEventListener('focusin', onFocus);
+      });
     });
   }
 

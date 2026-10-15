@@ -22,18 +22,21 @@
       }
     </div>
   </div>
-  <!-- Lighter, warmer shade: clear above the middle, navy at the foot; a second veil sits behind the copy side only. -->
-  <div class="hero-scrim pointer-events-none absolute inset-0" aria-hidden="true"></div>
+  <!-- A neutral shade (no colour cast) so the copy reads over every photo: light at the top, deeper at the foot. -->
+  <div class="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgb(0_0_0/0.25)_0%,rgb(0_0_0/0.32)_40%,rgb(0_0_0/0.72)_100%)]" aria-hidden="true"></div>
 </div>
 <ng-content />
 @if (started()) {
-  <div class="absolute right-4 top-28 z-20 flex items-center gap-1 md:right-12 md:top-auto md:bottom-12" role="group" [attr.aria-label]="'home.scenes.hero.controls' | transloco">
-    <button type="button" class="hero-control" (click)="previous()" [attr.aria-label]="'apartment.previousPhoto' | transloco">←</button>
+  <!-- Phones: arrows on the left and right edges of the photo, dots along the bottom. Desktop: one group, bottom right. -->
+  <button type="button" class="hero-control absolute left-3 top-1/2 z-20 -translate-y-1/2 md:hidden" (click)="previous()" [attr.aria-label]="'apartment.previousPhoto' | transloco">←</button>
+  <button type="button" class="hero-control absolute right-3 top-1/2 z-20 -translate-y-1/2 md:hidden" (click)="next()" [attr.aria-label]="'apartment.nextPhoto' | transloco">→</button>
+  <div class="absolute inset-x-0 bottom-4 z-20 flex items-center justify-center gap-1 md:inset-x-auto md:bottom-12 md:right-12" role="group" [attr.aria-label]="'home.scenes.hero.controls' | transloco">
+    <button type="button" class="hero-control hidden md:inline-grid" (click)="previous()" [attr.aria-label]="'apartment.previousPhoto' | transloco">←</button>
     @for (photo of photos(); track photo.src; let i = $index) {
       <button type="button" class="hero-dot" (click)="goTo(i)" [attr.aria-label]="'home.scenes.hero.slide' | transloco: { n: i + 1, total: photos().length }" [attr.aria-current]="i === index() ? 'true' : null">
         <span class="hero-dot__mark" [class.is-active]="i === index()"></span>
       </button>
     }
-    <button type="button" class="hero-control" (click)="next()" [attr.aria-label]="'apartment.nextPhoto' | transloco">→</button>
+    <button type="button" class="hero-control hidden md:inline-grid" (click)="next()" [attr.aria-label]="'apartment.nextPhoto' | transloco">→</button>
   </div>
 }

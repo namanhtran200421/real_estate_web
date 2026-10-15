@@ -35,10 +35,14 @@ export class CustomCursor {
         el.classList.toggle('is-view', !!target.closest('[data-cursor="view"]'));
         el.classList.toggle('is-hidden', !!target.closest('input, select, textarea, [contenteditable]'));
       };
+      // The dot leaves with the pointer, so it never sits stranded where the mouse last was.
+      const leave = () => el.classList.add('is-hidden');
       host.classList.add('is-active');
       window.addEventListener('pointermove', move, { passive: true });
+      document.documentElement.addEventListener('pointerleave', leave);
       onCleanup(() => {
         window.removeEventListener('pointermove', move);
+        document.documentElement.removeEventListener('pointerleave', leave);
         host.classList.remove('is-active');
       });
     });

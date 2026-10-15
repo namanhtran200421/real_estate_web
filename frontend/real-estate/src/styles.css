@@ -673,6 +673,11 @@
     display: none;
   }
 
+  /* The decorative cursor is desktop-only, even if a desktop window is narrowed after load. */
+  @media (max-width: 1023px) {
+    app-custom-cursor { display: none; }
+  }
+
   .cursor {
     position: fixed;
     left: 0;
@@ -875,29 +880,7 @@
     .room-tour__cta { position: static; padding-block: 3rem; text-align: center; }
   }
 
-  /* Home hero carousel: scrim, slow settle per photo, controls. */
-  .hero-scrim {
-    background:
-      linear-gradient(180deg, transparent 0%, transparent 50%, rgb(11 34 66 / 0.6) 100%),
-      rgb(221 179 127 / 0.08);
-  }
-
-  /* The copy side only: a navy veil behind the eyebrow, headline, price and button, fading out to the right and upwards. */
-  .hero-scrim::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: rgb(11 34 66 / 0.7);
-    -webkit-mask-image: linear-gradient(180deg, transparent 28%, #000 50%);
-    mask-image: linear-gradient(180deg, transparent 28%, #000 50%);
-  }
-
-  @media (width >= 64rem) {
-    .hero-scrim::after {
-      background: linear-gradient(90deg, rgb(11 34 66 / 0.72) 0%, rgb(11 34 66 / 0.66) 42%, transparent 75%);
-    }
-  }
-
+  /* Home hero carousel: slow settle per photo, controls. */
   @media (prefers-reduced-motion: no-preference) {
     .hero-zoom { transform: scale(1.04); transition: transform 7s cubic-bezier(0.22, 1, 0.36, 1); }
     .hero-slide.is-active .hero-zoom { transform: none; }
