@@ -13,7 +13,7 @@
 </table>
 
 @if (pricing().longStayDiscounts.length) {
-  <p class="small-caps mt-10 text-muted-foreground">{{ 'prices.longStay' | transloco }}</p>
+  <p class="label-caps mt-10 text-muted-foreground">{{ 'prices.longStay' | transloco }}</p>
   <ul class="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-6">
     @for (d of pricing().longStayDiscounts; track d.nights) {
       <li class="rounded-md border border-border bg-card py-3 text-center">

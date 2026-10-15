@@ -1,6 +1,6 @@
 @let item = identity();
 @let i = index();
-<section class="card space-y-6" [attr.aria-labelledby]="'guest-identity-' + i">
+<section class="panel space-y-6" [attr.aria-labelledby]="'guest-identity-' + i">
   <h2 [id]="'guest-identity-' + i" class="text-xl">
     {{ 'booking.identity.guest' | transloco: { number: i + 1 } }}
   </h2>
@@ -31,7 +31,7 @@
         [attr.aria-invalid]="!!error('fullName')"
       />
       @if (error('fullName'); as key) {
-        <p class="mt-2 text-sm text-accent-deep" role="alert">{{ key | transloco }}</p>
+        <p class="mt-2 text-sm text-danger" role="alert">{{ key | transloco }}</p>
       }
     </div>
     <div>
@@ -47,7 +47,7 @@
         [attr.aria-invalid]="!!error('dateOfBirth')"
       />
       @if (error('dateOfBirth'); as key) {
-        <p class="mt-2 text-sm text-accent-deep" role="alert">{{ key | transloco }}</p>
+        <p class="mt-2 text-sm text-danger" role="alert">{{ key | transloco }}</p>
       }
     </div>
 
@@ -66,7 +66,7 @@
           [attr.aria-invalid]="!!error('documentNumber')"
         />
         @if (error('documentNumber'); as key) {
-          <p class="mt-2 text-sm text-accent-deep" role="alert">{{ key | transloco }}</p>
+          <p class="mt-2 text-sm text-danger" role="alert">{{ key | transloco }}</p>
         }
       </div>
       <div class="sm:col-span-2">
@@ -87,7 +87,7 @@
           [attr.aria-invalid]="!!error('addressOnDocument')"
         />
         @if (error('addressOnDocument'); as key) {
-          <p class="mt-2 text-sm text-accent-deep" role="alert">{{ key | transloco }}</p>
+          <p class="mt-2 text-sm text-danger" role="alert">{{ key | transloco }}</p>
         }
       </div>
     } @else {
@@ -104,7 +104,7 @@
           [attr.aria-invalid]="!!error('nationality')"
         />
         @if (error('nationality'); as key) {
-          <p class="mt-2 text-sm text-accent-deep" role="alert">{{ key | transloco }}</p>
+          <p class="mt-2 text-sm text-danger" role="alert">{{ key | transloco }}</p>
         }
       </div>
       <div>
@@ -117,7 +117,7 @@
           [invalid]="!!error('gender')"
         />
         @if (error('gender'); as key) {
-          <p class="mt-2 text-sm text-accent-deep" role="alert">{{ key | transloco }}</p>
+          <p class="mt-2 text-sm text-danger" role="alert">{{ key | transloco }}</p>
         }
       </div>
       <div>
@@ -133,7 +133,7 @@
           [attr.aria-invalid]="!!error('documentNumber')"
         />
         @if (error('documentNumber'); as key) {
-          <p class="mt-2 text-sm text-accent-deep" role="alert">{{ key | transloco }}</p>
+          <p class="mt-2 text-sm text-danger" role="alert">{{ key | transloco }}</p>
         }
       </div>
       <div>
@@ -148,7 +148,7 @@
           [attr.aria-invalid]="!!error('temporaryStayExpiry')"
         />
         @if (error('temporaryStayExpiry'); as key) {
-          <p class="mt-2 text-sm text-accent-deep" role="alert">{{ key | transloco }}</p>
+          <p class="mt-2 text-sm text-danger" role="alert">{{ key | transloco }}</p>
         }
       </div>
     }
@@ -171,7 +171,7 @@
         [attr.aria-invalid]="!!error('issueDate')"
       />
       @if (error('issueDate'); as key) {
-        <p class="mt-2 text-sm text-accent-deep" role="alert">{{ key | transloco }}</p>
+        <p class="mt-2 text-sm text-danger" role="alert">{{ key | transloco }}</p>
       }
     </div>
     <div>
@@ -191,7 +191,7 @@
         [attr.aria-invalid]="!!error('expiryDate')"
       />
       @if (error('expiryDate'); as key) {
-        <p class="mt-2 text-sm text-accent-deep" role="alert">{{ key | transloco }}</p>
+        <p class="mt-2 text-sm text-danger" role="alert">{{ key | transloco }}</p>
       }
     </div>
     <div class="sm:col-span-2">
@@ -208,7 +208,7 @@
         [attr.aria-invalid]="!!error('stayReason')"
       />
       @if (error('stayReason'); as key) {
-        <p class="mt-2 text-sm text-accent-deep" role="alert">{{ key | transloco }}</p>
+        <p class="mt-2 text-sm text-danger" role="alert">{{ key | transloco }}</p>
       }
     </div>
   </div>

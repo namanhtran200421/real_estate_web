@@ -1,6 +1,6 @@
 @let apt = apartment();
 
-<div class="card card-accent-top card-elevated p-6">
+<div class="panel p-6">
   <div class="flex gap-4">
     <img
       [ngSrc]="apt.photos[0].src"
@@ -51,7 +51,7 @@
   @if (total() !== undefined) {
     <hr class="my-5" />
     <div class="flex items-baseline justify-between gap-4">
-      <span class="small-caps text-muted-foreground">{{ 'common.total' | transloco }}</span>
+      <span class="label-caps text-muted-foreground">{{ 'common.total' | transloco }}</span>
       <span class="font-serif text-2xl">{{ total() | number }} ₫</span>
     </div>
   }

@@ -4,12 +4,12 @@
     <li class="flex items-center gap-3 sm:gap-4" [class.flex-1]="!last" [attr.aria-current]="n === current() ? 'step' : null">
       <span class="flex items-center gap-2.5">
         <span
-          class="grid h-8 w-8 shrink-0 place-items-center rounded-full border font-mono text-xs"
+          class="grid h-9 w-9 shrink-0 place-items-center rounded-full border font-serif text-base"
           [class]="
             n < current()
               ? 'border-accent bg-accent text-accent-foreground'
               : n === current()
-                ? 'border-accent-deep text-accent-deep'
+                ? 'border-foreground bg-foreground text-background'
                 : 'border-border text-muted-foreground'
           "
         >
@@ -35,7 +35,7 @@
   }
 </ol>
 <p class="mt-4 text-sm md:hidden">
-  <span class="small-caps text-muted-foreground">
+  <span class="label-caps text-muted-foreground">
     {{ 'steps.progress' | transloco: { current: current(), total: steps.length } }}
   </span>
   <span class="ml-2 font-medium">{{ steps[current() - 1] | transloco }}</span>

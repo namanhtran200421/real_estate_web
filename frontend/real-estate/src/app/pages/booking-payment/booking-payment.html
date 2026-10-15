@@ -2,14 +2,14 @@
   <div class="container-editorial max-w-6xl">
     <app-booking-steps [current]="3" />
 
-    <h1 class="mt-12 text-4xl md:text-5xl">{{ 'payment.title' | transloco }}</h1>
+    <h1 class="mt-12 display-section">{{ 'payment.title' | transloco }}</h1>
 
     @if (b(); as b) {
       @let options = b.paymentOptions;
 
       @if (b.pendingTransfer; as pending) {
         <!-- Already reported: waiting for the owner -->
-        <div class="card mt-10 max-w-2xl">
+        <div class="panel mt-10 max-w-2xl">
           <h2 class="text-2xl">{{ 'payment.checkingTitle' | transloco }}</h2>
           <p class="mt-3 text-muted-foreground">
             {{
@@ -22,7 +22,7 @@
           </a>
         </div>
       } @else if (expired()) {
-        <div class="card mt-10 max-w-2xl">
+        <div class="panel mt-10 max-w-2xl">
           <h2 class="text-2xl">{{ 'payment.expiredTitle' | transloco }}</h2>
           <p class="mt-3 text-muted-foreground">
             {{ 'payment.expiredText' | transloco: { reference: b.reference } }}
@@ -39,7 +39,7 @@
         options.incident == null
       ) {
         <!-- Nothing to pay: cancelled or already paid -->
-        <div class="card mt-10 max-w-2xl">
+        <div class="panel mt-10 max-w-2xl">
           @if (b.amountDue === 0) {
             <h2 class="text-2xl">{{ 'payment.paidTitle' | transloco }}</h2>
             <a [routerLink]="['/booking', b.reference, 'confirmation']" class="btn btn-primary mt-6">
@@ -91,7 +91,7 @@
               <div class="mt-6 grid gap-4 sm:grid-cols-2">
                 @if (options.deposit != null) {
                   <label
-                    class="card flex cursor-pointer gap-4 p-6 has-[:checked]:border-accent-deep has-[:checked]:bg-accent-muted md:p-6"
+                    class="panel flex cursor-pointer gap-4 p-6 has-[:checked]:border-accent-deep has-[:checked]:bg-accent-muted md:p-6"
                   >
                     <input
                       type="radio"
@@ -112,7 +112,7 @@
                 }
                 @if (options.full != null) {
                   <label
-                    class="card flex cursor-pointer gap-4 p-6 has-[:checked]:border-accent-deep has-[:checked]:bg-accent-muted md:p-6"
+                    class="panel flex cursor-pointer gap-4 p-6 has-[:checked]:border-accent-deep has-[:checked]:bg-accent-muted md:p-6"
                   >
                     <input
                       type="radio"
@@ -139,7 +139,7 @@
                 }
                 @if (options.assetSecurity != null) {
                   <label
-                    class="card flex cursor-pointer gap-4 p-6 has-[:checked]:border-accent-deep has-[:checked]:bg-accent-muted md:p-6"
+                    class="panel flex cursor-pointer gap-4 p-6 has-[:checked]:border-accent-deep has-[:checked]:bg-accent-muted md:p-6"
                   >
                     <input
                       type="radio"
@@ -168,7 +168,7 @@
                 }
                 @if (options.incident != null) {
                   <label
-                    class="card flex cursor-pointer gap-4 p-6 has-[:checked]:border-accent-deep has-[:checked]:bg-accent-muted md:p-6"
+                    class="panel flex cursor-pointer gap-4 p-6 has-[:checked]:border-accent-deep has-[:checked]:bg-accent-muted md:p-6"
                   >
                     <input
                       type="radio"
@@ -192,7 +192,7 @@
             <section aria-labelledby="transfer-heading">
               <h2 id="transfer-heading" class="font-serif text-2xl">{{ 'payment.transfer' | transloco }}</h2>
 
-              <div class="card card-accent-top card-elevated mt-6">
+              <div class="panel mt-6">
                 @if (t(); as t) {
                   <div class="grid gap-8 sm:grid-cols-[13rem_minmax(0,1fr)] sm:items-start">
                     <div class="text-center">
@@ -224,7 +224,7 @@
                         <dt class="text-muted-foreground">{{ 'payment.accountNumber' | transloco }}</dt>
                         <dd class="flex items-center gap-3">
                           <span class="font-mono text-base">{{ t.accountNumber }}</span>
-                          <button type="button" class="link text-xs" (click)="copy('account', t.accountNumber)">
+                          <button type="button" class="link min-h-6 px-2 text-xs" (click)="copy('account', t.accountNumber)">
                             {{ (copied() === 'account' ? 'payment.copied' : 'payment.copy') | transloco }}
                           </button>
                         </dd>
@@ -233,7 +233,7 @@
                         <dt class="text-muted-foreground">{{ 'payment.amount' | transloco }}</dt>
                         <dd class="flex items-center gap-3">
                           <span class="font-serif text-xl">{{ t.amount | number }} ₫</span>
-                          <button type="button" class="link text-xs" (click)="copy('amount', '' + t.amount)">
+                          <button type="button" class="link min-h-6 px-2 text-xs" (click)="copy('amount', '' + t.amount)">
                             {{ (copied() === 'amount' ? 'payment.copied' : 'payment.copy') | transloco }}
                           </button>
                         </dd>
@@ -242,7 +242,7 @@
                         <dt class="text-muted-foreground">{{ 'payment.note' | transloco }}</dt>
                         <dd class="flex items-center gap-3">
                           <span class="font-mono text-base font-medium text-accent-deep">{{ t.note }}</span>
-                          <button type="button" class="link text-xs" (click)="copy('note', t.note)">
+                          <button type="button" class="link min-h-6 px-2 text-xs" (click)="copy('note', t.note)">
                             {{ (copied() === 'note' ? 'payment.copied' : 'payment.copy') | transloco }}
                           </button>
                         </dd>
@@ -261,7 +261,7 @@
                     <li>{{ 'payment.steps.screenshot' | transloco }}</li>
                   </ol>
                 } @else if (transfer.error()) {
-                  <p class="text-sm text-accent-deep" role="alert">{{ 'payment.transferLoadFailed' | transloco }}</p>
+                  <p class="text-sm text-danger" role="alert">{{ 'payment.transferLoadFailed' | transloco }}</p>
                   <button type="button" class="btn btn-outline mt-4" (click)="transfer.reload()">
                     {{ 'common.retry' | transloco }}
                   </button>
@@ -341,7 +341,7 @@
 
               <p id="screenshot-hint" class="mt-2 text-xs text-muted-foreground">{{ 'payment.upload.hint' | transloco }}</p>
               @if (screenshotProblem(); as problem) {
-                <p id="screenshot-problem" class="mt-2 text-sm text-accent-deep" role="alert">
+                <p id="screenshot-problem" class="mt-2 text-sm text-danger" role="alert">
                   {{ 'payment.upload.problems.' + problem | transloco }}
                 </p>
               }
@@ -385,7 +385,7 @@
                 </button>
               }
               @if (submitError(); as error) {
-                <p class="mt-3 text-sm text-accent-deep" role="alert">{{ error }}</p>
+                <p class="mt-3 text-sm text-danger" role="alert">{{ error }}</p>
               } @else if (!screenshot()) {
                 <p class="mt-3 text-center text-sm text-muted-foreground">{{ 'payment.upload.first' | transloco }}</p>
               }
@@ -405,7 +405,7 @@
         </div>
       }
     } @else if (loadError(); as error) {
-      <div class="card mt-10 max-w-2xl">
+      <div class="panel mt-10 max-w-2xl">
         @if (error.code === 'NOT_FOUND') {
           <h2 class="text-2xl">{{ 'payment.cannotOpen' | transloco }}</h2>
           <p class="mt-3 text-muted-foreground">{{ 'payment.noAccess' | transloco }}</p>
@@ -418,7 +418,7 @@
         }
       </div>
     } @else if (!ref()) {
-      <div class="card mt-10 max-w-2xl">
+      <div class="panel mt-10 max-w-2xl">
         <p class="text-muted-foreground">{{ 'payment.noBooking' | transloco }}</p>
         <a routerLink="/book" class="btn btn-primary mt-6">{{ 'nav.book' | transloco }}</a>
       </div>

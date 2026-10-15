@@ -3,7 +3,7 @@
     <div class="container-editorial max-w-6xl">
       <app-booking-steps [current]="1" />
 
-      <h1 class="mt-12 text-4xl md:text-5xl">{{ 'booking.title' | transloco }}</h1>
+      <h1 class="mt-12 display-section">{{ 'booking.title' | transloco }}</h1>
       <p class="mt-3 text-muted-foreground">{{ 'booking.intro' | transloco }}</p>
 
       <div class="mt-10 grid gap-10 lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-14">
@@ -37,7 +37,7 @@
                 (rangeChange)="setDates($event)"
               />
               @if (errors().checkIn ?? errors().checkOut; as error) {
-                <p class="mt-2 text-sm text-accent-deep" role="alert">{{ error }}</p>
+                <p class="mt-2 text-sm text-danger" role="alert">{{ error }}</p>
               }
             </div>
 
@@ -53,7 +53,7 @@
             </div>
 
             @if (quoteError(); as error) {
-              <p class="rounded-md border border-accent bg-accent-muted p-4 text-sm text-accent-deep" role="alert">
+              <p class="rounded-md border border-accent bg-accent-muted p-4 text-sm text-danger" role="alert">
                 {{ error }}
               </p>
             }
@@ -78,7 +78,7 @@
                 [attr.aria-invalid]="!!errors().name"
               />
               @if (errors().name; as error) {
-                <p class="mt-2 text-sm text-accent-deep">{{ error }}</p>
+                <p class="mt-2 text-sm text-danger">{{ error }}</p>
               }
             </div>
             <div class="grid gap-6 sm:grid-cols-2">
@@ -97,7 +97,7 @@
                   [attr.aria-invalid]="!!errors().phone"
                 />
                 @if (errors().phone; as error) {
-                  <p class="mt-2 text-sm text-accent-deep">{{ error }}</p>
+                  <p class="mt-2 text-sm text-danger">{{ error }}</p>
                 }
               </div>
               <div>
@@ -115,7 +115,7 @@
                   [attr.aria-invalid]="!!errors().email"
                 />
                 @if (errors().email; as error) {
-                  <p class="mt-2 text-sm text-accent-deep">{{ error }}</p>
+                  <p class="mt-2 text-sm text-danger">{{ error }}</p>
                 } @else {
                   <p class="mt-2 text-sm text-muted-foreground">{{ 'booking.emailNote' | transloco }}</p>
                 }
