@@ -604,6 +604,8 @@
     },
     "enterContact": "Enter the email or phone number you used for booking",
     "notConfirmed": "Waiting for the owner to confirm",
+    "rentDueLine": "Rent · payable from {{ date }}",
+    "checkingDeposit": "Checking your deposit transfer",
     "reportedTitle": "Thank you, your dates are reserved",
     "reportedText": "{{ name }}, the owner will match your {{ amount }} ₫ transfer in their account and confirm your booking. We’ll email",
     "reportedTextEnd": " as soon as it’s confirmed. This page also updates by itself.",

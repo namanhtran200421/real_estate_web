@@ -604,6 +604,8 @@
     },
     "enterContact": "Nhập email hoặc số điện thoại đã dùng khi đặt phòng",
     "notConfirmed": "Đang chờ chủ nhà xác nhận",
+    "rentDueLine": "Tiền phòng · thanh toán từ {{ date }}",
+    "checkingDeposit": "Đang kiểm tra chuyển khoản cọc",
     "reportedTitle": "Cảm ơn bạn, ngày đã được giữ",
     "reportedText": "{{ name }}, chủ nhà sẽ đối chiếu khoản chuyển {{ amount }} ₫ trong tài khoản và xác nhận đặt phòng. Chúng tôi sẽ gửi email tới",
     "reportedTextEnd": " ngay khi đặt phòng được xác nhận. Trang này cũng tự cập nhật.",

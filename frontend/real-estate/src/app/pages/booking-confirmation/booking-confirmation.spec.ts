@@ -162,6 +162,19 @@ describe('BookingConfirmation (deposit-first)', () => {
     expect(other.textContent).toContain('400.000');
   });
 
+  it('never shows the rent as waiting for confirmation while the deposit transfer is checked', async () => {
+    const el = await render(
+      makeBooking({
+        pendingTransfer: { amount: 400_000, purpose: 'asset_security', reportedAt: new Date().toISOString(), hasScreenshot: true },
+        paymentOptions: { deposit: null, full: null, assetSecurity: null, incident: null },
+      }),
+    );
+    const text = (el.textContent ?? '').replace(/\s+/g, ' ');
+    expect(text).toContain('Tiền phòng · thanh toán từ');
+    expect(text).toContain('Đang kiểm tra chuyển khoản cọc');
+    expect(text).not.toMatch(/Đang chờ chủ nhà xác nhận\s*2\.000\.000/);
+  });
+
   it('labels a damage payment, and offers damage charges by their name', async () => {
     const el = await render(
       makeBooking({

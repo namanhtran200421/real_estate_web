@@ -187,7 +187,13 @@
           </div>
           <div>
             <dt class="label-caps text-muted-foreground">{{ 'confirmation.paymentRow' | transloco }}</dt>
-            <dd class="mt-1">{{ 'status.' + b.paymentStatus | transloco }}</dd>
+            <dd class="mt-1">
+              @if (b.depositFirst && b.pendingTransfer?.purpose === 'asset_security') {
+                {{ 'confirmation.checkingDeposit' | transloco }}
+              } @else {
+                {{ 'status.' + b.paymentStatus | transloco }}
+              }
+            </dd>
           </div>
           @if (apartment(); as apt) {
             <div class="sm:col-span-2">
@@ -238,7 +244,10 @@
           }
           <div class="flex items-baseline justify-between gap-4 border-t border-border pt-3">
             <span class="font-medium">
-              @if (b.pendingTransfer) {
+              @if (b.depositFirst && b.rentDueFrom) {
+                <!-- Deposit-first: the rent is due from check-in; a transfer being checked is the deposit, shown above. -->
+                {{ 'confirmation.rentDueLine' | transloco: { date: (b.rentDueFrom | date: 'dd/MM/yyyy') } }}
+              } @else if (b.pendingTransfer) {
                 {{ 'confirmation.notConfirmed' | transloco }}
               } @else if (b.status === 'confirmed') {
                 {{ 'confirmation.dueAtCheckIn' | transloco }}
