@@ -2,23 +2,25 @@
 
 <div class="pt-8 md:pt-12">
   <div class="container-editorial max-w-6xl">
-    <nav aria-label="Breadcrumb" class="small-caps text-muted-foreground">
-      <a routerLink="/" class="link-subtle">{{ 'nav.home' | transloco }}</a>
-      <span class="mx-2 text-border" aria-hidden="true">/</span>
-      <span class="text-foreground" aria-current="page">{{ apt.name }}</span>
-    </nav>
+    @if (!tabsOnly()) {
+      <nav aria-label="Breadcrumb" class="small-caps text-muted-foreground">
+        <a routerLink="/" class="link-subtle">{{ 'nav.home' | transloco }}</a>
+        <span class="mx-2 text-border" aria-hidden="true">/</span>
+        <span class="text-foreground" aria-current="page">{{ apt.name }}</span>
+      </nav>
 
-    <div class="mt-6 flex flex-wrap items-end justify-between gap-4">
-      <div>
-        <p class="label-caps text-accent-deep">{{ apt.area }}</p>
-        <h1 class="display-section mt-2">{{ apt.name }}</h1>
+      <div class="mt-6 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p class="label-caps text-accent-deep">{{ apt.area }}</p>
+          <h1 class="display-section mt-2">{{ apt.name }}</h1>
+        </div>
+        <p class="text-muted-foreground">
+          {{ 'common.from' | transloco }}
+          <span class="font-serif text-2xl text-foreground">{{ apt.pricing.weekday | number }} ₫</span>
+          {{ 'common.perNight' | transloco }}
+        </p>
       </div>
-      <p class="text-muted-foreground">
-        {{ 'common.from' | transloco }}
-        <span class="font-serif text-2xl text-foreground">{{ apt.pricing.weekday | number }} ₫</span>
-        {{ 'common.perNight' | transloco }}
-      </p>
-    </div>
+    }
 
     <!-- Pill segmented control; scrolls sideways on phones; a right-edge fade hints at more tabs. -->
     <div class="mt-8">

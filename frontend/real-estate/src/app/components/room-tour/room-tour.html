@@ -1,0 +1,32 @@
+<a class="sr-only focus:not-sr-only focus:inline-block focus:px-4 focus:py-2" href="#sau-tham-quan" (click)="skipTour($event)">{{ 'rooms.skipTour' | transloco }}</a>
+<section #section class="room-tour" [attr.aria-label]="'rooms.tourEyebrow' | transloco">
+  <div class="room-tour__sticky">
+    <div class="room-tour__head container-editorial max-w-7xl">
+      <p class="label-caps text-accent-deep">{{ 'rooms.tourEyebrow' | transloco }}</p>
+      <span class="room-tour__progress" data-progress aria-hidden="true"></span>
+    </div>
+    <ol #track class="room-tour__track">
+      @for (chapter of chapters(); track chapter.id; let i = $index) {
+        <li class="room-tour__chapter" [id]="chapter.id" data-chapter>
+          <div class="room-tour__photos">
+            @for (photo of chapter.photos.slice(0, 3); track photo.src; let first = $first) {
+              <div class="lights relative" [class.arch]="first" [class.room-tour__lead]="first" appReveal>
+                <img [ngSrc]="photo.src" [alt]="photo.alt" fill sizes="(min-width: 1024px) 30vw, 90vw" class="object-cover" />
+              </div>
+            }
+          </div>
+          <div class="room-tour__text">
+            <p class="label-caps text-muted-foreground">{{ 'rooms.chapter' | transloco: { n: i + 1, total: chapters().length } }}</p>
+            <h3 class="display-section mt-2">{{ 'rooms.' + chapter.key + '.title' | transloco }}</h3>
+            <p class="mt-3 max-w-sm text-lg text-muted-foreground">{{ 'rooms.' + chapter.key + '.line' | transloco }}</p>
+          </div>
+        </li>
+      }
+      <li class="room-tour__chapter room-tour__cta">
+        <h3 class="display-section">{{ 'rooms.seeDates' | transloco }}</h3>
+        <a class="btn btn-primary mt-8" routerLink="/book" [queryParams]="{ apt: apartment().slug }">{{ 'apartment.bookBar.cta' | transloco }} →</a>
+      </li>
+    </ol>
+  </div>
+</section>
+<span id="sau-tham-quan" tabindex="-1"></span>

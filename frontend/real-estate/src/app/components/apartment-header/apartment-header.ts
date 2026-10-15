@@ -12,6 +12,8 @@ import { Apartment } from '../../models/apartment';
 })
 export class ApartmentHeader {
   readonly apartment = input.required<Apartment>();
+  /** Render only the tabs (the overview page has its own hero). */
+  readonly tabsOnly = input(false);
 
   /** `label` is a translation key. */
   protected readonly tabs = [
