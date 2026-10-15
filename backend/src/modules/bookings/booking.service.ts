@@ -2,7 +2,7 @@
  * Booking business logic.
  *
  * Lifecycle:
- *   pending ──(owner sees the money arrive)──▶ confirmed ──(check-out passes)──▶ completed
+ *   pending ──(owner sees the money arrive)──▶ confirmed ──(owner records check-out, or 24 h after it)──▶ completed
  *      │                                           │
  *      ├──(hold runs out, unpaid)──▶ expired        └──(owner cancels)──▶ cancelled
  *      │      (money seen late, dates still free: back to pending and confirmed)
@@ -394,7 +394,9 @@ async function adminDetail(reference: string): Promise<AdminBookingDetail> {
   );
   const minutesLate = Math.max(Math.floor((Date.now() - booking.scheduledCheckOutAt.getTime()) / 60_000), 0);
   let lateState: AdminBookingDetail['lateCheckout']['state'] = 'not_due';
-  if (booking.actualCheckOutAt) lateState = 'checked_out';
+  // A stay completed without the owner recording the time (24 h after check-out) is over too.
+  if (booking.actualCheckOutAt || booking.status === 'completed') lateState = 'checked_out';
+  else if (booking.status !== 'confirmed') lateState = 'not_due';
   else if (minutesLate >= 30 && nextArrivalReference) lateState = 'urgent';
   else if (minutesLate >= 15) lateState = 'late';
   else if (booking.scheduledCheckOutAt.getTime() <= Date.now()) lateState = 'due';
@@ -490,7 +492,11 @@ async function checkOut(reference: string, admin: AdminIdentity): Promise<AdminB
   });
 }
 
-/** Saves what the owner found when the guest left. Allowed from check-in day on. */
+/**
+ * Saves what the owner found when the guest left. Allowed from check-in day on, until the deposit
+ * is refunded: the refund was decided on this inspection.
+ * @throws 409 INVALID_STATUS, INSPECTION_LOCKED
+ */
 async function saveInspection(
   reference: string,
   results: InspectionResult[],
@@ -501,6 +507,9 @@ async function saveInspection(
       throw invalidStatus('Chỉ kiểm tra được đặt phòng đã xác nhận hoặc đã hoàn thành.');
     }
     if (booking.checkIn > todayIn(env.timezone)) throw invalidStatus('Khách chưa đến ngày nhận phòng.');
+    if (await bookingRepository.hasEvent(booking.id, 'deposit_refunded', db)) {
+      throw HttpError.conflict('INSPECTION_LOCKED', 'Đã hoàn cọc; không sửa được kết quả kiểm tra.');
+    }
     await inspectionRepository.upsert(booking.id, results, admin.id, db);
     await bookingRepository.addEvent(
       booking.id,
@@ -565,6 +574,17 @@ async function expireStaleHolds(): Promise<number> {
   const expired = await bookingRepository.expireStaleHolds();
   if (expired > 0) invalidateCaches();
   return expired;
+}
+
+/**
+ * Completes confirmed stays 24 hours after their scheduled check-out when the owner has not
+ * recorded it (the owner may still be away; the stay is over either way).
+ * @param now the job's clock (tests pass another one)
+ */
+async function completeFinishedStays(now = new Date()): Promise<number> {
+  const completed = await bookingRepository.completeFinishedStays(now);
+  if (completed > 0) invalidateCaches();
+  return completed;
 }
 
 /** Reminds the owner, once per booking, to look for the transfer before the hold runs out. */
@@ -636,6 +656,7 @@ export const bookingService = {
   summary,
   stats,
   expireStaleHolds,
+  completeFinishedStays,
   remindOwnerOfEndingHolds,
   sendCheckoutNotifications,
   sendRentRequests,

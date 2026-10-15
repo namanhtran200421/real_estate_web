@@ -83,12 +83,18 @@ async function confirmIfPending(booking: BookingRecord, actor: string, db: Db): 
 }
 
 /** Queue one clear guest email for the owner's action in the same transaction. */
-async function queueOwnerPaymentResult(booking: BookingRecord, amount: number, newlyConfirmed: boolean, db: Db): Promise<void> {
+async function queueOwnerPaymentResult(
+  booking: BookingRecord,
+  amount: number,
+  purpose: PaymentPurpose,
+  newlyConfirmed: boolean,
+  db: Db,
+): Promise<void> {
   const context = await bookingRepository.emailContext(booking.id, db);
   if (newlyConfirmed) {
     await emailService.queueBookingConfirmed(context, db);
   } else {
-    await emailService.queuePaymentReceived(context, amount, db);
+    await emailService.queuePaymentReceived(context, amount, purpose, db);
   }
 }
 
@@ -105,9 +111,25 @@ export function policyNotAccepted(): HttpError {
   return HttpError.unprocessable('POLICY_NOT_ACCEPTED', 'Vui lòng đồng ý với chính sách lưu trú trước khi gửi.');
 }
 
-/** A deposit above what is still due would be refunded later, though it was meant as rent. */
+/**
+ * Money the booking cannot take for that purpose: a deposit on a booking that has none (legacy),
+ * or damage before the stay is confirmed.
+ * @throws 422 PAYMENT_OPTION_UNAVAILABLE
+ */
+function assertPurposeApplies(booking: BookingRecord, purpose: PaymentPurpose): void {
+  if (purpose === 'asset_security' && !isDepositFirst(booking)) {
+    throw HttpError.unprocessable('PAYMENT_OPTION_UNAVAILABLE', 'Đặt phòng này không có tiền đặt cọc riêng.');
+  }
+  if (purpose === 'incident' && booking.status !== 'confirmed' && booking.status !== 'completed') {
+    throw HttpError.unprocessable('PAYMENT_OPTION_UNAVAILABLE', 'Chỉ ghi nhận bồi thường cho đặt phòng đã xác nhận.');
+  }
+}
+
+/**
+ * A deposit above what is still due would be refunded later, though it was meant as rent.
+ * Call after `assertPurposeApplies`, which refuses a deposit on a booking without one.
+ */
 async function assertDepositWithinDue(booking: BookingRecord, amount: number, db: Db): Promise<void> {
-  if (!isDepositFirst(booking)) return;
   const { assetSecurityDue } = await assetIncidentRepository.financials(booking.id, booking.assetSecurityAmount, db);
   if (amount > assetSecurityDue) {
     throw HttpError.unprocessable(
@@ -277,13 +299,14 @@ async function verifyTransfer(paymentId: string, amount: number | undefined, adm
   await withTransaction(async (db) => {
     const { payment, booking } = await lockedPendingTransfer(paymentId, db);
     const received = amount ?? payment.amount;
+    assertPurposeApplies(booking, payment.purpose);
     if (payment.purpose === 'asset_security') await assertDepositWithinDue(booking, received, db);
 
     await paymentRepository.markVerified(payment.id, received, admin.id, db);
     await bookingRepository.addEvent(booking.id, 'transfer_verified', admin.email, { amount: received, paymentId }, db);
     await recalculate(booking, db);
     const newlyConfirmed = payment.purpose === confirmingPurpose(booking) && (await confirmIfPending(booking, admin.email, db));
-    await queueOwnerPaymentResult(booking, received, newlyConfirmed, db);
+    await queueOwnerPaymentResult(booking, received, payment.purpose, newlyConfirmed, db);
   });
 }
 
@@ -313,6 +336,8 @@ async function rejectTransfer(paymentId: string, reason: string, admin: AdminIde
 /**
  * Records money the owner received: a transfer seen in the bank app, or cash at check-in.
  * Confirms a pending booking, or one whose hold ran out if its dates are still free.
+ * @throws 422 PAYMENT_OPTION_UNAVAILABLE for a purpose the booking cannot take (see `assertPurposeApplies`)
+ * @throws 422 DEPOSIT_REQUIRED_FIRST, AMOUNT_ABOVE_DEPOSIT
  * @throws 409 DATES_TAKEN when an expired booking's dates were booked by someone else
  */
 async function recordManualPayment(
@@ -326,6 +351,7 @@ async function recordManualPayment(
     if (booking.status === 'cancelled') {
       throw HttpError.conflict('INVALID_STATUS', 'Không ghi nhận thanh toán cho đặt phòng đã huỷ.');
     }
+    assertPurposeApplies(booking, payment.purpose);
 
     if (isDepositFirst(booking) && (booking.status === 'pending' || booking.status === 'expired') && payment.purpose !== 'asset_security') {
       throw HttpError.unprocessable('DEPOSIT_REQUIRED_FIRST', 'Đặt phòng này cần ghi nhận tiền đặt cọc trước.');
@@ -365,7 +391,7 @@ async function recordManualPayment(
     );
     await recalculate(current, db);
     const newlyConfirmed = payment.purpose === confirmingPurpose(booking) && (await confirmIfPending(current, admin.email, db));
-    await queueOwnerPaymentResult(current, payment.amount, newlyConfirmed, db);
+    await queueOwnerPaymentResult(current, payment.amount, payment.purpose, newlyConfirmed, db);
   });
 }
 
@@ -413,7 +439,7 @@ async function recordRefund(paymentId: string, request: { amount: number; reason
  * Gives back the security deposit still held, after the stay and its inspection. One click, one
  * transaction: the booking and the deposit payments are locked first, so two clicks can never
  * refund more than is held. The guest gets one email with the total.
- * @throws 409 INVALID_STATUS, RENT_DUE, INSPECTION_REQUIRED, INCIDENT_OPEN, NOTHING_TO_REFUND
+ * @throws 409 INVALID_STATUS, RENT_DUE, INSPECTION_REQUIRED, INCIDENT_OPEN, INCIDENT_DUE, NOTHING_TO_REFUND
  */
 async function refundDeposit(reference: string, admin: AdminIdentity): Promise<void> {
   await withTransaction(async (db) => {
@@ -431,6 +457,13 @@ async function refundDeposit(reference: string, admin: AdminIdentity): Promise<v
     const incidents = await assetIncidentRepository.list(booking.id, db);
     if (incidents.some((incident) => incident.status === 'open')) {
       throw HttpError.conflict('INCIDENT_OPEN', 'Còn khoản hư hỏng chưa xử lý.');
+    }
+    const { incidentAmountDue } = await assetIncidentRepository.financials(booking.id, booking.assetSecurityAmount, db);
+    if (incidentAmountDue >= 1000) {
+      throw HttpError.conflict(
+        'INCIDENT_DUE',
+        'Khách còn nợ tiền bồi thường. Hãy ghi nhận khoản bồi thường hoặc cấn trừ từ tiền cọc trước khi hoàn cọc.',
+      );
     }
 
     // Lock the deposit payments, then read what is held and refundable: two clicks queue here.

@@ -7,6 +7,7 @@
 import { env } from '../../config/env.js';
 import type { Db } from '../../db/pool.js';
 import { logger } from '../../lib/logger.js';
+import type { PaymentPurpose } from '../bookings/booking.types.js';
 import { emailRepository } from './email.repository.js';
 import {
   adminPasswordChangedEmail,
@@ -57,8 +58,8 @@ async function queueTransferNotReceived(booking: BookingEmailContext, reason: st
 }
 
 /** Receipt to the guest once the owner has the money. */
-async function queuePaymentReceived(booking: BookingEmailContext, amount: number, db: Db): Promise<void> {
-  await emailRepository.enqueue({ to: booking.customerEmail, ...paymentReceivedEmail(booking, amount) }, db);
+async function queuePaymentReceived(booking: BookingEmailContext, amount: number, purpose: PaymentPurpose, db: Db): Promise<void> {
+  await emailRepository.enqueue({ to: booking.customerEmail, ...paymentReceivedEmail(booking, amount, purpose) }, db);
 }
 
 async function queueBookingConfirmed(booking: BookingEmailContext, db: Db): Promise<void> {

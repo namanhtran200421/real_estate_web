@@ -37,6 +37,7 @@ const TEST_ENV = {
   BANK_NAME: 'Vietcombank',
   BANK_ACCOUNT_NUMBER: '6969888821',
   BANK_ACCOUNT_NAME: 'DO HOANG HAI',
+  RATE_LIMIT_MAX: '10000',
   RATE_LIMIT_WRITE_MAX: '1000',
   JOBS_ENABLED: 'false',
 };
@@ -604,6 +605,116 @@ describe('reporting a transfer with its screenshot', { skip: !databaseUrl && 'TE
     const row = await pool.query('SELECT status, security_applied FROM booking_asset_incidents WHERE id = $1', [id]);
     assert.deepEqual(row.rows[0], { status: 'waived', security_applied: 0 });
   });
+
+  it('records only money a booking can take: no deposit on a legacy booking, no damage before confirmation', async () => {
+    const pool = await clearCalendar();
+
+    const legacy = await book(210);
+    await pool.query('UPDATE bookings SET asset_security_amount = 0 WHERE reference = $1', [legacy.reference]);
+    const deposit = await recordPayment(legacy.reference, { method: 'cash', purpose: 'asset_security', amount: 100_000 });
+    assert.equal(await errorCode(deposit, 422), 'PAYMENT_OPTION_UNAVAILABLE');
+    const legacyIncident = await recordPayment(legacy.reference, { method: 'cash', purpose: 'incident', amount: 100_000 });
+    assert.equal(await errorCode(legacyIncident, 422), 'PAYMENT_OPTION_UNAVAILABLE');
+
+    // A deposit reported on a booking without one is refused when verified, too.
+    const reported = await pool.query<{ id: string }>(
+      `INSERT INTO payments (booking_id, provider, purpose, amount, state, note)
+       SELECT id, 'bank_transfer', 'asset_security', 100000, 'pending', 'x' FROM bookings WHERE reference = $1 RETURNING id`,
+      [legacy.reference],
+    );
+    const verified = await call(`/admin/payments/${reported.rows[0].id}/verify`, {
+      method: 'POST',
+      headers: await ownerHeaders(),
+      body: '{}',
+    });
+    assert.equal(await errorCode(verified, 422), 'PAYMENT_OPTION_UNAVAILABLE');
+
+    const pending = await book(215);
+    const incident = await recordPayment(pending.reference, { method: 'cash', purpose: 'incident', amount: 100_000 });
+    assert.equal(await errorCode(incident, 422), 'PAYMENT_OPTION_UNAVAILABLE');
+    const view = await (await call(`/bookings/${pending.reference}`, { headers: { 'X-Booking-Token': pending.token } })).json();
+    assert.equal(view.data.status, 'pending', 'nothing was recorded');
+    assert.equal(view.data.payments.length, 0);
+  });
+
+  it('completes a confirmed stay 24 hours after its check-out, and not before', async () => {
+    const pool = await clearCalendar();
+    const { bookingService } = await import('../bookings/booking.service.js');
+    const finished = await confirmedBooking(220);
+    const recent = await confirmedBooking(225);
+    await moveStay(finished.reference, -6, -4);
+    await moveStay(recent.reference, -2, -1);
+    const scheduled = new Date((await adminBooking(recent.reference)).lateCheckout.scheduledAt);
+
+    // The clock two hours after the recent stay's check-out time; the other ended days before.
+    const completed = await bookingService.completeFinishedStays(new Date(scheduled.getTime() + 2 * 3_600_000));
+
+    assert.equal(completed, 1);
+    const done = await adminBooking(finished.reference);
+    assert.equal(done.status, 'completed');
+    assert.ok(done.completedAt);
+    assert.equal(done.lateCheckout.actualAt, null, 'the owner did not record the actual time');
+    assert.equal(done.lateCheckout.state, 'checked_out', 'no late check-out warning on a finished stay');
+    const event = done.events.find((e: { type: string }) => e.type === 'completed');
+    assert.equal(event.actor, 'system');
+    assert.deepEqual(event.data, { reason: 'auto_after_checkout' });
+    assert.equal((await adminBooking(recent.reference)).status, 'confirmed', 'check-out ended only 2 hours ago');
+
+    const later = await bookingService.completeFinishedStays(new Date(scheduled.getTime() + 25 * 3_600_000));
+    assert.equal(later, 1);
+    assert.equal((await adminBooking(recent.reference)).status, 'completed');
+    const rows = await pool.query(`SELECT count(*)::int AS n FROM booking_events WHERE type = 'completed'`);
+    assert.equal(rows.rows[0].n, 2, 'one event per stay');
+  });
+
+  it('keeps the deposit while damage is owed, then locks the inspection once the deposit is refunded', async () => {
+    const pool = await clearCalendar();
+    const booking = await confirmedBooking(230);
+    const admin = (path: string, method: string, body?: unknown) =>
+      ownerHeaders().then((headers) =>
+        call(`/admin/bookings/${booking.reference}${path}`, {
+          method,
+          headers,
+          body: body === undefined ? undefined : JSON.stringify(body),
+        }),
+      );
+    await moveStay(booking.reference, -1, 1);
+    const total = (await adminBooking(booking.reference)).quote.total;
+
+    // Rent paid while the stay is on: the receipt names the rent, and does not promise a confirmation.
+    assert.equal((await recordPayment(booking.reference, { method: 'cash', purpose: 'accommodation', amount: total })).status, 201);
+    const rentEmail = await lastEmail(`Đã nhận thanh toán · ${booking.reference}`);
+    assert.match(rentEmail, /Chúng tôi đã nhận khoản thanh toán của bạn\./);
+    assert.match(rentEmail, /tiền phòng/);
+    assert.doesNotMatch(rentEmail, /Chủ nhà sẽ xác nhận/);
+
+    assert.equal((await admin('/check-out', 'POST')).status, 200);
+    const results = [{ room: 'Bếp', item: 'Tủ lạnh', ok: false, note: 'Móp cửa' }];
+    assert.equal((await admin('/inspection', 'PUT', { results })).status, 200);
+
+    // 200.000 ₫ of damage, 100.000 ₫ taken from the deposit: the guest still owes 100.000 ₫.
+    assert.equal((await admin('/incidents', 'POST', { description: 'Móp cửa tủ lạnh', amount: 200_000, securityApplied: 100_000 })).status, 201);
+    const [{ id: incidentId }] = (await adminBooking(booking.reference)).incidents;
+    assert.equal((await admin(`/incidents/${incidentId}`, 'PATCH', { status: 'settled' })).status, 200);
+    assert.equal(await errorCode(await admin('/deposit-refund', 'POST'), 409), 'INCIDENT_DUE');
+
+    assert.equal((await recordPayment(booking.reference, { method: 'cash', purpose: 'incident', amount: 100_000 })).status, 201);
+    const incidentEmail = await lastEmail(`Đã nhận thanh toán · ${booking.reference}`);
+    assert.match(incidentEmail, /Chúng tôi đã nhận khoản thanh toán của bạn\./);
+    assert.match(incidentEmail, /tiền bồi thường/);
+    assert.doesNotMatch(incidentEmail, /Chủ nhà sẽ xác nhận/);
+
+    const refunded = await admin('/deposit-refund', 'POST');
+    assert.equal(refunded.status, 200, await refunded.clone().text());
+
+    const locked = await admin('/inspection', 'PUT', { results: [{ room: 'Bếp', item: 'Tủ lạnh', ok: true, note: null }] });
+    assert.equal(await errorCode(locked, 409), 'INSPECTION_LOCKED');
+    const saved = await pool.query(
+      `SELECT i.results FROM booking_inspections i JOIN bookings b ON b.id = i.booking_id WHERE b.reference = $1`,
+      [booking.reference],
+    );
+    assert.equal(saved.rows[0].results[0].ok, false, 'the saved inspection is unchanged');
+  });
 });
 
 let ownerToken: string | undefined;
@@ -621,4 +732,66 @@ async function signInAsOwner(): Promise<string> {
   assert.equal(response.status, 200, await response.clone().text());
   ownerToken = (await response.json()).data.token as string;
   return ownerToken;
+}
+
+async function ownerHeaders(): Promise<Record<string, string>> {
+  return { Authorization: `Bearer ${await signInAsOwner()}`, 'Content-Type': 'application/json' };
+}
+
+/** Earlier cases leave stays around today: frees the calendar (and the guest's active holds). */
+async function clearCalendar() {
+  const { pool } = await import('../../db/pool.js');
+  await pool.query(`UPDATE bookings SET status = 'cancelled' WHERE status IN ('pending', 'confirmed')`);
+  return pool;
+}
+
+async function errorCode(response: Response, status: number): Promise<string> {
+  const body = await response.text();
+  assert.equal(response.status, status, body);
+  return JSON.parse(body).error.code as string;
+}
+
+async function recordPayment(reference: string, payment: { method: string; purpose: string; amount: number }): Promise<Response> {
+  return call(`/admin/bookings/${reference}/payments`, {
+    method: 'POST',
+    headers: await ownerHeaders(),
+    body: JSON.stringify(payment),
+  });
+}
+
+/** A new booking whose deposit the owner has received: confirmed. */
+async function confirmedBooking(daysAhead: number): Promise<NewBooking> {
+  const booking = await book(daysAhead);
+  const recorded = await recordPayment(booking.reference, { method: 'cash', purpose: 'asset_security', amount: booking.deposit });
+  assert.equal(recorded.status, 201, await recorded.clone().text());
+  return booking;
+}
+
+/** Moves a stay to `from`…`to` days from today (business time zone). */
+async function moveStay(reference: string, from: number, to: number): Promise<void> {
+  const { pool } = await import('../../db/pool.js');
+  await pool.query(
+    `UPDATE bookings
+     SET check_in = (now() AT TIME ZONE 'Asia/Ho_Chi_Minh')::date + $2::int,
+         check_out = (now() AT TIME ZONE 'Asia/Ho_Chi_Minh')::date + $3::int
+     WHERE reference = $1`,
+    [reference, from, to],
+  );
+}
+
+async function adminBooking(reference: string): Promise<any> {
+  const response = await call(`/admin/bookings/${reference}`, { headers: await ownerHeaders() });
+  assert.equal(response.status, 200, await response.clone().text());
+  return (await response.json()).data;
+}
+
+/** The plain text of the newest email with this subject. */
+async function lastEmail(subject: string): Promise<string> {
+  const { pool } = await import('../../db/pool.js');
+  const rows = await pool.query<{ text: string }>(
+    'SELECT text FROM email_outbox WHERE subject = $1 ORDER BY id DESC LIMIT 1',
+    [subject],
+  );
+  assert.ok(rows.rows[0], `no email "${subject}"`);
+  return rows.rows[0].text;
 }

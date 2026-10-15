@@ -6,6 +6,7 @@
  */
 import { env } from '../../config/env.js';
 import { confirmingPurpose, MIN_TRANSFER, transferNote } from '../bookings/booking.rules.js';
+import type { PaymentPurpose } from '../bookings/booking.types.js';
 import type { OutgoingEmail } from './email.repository.js';
 
 /** Everything the booking emails show. */
@@ -191,14 +192,33 @@ function singleLine(value: string): string {
 // Guest emails
 // ---------------------------------------------------------------------------
 
-export function paymentReceivedEmail(booking: BookingEmailContext, amount: number): Content {
-  let next = 'Chủ nhà sẽ xác nhận đặt phòng của bạn sớm nhất và thông báo qua email.';
-  if (booking.status === 'confirmed') next = 'Đặt phòng của bạn đã được xác nhận. Hẹn gặp bạn!';
+const PURPOSE_NAMES: Record<PaymentPurpose, string> = {
+  accommodation: 'tiền phòng',
+  asset_security: 'tiền đặt cọc',
+  incident: 'tiền bồi thường',
+};
+
+/**
+ * Receipt for money the owner recorded or verified that did not newly confirm the booking. Only a
+ * booking still waiting is told the owner will confirm it; a confirmed or finished stay is told
+ * what the money was for.
+ */
+export function paymentReceivedEmail(booking: BookingEmailContext, amount: number, purpose: PaymentPurpose): Content {
+  let paragraphs = [
+    `Chúng tôi đã nhận ${formatVnd(amount)} cho đặt phòng ${booking.reference}.`,
+    'Chủ nhà sẽ xác nhận đặt phòng của bạn sớm nhất và thông báo qua email.',
+  ];
+  if (booking.status !== 'pending') {
+    paragraphs = [
+      'Chúng tôi đã nhận khoản thanh toán của bạn.',
+      `Khoản ${PURPOSE_NAMES[purpose]} ${formatVnd(amount)} cho đặt phòng ${booking.reference} đã được ghi nhận.`,
+    ];
+  }
 
   return render({
     subject: `Đã nhận thanh toán · ${booking.reference}`,
     heading: `Cảm ơn bạn, ${booking.customerName}`,
-    paragraphs: [`Chúng tôi đã nhận ${formatVnd(amount)} cho đặt phòng ${booking.reference}.`, next],
+    paragraphs,
     rows: bookingRows(booking),
     button: { label: 'Xem đặt phòng', url: lookupUrl(booking.reference) },
   });

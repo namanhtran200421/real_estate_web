@@ -177,6 +177,16 @@ async function addEvent(bookingId: string, type: string, actor: string, data: ob
   await query('INSERT INTO booking_events (booking_id, type, actor, data) VALUES ($1, $2, $3, $4)', [bookingId, type, actor, JSON.stringify(data)], db);
 }
 
+/** Whether the booking's history has an event of this type. */
+async function hasEvent(bookingId: string, type: string, db?: Db): Promise<boolean> {
+  const row = await queryOne<{ exists: boolean }>(
+    'SELECT EXISTS (SELECT 1 FROM booking_events WHERE booking_id = $1 AND type = $2) AS exists',
+    [bookingId, type],
+    db,
+  );
+  return row!.exists;
+}
+
 async function listEvents(bookingId: string): Promise<BookingEvent[]> {
   const rows = await query<{ type: string; actor: string; data: Record<string, unknown>; created_at: Date }>(
     'SELECT type, actor, data, created_at FROM booking_events WHERE booking_id = $1 ORDER BY created_at, id',
@@ -311,6 +321,28 @@ async function setPaymentProgress(id: string, amountPaid: number, paymentStatus:
     [id, amountPaid, paymentStatus],
     db,
   );
+}
+
+/**
+ * Completes confirmed stays whose scheduled check-out passed more than 24 hours before `now`
+ * without the owner recording it, with a `completed` event (reason `auto_after_checkout`). The
+ * actual check-out time stays null: only the owner records it.
+ */
+async function completeFinishedStays(now: Date): Promise<number> {
+  const rows = await query<{ id: string }>(
+    `WITH done AS (
+       UPDATE bookings b SET status = 'completed', completed_at = now()
+       FROM apartments a
+       WHERE a.id = b.apartment_id AND b.status = 'confirmed'
+         AND ((b.check_out + a.check_out_time) AT TIME ZONE current_setting('TIMEZONE')) < $1::timestamptz - interval '24 hours'
+       RETURNING b.id
+     )
+     INSERT INTO booking_events (booking_id, type, actor, data)
+     SELECT id, 'completed', 'system', '{"reason":"auto_after_checkout"}'::jsonb FROM done
+     RETURNING booking_id AS id`,
+    [now],
+  );
+  return rows.length;
 }
 
 /** Claims upcoming check-outs once, so each guest receives at most one reminder. */
@@ -706,6 +738,7 @@ export const bookingRepository = {
   findByReference,
   findById,
   addEvent,
+  hasEvent,
   listEvents,
   expireStaleHolds,
   claimHoldsEndingSoon,
@@ -718,6 +751,7 @@ export const bookingRepository = {
   clearHold,
   holdForMinutes,
   setPaymentProgress,
+  completeFinishedStays,
   claimCheckoutReminders,
   claimRentRequests,
   claimLateCheckoutAlerts,
