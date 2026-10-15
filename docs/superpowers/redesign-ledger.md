@@ -69,3 +69,24 @@ Blocking: (a) `.guest` token scoping fails for inherited properties (html font/c
 Suggestions: pin `gsap@3.15.0` (Standard no-charge licence, commercial OK, SplitText included) and `lenis@1.3.26` (MIT); measured 53.1 kB gz → enforce ≤ 60 kB via a script over `--stats-json`; only one engine module imports gsap/lenis (others `import type`) or preloading drags gsap into Tier 2; zoneless confirmed: `gsap.matchMedia()` per component + `revert()` on destroy, never set signals in `onUpdate`, SplitText `autoSplit` + `onSplit`; Lenis `autoRaf:false` on gsap.ticker, `lagSmoothing(0)`, `allowNestedScroll:true`, `stopInertiaOnNavigate:true`, `anchors:false`, import lenis.css, destroy on Tier 2; `overflow-x: clip` never `hidden`; `sizes` for portrait panes: desktop `(min-width:1024px) 75vh`, phones `(max-width:767px) 320px`; fonts measured (Fraunces roman 87 kB, italic 105 kB, Be Vietnam Pro 55 kB) → font budget + size-adjusted fallback.
 Testing gaps: Playwright once against the production SSR server (CSP on) with a `securitypolicyviolation` listener, JS disabled, Firefox + WebKit, LCP/CLS observers, assert no NG05xx hydration messages.
 Sound: utilities follow the vars; inline head script passes CSP (SSR + index.csr.html both stamped); language switch reloads (no SplitText vs Transloco); destination hero exists for view transitions; no hard-coded colours in components; single lazy chunk.
+
+## Deposit-first payments: decisions and owner checklist (14–15/10/2026)
+
+Built from the owner's brief ("Follow this") as its own plan (`docs/superpowers/plans/2026-10-14-deposit-first-payments.md`), commits 2b0eccc..e6e5e7e. Every task passed a spec + quality review, the whole change passed a final review (fix wave + scoped re-review), and an end-to-end browser run on a local database passed 27/27.
+
+Owner decisions: 20% deposit of the rent; rent paid on the site from check-in day (email 08:00); check-out checklist in admin, then Hoàn cọc; publish the main policy column with the numbered check-out list; stays auto-complete 24 h after check-out; children under 14 give name, date of birth and the 12-digit personal ID number only; keep the holiday premium inside weekly/monthly packages; the uncommitted guest-identity work belongs to this branch.
+
+Rulings made without the owner (each reversible):
+- Migration 015 sets Sun Garden's deposit to 20% (it was seeded at 30%); still editable in admin.
+- Hoàn cọc needs the stay checked out, the rent paid, the inspection saved, no open incident and no damage still owed; it refunds exactly what is held, never more, and the inspection is locked afterwards.
+- A deposit-first booking takes the deposit first (recording rent first is refused), a deposit above what is due is refused, and a payment purpose that does not fit the booking is refused — so a guest is never asked twice and rent is never refunded as deposit.
+- Guests agree to the house rules on every transfer report; the agreement is stored with the rules' version.
+- The policy page shows the apartment's real deposit percentage; the page intro sentence was written by us (owner to check).
+- Identity documents of bookings that expire or are cancelled are deleted within 3 days (kept again if a late payment revives the booking).
+- One pay button per page; the lookup card shows the deposit separately from the rent.
+
+Before merging to main (owner):
+1. Apply migrations 014 and 015 to Neon (direct host). The current main backend keeps working on the migrated schema.
+2. Set `GUEST_IDENTITY_ENCRYPTION_KEY` (32+ random characters; keep an offline copy — losing it makes stored identities unreadable) and `GUEST_IDENTITY_RETENTION_DAYS` (35) on Render; the API refuses to start without them.
+3. Push in a quiet hour so the API and the site switch together; afterwards check "Chờ tiền về" and the transfers to check, and record by hand any guest who could not report from an old tab.
+4. Review: the policy page intro sentence; policy item 3 (up to 6 guests with a surcharge) versus the booking form, which still stops at 4 with no surcharge.
