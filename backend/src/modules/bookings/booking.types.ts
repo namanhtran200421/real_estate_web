@@ -39,16 +39,20 @@ export interface CreateBookingRequest extends QuoteRequest {
 interface IdentityBase {
   fullName: string;
   dateOfBirth: string;
-  issueDate: string;
-  expiryDate: string;
   stayReason: string;
 }
 
+/**
+ * CCCD, or for a child the personal ID number (mã định danh cá nhân). The dates and address are
+ * absent only for a guest under 14 on check-in day (guest-identity.schema.ts).
+ */
 export interface VietnameseIdentity extends IdentityBase {
   documentType: 'cccd';
   nationality: 'VN';
   documentNumber: string;
-  addressOnDocument: string;
+  addressOnDocument?: string;
+  issueDate?: string;
+  expiryDate?: string;
 }
 
 export interface ForeignIdentity extends IdentityBase {
@@ -56,10 +60,20 @@ export interface ForeignIdentity extends IdentityBase {
   nationality: string;
   gender: 'female' | 'male' | 'other';
   documentNumber: string;
+  issueDate: string;
+  expiryDate: string;
   temporaryStayExpiry: string;
 }
 
 export type GuestIdentity = VietnameseIdentity | ForeignIdentity;
+
+/**
+ * A stored identity as the owner sees it, by guest (0-based). `unreadable` when it cannot be
+ * decrypted (the encryption key changed or was lost): the rest of the booking still shows.
+ */
+export type AdminGuestIdentity =
+  | (GuestIdentity & { guestIndex: number; unreadable?: undefined })
+  | { guestIndex: number; unreadable: true };
 
 /** A booking row, as the services use it. */
 export interface BookingRecord {
@@ -229,8 +243,14 @@ export interface AdminBookingDetail extends Omit<GuestBooking, 'payments'> {
   cancelledAt: string | null;
   cancellationReason: string | null;
   completedAt: string | null;
-  identities: GuestIdentity[];
+  identities: AdminGuestIdentity[];
+  /** No identities left because they were deleted after their retention date (not: never collected). */
   identitiesPurged: boolean;
+  /**
+   * The booking came back after its identities were deleted (an expired booking paid late): the
+   * owner collects them again at check-in.
+   */
+  identitiesMissing: boolean;
   incidents: AdminAssetIncident[];
   lateCheckout: LateCheckoutState;
   payments: AdminPayment[];

@@ -27,6 +27,7 @@ import type { AdminIdentity } from '../admin-auth/admin-auth.types.js';
 import { assertAccess } from '../bookings/booking-access.js';
 import { assetIncidentRepository } from '../bookings/asset-incident.repository.js';
 import { bookingRepository } from '../bookings/booking.repository.js';
+import { guestIdentityRepository } from '../bookings/guest-identity.repository.js';
 import {
   confirmingPurpose,
   derivePaymentStatus,
@@ -369,6 +370,10 @@ async function recordManualPayment(
       }
       current = { ...booking, status: 'pending' };
       await bookingRepository.addEvent(booking.id, 'reactivated', admin.email, { reason: 'late_payment' }, db);
+      // The stay is back on: keep the guests' identities as for any stay, or ask for them again.
+      if ((await guestIdentityRepository.restoreRetention(booking.id, booking.checkOut, db)) === 0) {
+        await bookingRepository.addEvent(booking.id, 'identities_missing', 'system', { reason: 'purged_before_reactivation' }, db);
+      }
     }
 
     const paymentId = await paymentRepository.insertManual(

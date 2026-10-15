@@ -61,45 +61,57 @@ async function call(path: string, init: RequestInit = {}): Promise<Response> {
   return fetch(`${api}/api/v1${path}`, init);
 }
 
-/** A fresh booking `daysAhead` days from now, as a guest would make it. */
-async function book(daysAhead: number): Promise<NewBooking> {
-  const checkIn = new Date(Date.now() + daysAhead * 86_400_000).toISOString().slice(0, 10);
+const ADULTS = [
+  {
+    documentType: 'cccd',
+    nationality: 'VN',
+    fullName: 'Hoàng Hải',
+    dateOfBirth: '1990-01-01',
+    documentNumber: '001090000001',
+    addressOnDocument: 'Hà Nội',
+    issueDate: '2021-01-01',
+    expiryDate: '2031-01-01',
+    stayReason: 'Du lịch',
+  },
+  {
+    documentType: 'cccd',
+    nationality: 'VN',
+    fullName: 'Nguyễn An',
+    dateOfBirth: '1992-02-02',
+    documentNumber: '001092000002',
+    addressOnDocument: 'Hà Nội',
+    issueDate: '2021-01-01',
+    expiryDate: '2031-01-01',
+    stayReason: 'Du lịch',
+  },
+];
+
+/** Check-in `daysAhead` days from now (UTC date, as the guest's form would send it). */
+function checkInIn(daysAhead: number): string {
+  return new Date(Date.now() + daysAhead * 86_400_000).toISOString().slice(0, 10);
+}
+
+/** POST /bookings for a 2-night stay `daysAhead` days from now, as a guest would make it. */
+function requestBooking(daysAhead: number, guestIdentities: object[] = ADULTS): Promise<Response> {
+  const checkIn = checkInIn(daysAhead);
   const checkOut = new Date(Date.now() + (daysAhead + 2) * 86_400_000).toISOString().slice(0, 10);
-  const response = await call('/bookings', {
+  return call('/bookings', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       apartmentSlug: APARTMENT,
       checkIn,
       checkOut,
-      guests: 2,
+      guests: guestIdentities.length,
       customer: { name: 'Hoàng Hải', phone: `09${String(daysAhead).padStart(8, '0')}`, email: `guest${daysAhead}@example.com` },
-      guestIdentities: [
-        {
-          documentType: 'cccd',
-          nationality: 'VN',
-          fullName: 'Hoàng Hải',
-          dateOfBirth: '1990-01-01',
-          documentNumber: '001090000001',
-          addressOnDocument: 'Hà Nội',
-          issueDate: '2021-01-01',
-          expiryDate: '2031-01-01',
-          stayReason: 'Du lịch',
-        },
-        {
-          documentType: 'cccd',
-          nationality: 'VN',
-          fullName: 'Nguyễn An',
-          dateOfBirth: '1992-02-02',
-          documentNumber: '001092000002',
-          addressOnDocument: 'Hà Nội',
-          issueDate: '2021-01-01',
-          expiryDate: '2031-01-01',
-          stayReason: 'Du lịch',
-        },
-      ],
+      guestIdentities,
     }),
   });
+}
+
+/** A fresh booking `daysAhead` days from now, as a guest would make it. */
+async function book(daysAhead: number, guestIdentities: object[] = ADULTS): Promise<NewBooking> {
+  const response = await requestBooking(daysAhead, guestIdentities);
   assert.equal(response.status, 201, await response.clone().text());
   const { data } = await response.json();
   return { reference: data.booking.reference, token: data.accessToken, deposit: data.booking.paymentOptions.assetSecurity };
@@ -714,6 +726,179 @@ describe('reporting a transfer with its screenshot', { skip: !databaseUrl && 'TE
       [booking.reference],
     );
     assert.equal(saved.rows[0].results[0].ok, false, 'the saved inspection is unchanged');
+  });
+
+  it('keeps the identities of a booking that never happens at most 3 days, then purges them', async () => {
+    const pool = await clearCalendar();
+    const { bookingService } = await import('../bookings/booking.service.js');
+    const DAY = 86_400_000;
+    const purgeTimes = async (reference: string) =>
+      (
+        await pool.query<{ purge_after: Date }>(
+          `SELECT g.purge_after FROM booking_guest_identities g JOIN bookings b ON b.id = g.booking_id
+           WHERE b.reference = $1 ORDER BY g.guest_index`,
+          [reference],
+        )
+      ).rows.map((row) => row.purge_after.getTime());
+    const assertThreeDays = async (reference: string) => {
+      const times = await purgeTimes(reference);
+      assert.equal(times.length, 2);
+      for (const time of times) assert.ok(Math.abs(time - (Date.now() + 3 * DAY)) < 60_000, `${new Date(time).toISOString()}`);
+    };
+
+    const live = await book(240);
+    const expiring = await book(245);
+    await pool.query(`UPDATE bookings SET hold_expires_at = now() - interval '1 minute' WHERE reference = $1`, [expiring.reference]);
+    assert.ok((await bookingService.expireStaleHolds()) >= 1);
+    await assertThreeDays(expiring.reference);
+
+    const cancelled = await book(250);
+    const cancel = await call(`/admin/bookings/${cancelled.reference}/cancel`, {
+      method: 'POST',
+      headers: await ownerHeaders(),
+      body: JSON.stringify({ reason: 'Khách đổi kế hoạch' }),
+    });
+    assert.equal(cancel.status, 200, await cancel.clone().text());
+    await assertThreeDays(cancelled.reference);
+
+    // A stay that happens keeps them until its check-out plus the retention days.
+    for (const time of await purgeTimes(live.reference)) assert.ok(time > Date.now() + 240 * DAY);
+
+    // The purge job, four days later.
+    assert.ok((await bookingService.purgeExpiredGuestIdentities(new Date(Date.now() + 4 * DAY))) >= 4);
+    assert.deepEqual(await purgeTimes(expiring.reference), []);
+    assert.deepEqual(await purgeTimes(cancelled.reference), []);
+    assert.equal((await purgeTimes(live.reference)).length, 2);
+    for (const reference of [expiring.reference, cancelled.reference]) {
+      const detail = await adminBooking(reference);
+      assert.deepEqual(detail.identities, []);
+      assert.equal(detail.identitiesPurged, true, 'deleted after their retention date');
+      assert.equal(detail.identitiesMissing, false);
+      assert.equal(detail.events.filter((event: { type: string }) => event.type === 'identities_purged').length, 1);
+    }
+
+    // Past their date but not purged yet: deleted, as far as the owner can tell.
+    const overdue = await book(252);
+    await pool.query(
+      `UPDATE booking_guest_identities SET purge_after = now() - interval '1 minute'
+       WHERE booking_id = (SELECT id FROM bookings WHERE reference = $1)`,
+      [overdue.reference],
+    );
+    const overdueDetail = await adminBooking(overdue.reference);
+    assert.deepEqual(overdueDetail.identities, []);
+    assert.equal(overdueDetail.identitiesPurged, true);
+
+    // A booking made before identities were collected never had any: not "deleted".
+    const older = await book(255);
+    await pool.query(`DELETE FROM booking_guest_identities WHERE booking_id = (SELECT id FROM bookings WHERE reference = $1)`, [
+      older.reference,
+    ]);
+    assert.equal((await adminBooking(older.reference)).identitiesPurged, false);
+  });
+
+  it('restores identity retention when an expired booking is paid late, or asks for the identities again', async () => {
+    const pool = await clearCalendar();
+    const { bookingService } = await import('../bookings/booking.service.js');
+    const expire = async (reference: string) => {
+      await pool.query(`UPDATE bookings SET hold_expires_at = now() - interval '1 minute' WHERE reference = $1`, [reference]);
+      await bookingService.expireStaleHolds();
+      assert.equal((await adminBooking(reference)).status, 'expired');
+    };
+
+    const late = await book(260);
+    await expire(late.reference);
+    const paidLate = await recordPayment(late.reference, { method: 'bank_transfer', purpose: 'asset_security', amount: late.deposit });
+    assert.equal(paidLate.status, 201, await paidLate.clone().text());
+    const restored = await pool.query(
+      `SELECT bool_and(g.purge_after = (b.check_out + make_interval(days => 35))::timestamptz) AS restored, count(*)::int AS n
+       FROM booking_guest_identities g JOIN bookings b ON b.id = g.booking_id WHERE b.reference = $1`,
+      [late.reference],
+    );
+    assert.deepEqual(restored.rows[0], { restored: true, n: 2 });
+    const lateDetail = await adminBooking(late.reference);
+    assert.equal(lateDetail.status, 'confirmed');
+    assert.equal(lateDetail.identities.length, 2);
+    assert.equal(lateDetail.identitiesMissing, false);
+
+    const purged = await book(265);
+    await expire(purged.reference);
+    await bookingService.purgeExpiredGuestIdentities(new Date(Date.now() + 4 * 86_400_000));
+    const paid = await recordPayment(purged.reference, { method: 'bank_transfer', purpose: 'asset_security', amount: purged.deposit });
+    assert.equal(paid.status, 201, await paid.clone().text());
+    const detail = await adminBooking(purged.reference);
+    assert.equal(detail.status, 'confirmed', 'the late payment still brings the booking back');
+    assert.deepEqual(detail.identities, []);
+    assert.equal(detail.identitiesMissing, true, 'to be collected again at check-in');
+    assert.ok(detail.events.some((event: { type: string }) => event.type === 'identities_missing'));
+  });
+
+  it('takes a child with only name, date of birth and personal ID number, and refuses an adult without an issue date', async () => {
+    await clearCalendar();
+    const tenYearsOld = `${Number(checkInIn(270).slice(0, 4)) - 10}-01-01`;
+    const child = {
+      documentType: 'cccd',
+      nationality: 'VN',
+      fullName: 'Hoàng Bé',
+      dateOfBirth: tenYearsOld,
+      documentNumber: '001216000003',
+      stayReason: 'Du lịch',
+    };
+
+    const booking = await book(270, [ADULTS[0], child]);
+
+    assert.deepEqual((await adminBooking(booking.reference)).identities[1], { ...child, guestIndex: 1 });
+
+    const { issueDate: _issueDate, ...withoutIssueDate } = ADULTS[0];
+    const refused = await requestBooking(275, [withoutIssueDate]);
+    assert.equal(refused.status, 400);
+    const { error } = await refused.json();
+    assert.equal(error.code, 'VALIDATION_ERROR');
+    assert.deepEqual(
+      error.details.map((detail: { path: string }) => detail.path),
+      ['guestIdentities.0.issueDate'],
+    );
+  });
+
+  it('shows an identity it cannot decrypt as unreadable, and the rest of the booking', async () => {
+    const pool = await clearCalendar();
+    const booking = await book(280);
+    // A payload sealed for another guest cannot be opened as this one, as with a wrong key.
+    await pool.query(
+      `UPDATE booking_guest_identities g SET encrypted_payload = other.encrypted_payload
+       FROM booking_guest_identities other
+       WHERE other.booking_id = g.booking_id AND other.guest_index = 1 AND g.guest_index = 0
+         AND g.booking_id = (SELECT id FROM bookings WHERE reference = $1)`,
+      [booking.reference],
+    );
+
+    const detail = await adminBooking(booking.reference);
+
+    assert.deepEqual(detail.identities[0], { guestIndex: 0, unreadable: true });
+    assert.equal(detail.identities[1].fullName, 'Nguyễn An');
+    assert.equal(detail.identitiesPurged, false);
+  });
+
+  it('never shows a guest the identity documents', async () => {
+    await clearCalendar();
+    const response = await requestBooking(285);
+    assert.equal(response.status, 201);
+    const created = await response.text();
+    const { reference } = JSON.parse(created).data.booking;
+    const token = JSON.parse(created).data.accessToken;
+
+    const viewed = await call(`/bookings/${reference}`, { headers: { 'X-Booking-Token': token } });
+    const lookedUp = await call('/bookings/lookup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reference, contact: 'guest285@example.com' }),
+    });
+    assert.equal(viewed.status, 200);
+    assert.equal(lookedUp.status, 200);
+
+    for (const body of [created, await viewed.text(), await lookedUp.text()]) {
+      assert.doesNotMatch(body, /001090000001|001092000002|documentNumber|identities/);
+    }
+    assert.match(JSON.stringify((await adminBooking(reference)).identities), /001090000001/, 'only the owner sees them');
   });
 });
 

@@ -34,5 +34,5 @@ export const jobs: Job[] = [
   { name: 'purge-admin-sessions', intervalMs: HOUR, run: adminAuthService.purgeExpiredSessions },
   { name: 'purge-emails', intervalMs: 6 * HOUR, run: emailService.purgeOldEmails },
   { name: 'purge-screenshots', intervalMs: 6 * HOUR, run: () => paymentService.purgeOldTransferScreenshots() },
-  { name: 'purge-guest-identities', intervalMs: 6 * HOUR, run: bookingService.purgeExpiredGuestIdentities },
+  { name: 'purge-guest-identities', intervalMs: 6 * HOUR, run: () => bookingService.purgeExpiredGuestIdentities() },
 ];

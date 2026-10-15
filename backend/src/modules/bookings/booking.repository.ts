@@ -5,6 +5,7 @@ import { isPgError, PG_ERROR, query, queryOne, type Db } from '../../db/pool.js'
 import type { BookingEmailContext } from '../notifications/email.templates.js';
 import type { PriceBreakdown } from '../pricing/pricing.js';
 import { transferNote } from './booking.rules.js';
+import { UNUSED_IDENTITY_RETENTION } from './guest-identity.repository.js';
 import type {
   AdminBookingFilters,
   AdminBookingListItem,
@@ -197,7 +198,8 @@ async function listEvents(bookingId: string): Promise<BookingEvent[]> {
 
 /**
  * Expires unpaid pending bookings whose hold ran out, freeing their dates, and records an
- * event for each. Runs before every new booking (in its transaction) and as a background job.
+ * event for each. Their guests' identities are kept at most 3 more days (same statement). Runs
+ * before every new booking (in its transaction) and as a background job.
  */
 async function expireStaleHolds(db?: Db): Promise<number> {
   const rows = await query<{ id: string }>(
@@ -205,6 +207,9 @@ async function expireStaleHolds(db?: Db): Promise<number> {
        UPDATE bookings SET status = 'expired'
        WHERE status = 'pending' AND amount_paid = 0 AND hold_expires_at < now()
        RETURNING id
+     ), identities AS (
+       UPDATE booking_guest_identities SET purge_after = least(purge_after, now() + ${UNUSED_IDENTITY_RETENTION})
+       WHERE booking_id IN (SELECT id FROM expired)
      )
      INSERT INTO booking_events (booking_id, type, actor)
      SELECT id, 'expired', 'system' FROM expired

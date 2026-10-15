@@ -374,11 +374,11 @@ async function adminDetail(reference: string): Promise<AdminBookingDetail> {
   const booking = await bookingRepository.findByReference(reference);
   if (!booking) throw notFound();
 
-  const [payments, refunds, events, identities, financials, incidents, nextArrivalReference, inspection, apartment] = await Promise.all([
+  const [payments, refunds, events, stored, financials, incidents, nextArrivalReference, inspection, apartment] = await Promise.all([
     paymentRepository.listForBooking(booking.id),
     paymentRepository.listRefundsForBooking(booking.id),
     bookingRepository.listEvents(booking.id),
-    guestIdentityRepository.list(booking.id),
+    guestIdentityRepository.forAdmin(booking.id),
     assetIncidentRepository.financials(booking.id, booking.assetSecurityAmount),
     assetIncidentRepository.list(booking.id),
     bookingRepository.nextArrival(booking),
@@ -400,6 +400,11 @@ async function adminDetail(reference: string): Promise<AdminBookingDetail> {
   else if (minutesLate >= 30 && nextArrivalReference) lateState = 'urgent';
   else if (minutesLate >= 15) lateState = 'late';
   else if (booking.scheduledCheckOutAt.getTime() <= Date.now()) lateState = 'due';
+  // "Deleted after retention" only when the booking had identities: rows past their date not purged
+  // yet, or the purge job's event. A booking made before identities were collected never had any.
+  const { identities } = stored;
+  const purged = identities.length === 0
+    && (stored.expired > 0 || events.some((event) => event.type === 'identities_purged'));
   return {
     ...guest,
     apartmentName: booking.apartmentName,
@@ -410,7 +415,8 @@ async function adminDetail(reference: string): Promise<AdminBookingDetail> {
     cancellationReason: booking.cancellationReason,
     completedAt: booking.completedAt?.toISOString() ?? null,
     identities,
-    identitiesPurged: identities.length === 0,
+    identitiesPurged: purged,
+    identitiesMissing: identities.length === 0 && events.some((event) => event.type === 'identities_missing'),
     incidents,
     lateCheckout: {
       state: lateState,
@@ -478,6 +484,8 @@ async function cancel(reference: string, reason: string, admin: AdminIdentity): 
     }
     await bookingRepository.markCancelled(booking.id, reason, db);
     await paymentRepository.failPendingForBooking(booking.id, 'Đặt phòng đã huỷ', db);
+    // The stay will not happen: its guests' identities are kept at most 3 more days.
+    await guestIdentityRepository.shortenRetention(booking.id, db);
     await bookingRepository.addEvent(booking.id, 'cancelled', admin.email, { reason }, db);
     await emailService.queueBookingCancelled(await bookingRepository.emailContext(booking.id, db), reason, db);
   });
@@ -636,8 +644,12 @@ async function sendRentRequests(): Promise<number> {
   });
 }
 
-async function purgeExpiredGuestIdentities(): Promise<number> {
-  return guestIdentityRepository.purgeExpired();
+/**
+ * Deletes guests' identities past their retention date.
+ * @param now the job's clock (tests pass a later one)
+ */
+async function purgeExpiredGuestIdentities(now = new Date()): Promise<number> {
+  return guestIdentityRepository.purgeExpired(now);
 }
 
 export const bookingService = {
