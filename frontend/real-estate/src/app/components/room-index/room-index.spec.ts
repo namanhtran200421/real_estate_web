@@ -7,14 +7,15 @@ const chapter = (id: string, files: string[], textOnly = false): RoomChapter => 
 describe('indexItems', () => {
   const items = indexItems([
     chapter('phong-khach', ['10', '09', '02']),
-    chapter('bep', [], true),
+    chapter('bep', ['01']),
+    chapter('text-only', [], true),
     chapter('phong-tam', ['11', '12']),
     chapter('phong-ngu-1', ['13', '14']),
     chapter('phong-ngu-2', ['16', '15', '03']),
   ]);
 
-  it('picks 09, nothing for the kitchen, 12, 13 and 15', () => {
-    expect(items.map((i) => i.photo?.src.match(/(\d\d)\.jpg/)?.[1])).toEqual(['09', undefined, '12', '13', '15']);
+  it('picks 09, 01 for the kitchen, nothing for a text-only room, 12, 13 and 15', () => {
+    expect(items.map((i) => i.photo?.src.match(/(\d\d)\.jpg/)?.[1])).toEqual(['09', '01', undefined, '12', '13', '15']);
   });
 
   it('crops the bathroom photo towards the top', () => {

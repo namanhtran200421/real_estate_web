@@ -8,7 +8,7 @@ import { MOTION_QUERIES } from '../../motion/motion-prefs';
 import { onMotion } from '../../motion/on-motion';
 
 /** The photo each room shows in the index (file number), so none repeats the hero or another room. */
-const INDEX_FILE: Record<string, string> = { 'phong-khach': '09', 'phong-tam': '12', 'phong-ngu-1': '13', 'phong-ngu-2': '15' };
+const INDEX_FILE: Record<string, string> = { 'phong-khach': '09', bep: '01', 'phong-tam': '12', 'phong-ngu-1': '13', 'phong-ngu-2': '15' };
 
 export interface RoomIndexItem {
   chapter: RoomChapter;

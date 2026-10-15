@@ -13,17 +13,18 @@ describe('room chapters', () => {
     expect(chapters.map((c) => c.id)).toEqual(['phong-khach', 'bep', 'phong-tam', 'phong-ngu-1', 'phong-ngu-2']);
     expect(chapters.map((c) => c.photos.map((p) => p.src.slice(-6, -4)))).toEqual([
       ['10', '09', '02', '08'],
-      [],
+      ['01'],
       ['11', '12'],
       ['13', '14'],
       ['16', '15', '03'],
     ]);
   });
 
-  it('keeps the kitchen as a text-only chapter, and no other chapter is text-only', () => {
+  it('shows the one kitchen photo, 01, and no chapter is text-only', () => {
     const chapters = roomChapters(sunGarden);
-    expect(chapters.map((c) => c.textOnly)).toEqual([false, true, false, false, false]);
+    expect(chapters.map((c) => c.textOnly)).toEqual([false, false, false, false, false]);
     expect(chapters[1].key).toBe('kitchen');
+    expect(chapters[1].photos.map((p) => p.src.slice(-6, -4))).toEqual(['01']);
   });
 
   it('skips photos the listing no longer has', () => {
@@ -31,9 +32,9 @@ describe('room chapters', () => {
     expect(roomChapters(fewer)[0].photos.map((p) => p.src.slice(-6, -4))).toEqual(['10', '09', '02']);
   });
 
-  it('drops a photo chapter the listing has no photos for, but keeps the text-only one', () => {
+  it('drops a chapter the listing has no photos for', () => {
     const none = { slug: 'sun-garden-a04-12', photos: [photo('11'), photo('12')] } as Apartment;
-    expect(roomChapters(none).map((c) => c.id)).toEqual(['bep', 'phong-tam']);
+    expect(roomChapters(none).map((c) => c.id)).toEqual(['phong-tam']);
   });
 
   it('gives any other apartment a single chapter with all its photos', () => {
@@ -54,7 +55,7 @@ describe('gallery chapters', () => {
     const last = chapters[chapters.length - 1];
     expect(last.key).toBe('moreViews');
     expect(last.textOnly).toBe(false);
-    expect(last.photos.map((p) => p.src.slice(-6, -4))).toEqual(['01', '04', '05', '06', '07']);
+    expect(last.photos.map((p) => p.src.slice(-6, -4))).toEqual(['04', '05', '06', '07']);
     const shown = chapters.flatMap((c) => c.photos).map((p) => p.src).sort();
     expect(shown).toHaveLength(16);
     expect(shown).toEqual(sunGarden.photos.map((p) => p.src).sort());

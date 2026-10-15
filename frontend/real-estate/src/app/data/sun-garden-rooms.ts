@@ -7,8 +7,8 @@ import { Apartment, Photo } from '../models/apartment';
 const SUN_GARDEN: { id: string; key: string; files: string[]; textOnly?: true }[] = [
   // 10 leads: it shows the kitchen corner and the front door.
   { id: 'phong-khach', key: 'living', files: ['10', '09', '02', '08'] },
-  // The listing has no kitchen photo worth showing: the chapter is words only.
-  { id: 'bep', key: 'kitchen', files: [], textOnly: true },
+  // 01 is the one kitchen photo (the owner's choice: use it). Text-only chapters stay supported.
+  { id: 'bep', key: 'kitchen', files: ['01'] },
   { id: 'phong-tam', key: 'bathrooms', files: ['11', '12'] },
   { id: 'phong-ngu-1', key: 'bedroom1', files: ['13', '14'] },
   { id: 'phong-ngu-2', key: 'bedroom2', files: ['16', '15', '03'] },
@@ -20,7 +20,7 @@ export interface RoomChapter {
   /** Translation key under `rooms.` (title and one line). */
   key: string;
   photos: Photo[];
-  /** A room with a title and a line but no photo (the kitchen): every layout must cope with `photos` being empty. */
+  /** A room with a title and a line but no photo: every layout must cope with `photos` being empty. */
   textOnly: boolean;
 }
 

@@ -10,11 +10,10 @@ export default async function check({ browser, site, assert, lib }) {
       return Math.round(edge - Math.max(...[...ul.children].map((li) => li.getBoundingClientRect().right)));
     }),
   );
-  // Six chips: the text-only kitchen is a chapter without a photo grid, so five grids.
+  // Six chips and six photo grids: the kitchen shows its one photo (01).
   assert.equal(await page.locator('main a[href*="#g-"]').count(), 6, 'six chapter chips');
-  assert.equal(gaps.length, 5, 'five photo grids (the kitchen has none)');
-  assert.equal(await page.locator('#g-bep img').count(), 0, 'kitchen shows no photo');
-  assert.equal(await page.locator('#g-bep p').count(), 1, 'kitchen keeps its line');
+  assert.equal(gaps.length, 6, 'six photo grids');
+  assert.equal(await page.locator('#g-bep img').count(), 1, 'kitchen shows its one photo');
   assert.equal(await page.locator('main img').count(), 16, 'sixteen photos, each once');
   const alts = await page.locator('main img').evaluateAll((imgs) => imgs.map((i) => i.alt));
   assert.equal(new Set(alts).size, 16, `unique alt text ${alts}`);
