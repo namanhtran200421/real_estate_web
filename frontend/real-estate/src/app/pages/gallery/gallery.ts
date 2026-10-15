@@ -36,26 +36,6 @@ export class Gallery {
     this.chapters().flatMap((chapter) => chapter.photos.map((_, i) => photoAlt(chapter, i, (key, params) => this.transloco.translate(key, params)))),
   );
 
-  /**
-   * Classes for photo `i` of a chapter with `count` photos. Phones: two columns. From md the list is
-   * a six-column grid whose tiles always fill the row (a lone leftover tile is widened), so the
-   * chapter spans the full width whatever its count.
-   */
-  protected tile(count: number, i: number): { item: string; box: string } {
-    if (count === 1) return { item: 'col-span-2 md:col-span-6', box: 'aspect-[4/3] md:aspect-[16/9]' };
-    if (count === 2 || count === 4) return { item: 'md:col-span-3', box: 'aspect-[3/4] md:aspect-square' };
-    if (count === 3) {
-      return i === 0
-        ? { item: 'col-span-2 md:col-span-3 md:row-span-2', box: 'aspect-[4/3] md:aspect-auto md:h-full' }
-        : { item: 'md:col-span-3', box: 'aspect-[3/4] md:aspect-[4/3]' };
-    }
-    const rest = count % 3;
-    const last = rest > 0 && i >= count - rest;
-    if (last && rest === 1) return { item: 'col-span-2 md:col-span-6', box: 'aspect-[4/3] md:aspect-[16/9]' };
-    if (last) return { item: 'md:col-span-3', box: 'aspect-[3/4] md:aspect-[4/3]' };
-    return { item: 'md:col-span-2', box: 'aspect-[3/4]' };
-  }
-
   protected indexOf(photo: Photo): number {
     return this.ordered().indexOf(photo);
   }

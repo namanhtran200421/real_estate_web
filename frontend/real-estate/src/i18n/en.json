@@ -389,6 +389,7 @@
   },
   "gallery": {
     "chapters": "Rooms",
+    "photoCount": "{{ count }} photos",
     "lightbox": {
       "label": "Photo viewer",
       "position": "Photo {{ n }} of {{ total }}",

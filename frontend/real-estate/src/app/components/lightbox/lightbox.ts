@@ -1,7 +1,7 @@
-import { ApplicationRef, Component, ElementRef, PLATFORM_ID, inject, input, signal, viewChild } from '@angular/core';
+import { ApplicationRef, Component, DestroyRef, ElementRef, PLATFORM_ID, inject, input, signal, viewChild } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { NavigationEnd, Router } from '@angular/router';
+import { NavigationStart, Router } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { filter } from 'rxjs';
 import { imageLoader } from '../../image-loader';
@@ -48,16 +48,22 @@ export class Lightbox {
   constructor() {
     // Browser only: the server DOM has no <dialog> API (close() throws "NotYetImplemented").
     if (!isPlatformBrowser(inject(PLATFORM_ID))) return;
-    // Any navigation (browser back, iOS swipe-back) closes the viewer; (close) then cleans up.
+    // Any navigation start (browser back, iOS swipe-back) closes the viewer; (close) then cleans up.
     inject(Router)
       .events.pipe(
-        filter((event) => event instanceof NavigationEnd),
+        filter((event) => event instanceof NavigationStart),
         takeUntilDestroyed(),
       )
       .subscribe(() => {
         const dialog = this.dialog()?.nativeElement;
         if (dialog?.open) dialog.close();
       });
+    // Destroyed while open (route change that skipped the close): undo what open() set.
+    inject(DestroyRef).onDestroy(() => {
+      if (!document.documentElement.classList.contains('has-dialog')) return;
+      document.documentElement.classList.remove('has-dialog');
+      this.motion.engine()?.resume();
+    });
   }
 
   /** The 1600 px WebP the build makes for every photo, not the ~440 kB original JPEG. */

@@ -802,12 +802,12 @@
   }
 
   /* Photo viewer: a navy dialog over the whole viewport. */
-  .lightbox { max-width: none; max-height: none; width: 100vw; height: 100dvh; margin: 0; padding: 0; border: 0; background: color-mix(in srgb, var(--color-navy-deep) 96%, transparent); }
+  .lightbox { max-width: none; max-height: none; width: 100vw; height: 100dvh; margin: 0; padding: 0; border: 0; background: var(--color-navy-deep); }
   .lightbox::backdrop { background: transparent; }
   .lightbox-img { position: absolute; inset: 3.5rem 0 3rem; margin: auto; max-width: 100%; max-height: calc(100% - 6.5rem); object-fit: contain; view-transition-name: lightbox-photo; touch-action: pan-y; }
   .lightbox-pos { position: absolute; bottom: 1rem; inset-inline: 0; text-align: center; color: var(--color-background); font-size: 0.875rem; }
   .lightbox-btn,
-  .lightbox-close { position: absolute; display: grid; place-items: center; width: 2.75rem; height: 2.75rem; border-radius: 999px; background: color-mix(in srgb, var(--color-background) 92%, transparent); color: var(--color-foreground); font-size: 1.5rem; }
+  .lightbox-close { position: absolute; display: grid; place-items: center; width: 3rem; height: 3rem; border-radius: 999px; background: color-mix(in srgb, var(--color-background) 92%, transparent); color: var(--color-foreground); font-size: 1.5rem; }
   .lightbox-btn { top: 50%; transform: translateY(-50%); }
   .lightbox-close { top: 1rem; right: 1rem; }
 

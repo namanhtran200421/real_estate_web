@@ -389,6 +389,7 @@
   },
   "gallery": {
     "chapters": "Các phòng",
+    "photoCount": "{{ count }} ảnh",
     "lightbox": {
       "label": "Xem ảnh",
       "position": "Ảnh {{ n }}/{{ total }}",
