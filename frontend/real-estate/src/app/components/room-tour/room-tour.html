@@ -2,7 +2,7 @@
 <section #section class="room-tour" [attr.aria-label]="'rooms.tourEyebrow' | transloco">
   <div class="room-tour__sticky">
     <div class="room-tour__head container-editorial max-w-7xl">
-      <p class="label-caps text-accent-deep">{{ 'rooms.tourEyebrow' | transloco }}</p>
+      <h2 class="label-caps text-accent-deep">{{ 'rooms.tourEyebrow' | transloco }}</h2>
       <span class="room-tour__progress" data-progress aria-hidden="true"></span>
     </div>
     <ol #track class="room-tour__track">
@@ -12,7 +12,7 @@
             <div class="room-tour__photos">
               @for (photo of chapter.photos.slice(0, 3); track photo.src; let first = $first; let p = $index) {
                 <div class="lights relative" [class.arch]="first" [class.room-tour__lead]="first" appReveal>
-                  <img [ngSrc]="photo.src" [alt]="alt(chapter, p)" fill sizes="(min-width: 1024px) 30vw, 90vw" class="object-cover" />
+                  <img [ngSrc]="photo.src" [alt]="alt(chapter, p)" fill sizes="(min-width: 1024px) 30vw, 50vw" class="object-cover" [style.object-position]="chapter.key === 'bathrooms' ? '50% 15%' : null" />
                 </div>
               }
             </div>

@@ -1,7 +1,7 @@
 import { DatePipe, DecimalPipe, NgOptimizedImage } from '@angular/common';
 import { httpResource } from '@angular/common/http';
 import { Component, computed, effect, inject, input } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { DomSanitizer } from '@angular/platform-browser';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { ApartmentHeader } from '../../components/apartment-header/apartment-header';
@@ -47,6 +47,8 @@ export class ApartmentDetail {
   private readonly sanitizer = inject(DomSanitizer);
   private readonly reviewService = inject(GuestReviewService);
   protected readonly amenityGroups = SUN_GARDEN_AMENITIES;
+  /** True only when arriving from the Home room index morph (navigation state), never on a direct load. */
+  protected readonly morphed = inject(Router).currentNavigation()?.extras.state?.['morph'] === true;
 
   /** Bound from the `?apt=` query param. */
   readonly slug = input<string>(undefined, { alias: 'apt' });

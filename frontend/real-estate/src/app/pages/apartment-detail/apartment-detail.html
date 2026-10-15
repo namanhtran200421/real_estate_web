@@ -1,25 +1,25 @@
 @if (apartment(); as apt) {
   <div class="pb-24 md:pb-0">
-    <section class="relative overflow-x-clip" data-apartment-hero>
-      <div class="container-editorial grid max-w-7xl items-end gap-10 pb-12 lg:h-[86vh] lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)] lg:pb-0">
-        <div class="order-2 pb-6 lg:order-1 lg:pb-24">
-          <p class="label-caps text-accent-deep">{{ apt.area }}</p>
-          <h1 class="display mt-4"><app-split [text]="apt.name" /></h1>
-          <p class="mt-6 text-lg text-muted-foreground">{{ 'apartment.capacity' | transloco: { guests: apt.guests, bedrooms: apt.bedrooms, beds: apt.beds, bathrooms: apt.bathrooms } }}</p>
-          <div class="mt-8 flex flex-wrap items-center gap-5">
+    <section data-apartment-hero>
+      <div class="container-editorial max-w-7xl pb-10 pt-10 md:pt-14 lg:pb-12">
+        <p class="label-caps text-accent-deep">{{ apt.area }}</p>
+        <h1 class="display mt-4 lg:whitespace-nowrap"><app-split [text]="apt.name" /></h1>
+        <div class="mt-6 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+          <p class="text-lg text-muted-foreground">{{ 'apartment.capacity' | transloco: { guests: apt.guests, bedrooms: apt.bedrooms, beds: apt.beds, bathrooms: apt.bathrooms } }}</p>
+          <div class="flex flex-wrap items-center gap-5">
             <p class="font-serif text-3xl">{{ 'home.scenes.perNight' | transloco: { price: (apt.pricing.weekday | number) } }}</p>
             <a class="btn btn-primary" routerLink="/book" [queryParams]="{ apt: apt.slug }">{{ 'home.scenes.heroCta' | transloco }} →</a>
           </div>
         </div>
-        <div class="hero-image relative order-1 -mx-6 aspect-[3/4] overflow-clip lg:order-2 lg:mx-0 lg:-mr-[max(2rem,calc((100vw-80rem)/2+2rem))] lg:h-[86vh] lg:aspect-auto lg:rounded-tl-[999px]">
-          @if (heroPhoto(); as photo) {
-            <img [ngSrc]="photo.src" [alt]="photo.alt" fill priority sizes="(min-width: 1024px) 50vw, 100vw" class="object-cover" style="view-transition-name: apt-photo" />
-          }
-        </div>
+      </div>
+      <div class="hero-image relative aspect-[4/3] w-full overflow-clip lg:aspect-[21/9]">
+        @if (heroPhoto(); as photo) {
+          <img [ngSrc]="photo.src" [alt]="photo.alt" fill priority sizes="100vw" class="object-cover" [style.view-transition-name]="morphed ? 'apt-photo' : null" />
+        }
       </div>
     </section>
     <app-apartment-header [apartment]="apt" [tabsOnly]="true" />
-    <app-room-tour [apartment]="apt" />
+    <app-room-tour class="block pt-12" [apartment]="apt" />
 
     <!-- Details + booking card -->
     <section class="pb-16 pt-12 md:pb-24 md:pt-16">
@@ -39,9 +39,9 @@
               </div>
             }
           </div>
-          <ul class="mt-7 grid gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
+          <ul class="mt-7 grid grid-cols-2 gap-2.5 xl:grid-cols-5">
             @for (item of apt.keyFacilities; track item) {
-              <li class="flex min-h-16 items-center gap-3 rounded-md border border-accent bg-accent-muted px-4 py-3 text-sm leading-snug shadow-sm">
+              <li class="panel flex min-h-16 items-center gap-3 !rounded-md !p-4 text-sm leading-snug">
                 <svg viewBox="0 0 24 24" class="size-6 shrink-0 text-accent-deep" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                   @switch (facilityIcon(item)) {
                     @case ('apartment') { <path d="M4 21V7l8-5 8 5v14M3 21h18M9 21v-8h6v8M8 9h.01M16 9h.01" /> }
@@ -157,7 +157,11 @@
           @defer (on viewport) {
             <iframe [title]="'location.mapTitle' | transloco: { name: apt.name }" [src]="mapUrl()" loading="lazy" referrerpolicy="no-referrer-when-downgrade" class="block h-80 w-full md:h-96"></iframe>
           } @placeholder {
-            <div class="grid h-80 place-items-center md:h-96"><span class="small-caps text-muted-foreground">{{ 'location.loadingMap' | transloco }}</span></div>
+            <div class="flex h-80 flex-col items-center justify-center gap-3 bg-muted px-6 text-center md:h-96">
+              <svg viewBox="0 0 24 24" class="size-8 text-accent-deep" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21Z" /><circle cx="12" cy="9.5" r="2.5" /></svg>
+              <span class="max-w-xs text-sm text-muted-foreground">{{ apt.address }}</span>
+              <span class="small-caps text-xs text-muted-foreground">{{ 'location.loadingMap' | transloco }}</span>
+            </div>
           }
         </div>
         <div class="panel flex flex-col">

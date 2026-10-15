@@ -22,6 +22,10 @@ export default async function check({ browser, site, assert, lib }) {
   await desktop.waitForTimeout(1500);
   const heroRight = await desktop.evaluate(() => document.querySelector('[data-apartment-hero] .hero-image').getBoundingClientRect().right);
   assert.equal(Math.round(heroRight), 1440, `hero photo right edge ${heroRight}`);
+  const heroLeft = await desktop.evaluate(() => document.querySelector('[data-apartment-hero] .hero-image').getBoundingClientRect().left);
+  assert.equal(Math.round(heroLeft), 0, `hero photo left edge ${heroLeft}`);
+  assert.equal(await desktop.evaluate(() => getComputedStyle(document.querySelector('[data-apartment-hero] .hero-image')).borderRadius), '0px', 'hero frame has no curve');
+  assert.equal(await desktop.evaluate(() => document.querySelector('[data-apartment-hero] img').style.viewTransitionName), '', 'no static view-transition-name on a direct load');
   await desktop.locator('a[href="#sau-tham-quan"]').focus();
   await desktop.keyboard.press('Tab');
   await desktop.waitForTimeout(1800);
@@ -51,6 +55,15 @@ export default async function check({ browser, site, assert, lib }) {
 
   const phone = await lib.openPage(browser, { viewport: lib.VIEWPORTS.phone });
   await phone.goto(site + '/apartment', { waitUntil: 'networkidle' });
+  // The tour leaves no void: after the last card the page flows on within 120 px.
+  const gap = await phone.evaluate(() => {
+    const cta = document.querySelector('.room-tour__cta');
+    const last = [...document.querySelectorAll('.room-tour__chapter:not(.room-tour__cta)')].pop();
+    const next = document.querySelector('.room-tour').nextElementSibling;
+    return { cta: cta.getBoundingClientRect().top - last.getBoundingClientRect().bottom, afterTour: (next?.getBoundingClientRect().top ?? 0) - cta.getBoundingClientRect().bottom };
+  });
+  assert.ok(gap.cta < 120, `gap between the last card and the CTA ${gap.cta}px`);
+  assert.ok(gap.afterTour < 120, `gap after the tour CTA ${gap.afterTour}px`);
   await phone.evaluate(() => window.scrollTo(0, window.innerHeight * 1.5));
   await phone.waitForTimeout(900);
   assert.equal(await phone.evaluate(() => document.querySelector('.book-bar')?.classList.contains('is-shown')), true, 'book bar after the hero');
@@ -62,4 +75,20 @@ export default async function check({ browser, site, assert, lib }) {
   await lib.scrollThrough(phone);
   await lib.shot(phone, 'apartment-phone');
   await phone.context().close();
+
+  // CLS stays under 0.05 on desktop when the web fonts arrive 1 s late.
+  const slow = await lib.openPage(browser);
+  await slow.route(/\.(woff2?|ttf)(\?.*)?$/, async (route) => {
+    await new Promise((r) => setTimeout(r, 1000));
+    await route.continue();
+  });
+  await slow.addInitScript(() => {
+    window.__cls = 0;
+    new PerformanceObserver((l) => { for (const e of l.getEntries()) if (!e.hadRecentInput) window.__cls += e.value; }).observe({ type: 'layout-shift', buffered: true });
+  });
+  await slow.goto(site + '/apartment', { waitUntil: 'networkidle' });
+  await slow.waitForTimeout(1500);
+  const cls = await slow.evaluate(() => window.__cls);
+  assert.ok(cls < 0.05, `apartment CLS with a 1 s font delay ${cls.toFixed(3)}`);
+  await slow.context().close();
 }

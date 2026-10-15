@@ -8,6 +8,7 @@
   <a
     routerLink="/book"
     [queryParams]="{ apt: slug() }"
+    [attr.aria-label]="'nav.book' | transloco"
     class="mt-6 grid grid-cols-2 rounded-md border border-border transition-colors hover:border-border-hover"
   >
     <span class="border-b border-r border-border px-4 py-3">

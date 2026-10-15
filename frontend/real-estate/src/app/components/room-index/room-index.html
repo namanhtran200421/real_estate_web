@@ -8,6 +8,7 @@
             routerLink="/apartment"
             [fragment]="item.chapter.id"
             [queryParams]="{ apt: apartmentSlug() }"
+            [state]="{ morph: true }"
             (click)="morph($event, item.chapter.id)"
           >
             <span class="room-index__number label-caps">0{{ i + 1 }}</span>
