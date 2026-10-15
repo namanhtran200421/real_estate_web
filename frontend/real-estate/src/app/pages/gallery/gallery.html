@@ -10,21 +10,25 @@
   @for (chapter of chapters(); track chapter.id; let last = $last) {
     <section class="container-editorial mt-16 max-w-6xl" [class.mb-24]="last" [id]="'g-' + chapter.id">
       <h2 class="display-section">{{ 'rooms.' + chapter.key + '.title' | transloco }}</h2>
+      @if (chapter.photos.length === 0) {
+        <p class="mt-4 max-w-xl text-lg text-muted-foreground">{{ 'rooms.' + chapter.key + '.line' | transloco }}</p>
+      } @else {
       <ul class="mt-8 grid grid-cols-2 gap-3 md:grid-cols-6 md:gap-5" data-chapter-grid>
         @for (photo of chapter.photos; track photo.src; let first = $first; let i = $index; let n = $count) {
           @let t = tile(n, i);
           <li [class]="t.item" appFadeIn>
             <button type="button" class="focus-photo group block h-full w-full" (click)="lightbox.open(indexOf(photo), $any($event.currentTarget).querySelector('img'))" data-cursor="view">
               <span class="relative block overflow-clip" [class]="t.box" [class.arch]="first && n > 1">
-                <img [ngSrc]="photo.src" [alt]="photo.alt" fill [priority]="photo === ordered()[0]" sizes="(min-width: 768px) 45vw, 48vw" class="media-zoom object-cover" />
+                <img [ngSrc]="photo.src" [alt]="alts()[indexOf(photo)]" fill [priority]="photo === ordered()[0]" sizes="(min-width: 768px) 45vw, 48vw" class="media-zoom object-cover" />
               </span>
             </button>
           </li>
         }
       </ul>
+      }
     </section>
   }
-  <app-lightbox #lightbox [photos]="ordered()" />
+  <app-lightbox #lightbox [photos]="ordered()" [alts]="alts()" />
 } @else {
   <app-apartment-not-found />
 }

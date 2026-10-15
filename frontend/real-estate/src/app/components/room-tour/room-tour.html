@@ -8,13 +8,15 @@
     <ol #track class="room-tour__track">
       @for (chapter of chapters(); track chapter.id; let i = $index) {
         <li class="room-tour__chapter" [id]="chapter.id" data-chapter>
-          <div class="room-tour__photos">
-            @for (photo of chapter.photos.slice(0, 3); track photo.src; let first = $first) {
-              <div class="lights relative" [class.arch]="first" [class.room-tour__lead]="first" appReveal>
-                <img [ngSrc]="photo.src" [alt]="photo.alt" fill sizes="(min-width: 1024px) 30vw, 90vw" class="object-cover" />
-              </div>
-            }
-          </div>
+          @if (chapter.photos.length) {
+            <div class="room-tour__photos">
+              @for (photo of chapter.photos.slice(0, 3); track photo.src; let first = $first; let p = $index) {
+                <div class="lights relative" [class.arch]="first" [class.room-tour__lead]="first" appReveal>
+                  <img [ngSrc]="photo.src" [alt]="alt(chapter, p)" fill sizes="(min-width: 1024px) 30vw, 90vw" class="object-cover" />
+                </div>
+              }
+            </div>
+          }
           <div class="room-tour__text">
             <p class="label-caps text-muted-foreground">{{ 'rooms.chapter' | transloco: { n: i + 1, total: chapters().length } }}</p>
             <h3 class="display-section mt-2">{{ 'rooms.' + chapter.key + '.title' | transloco }}</h3>

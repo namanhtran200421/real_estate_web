@@ -1,9 +1,9 @@
 import { Component, ElementRef, computed, inject, input, viewChild } from '@angular/core';
 import { NgOptimizedImage } from '@angular/common';
 import { Router, RouterLink, Scroll } from '@angular/router';
-import { TranslocoPipe } from '@jsverse/transloco';
+import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { Apartment } from '../../models/apartment';
-import { roomChapters } from '../../data/sun-garden-rooms';
+import { RoomChapter, photoAlt, roomChapters } from '../../data/sun-garden-rooms';
 import { MOTION_QUERIES } from '../../motion/motion-prefs';
 import { onMotion } from '../../motion/on-motion';
 import { RevealDirective } from '../../motion/reveal.directive';
@@ -34,6 +34,11 @@ export class RoomTour {
     document.getElementById('sau-tham-quan')?.focus();
   }
   protected readonly chapters = computed(() => roomChapters(this.apartment()));
+  private readonly transloco = inject(TranslocoService);
+
+  protected alt(chapter: RoomChapter, index: number): string {
+    return photoAlt(chapter, index, (key, params) => this.transloco.translate(key, params));
+  }
   private readonly router = inject(Router);
   private readonly section = viewChild.required<ElementRef<HTMLElement>>('section');
   private readonly track = viewChild.required<ElementRef<HTMLElement>>('track');

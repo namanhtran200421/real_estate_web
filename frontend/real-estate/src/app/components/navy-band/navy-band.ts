@@ -15,6 +15,7 @@ import { Split } from '../../motion/split';
         <h2 class="display-section mt-4 max-w-3xl"><app-split [text]="title()" [em]="em()" /></h2>
         <ng-content />
         <a class="btn btn-primary mt-12" [routerLink]="ctaLink()" [queryParams]="ctaQuery()">{{ ctaLabel() }} →</a>
+        <ng-content select="[bandAfter]" />
       </div>
       <svg class="pointer-events-none absolute inset-x-0 bottom-0 h-28 w-full" viewBox="0 0 1200 120" preserveAspectRatio="none" aria-hidden="true">
         <path [appParallax]="6" d="M0 120 L0 70 L80 54 L150 68 L240 40 L320 62 L410 46 L500 70 L590 44 L680 64 L770 38 L860 60 L950 46 L1040 66 L1130 50 L1200 60 L1200 120 Z" class="fill-[color-mix(in_srgb,var(--color-background)_16%,var(--color-navy-deep))]" />

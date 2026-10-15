@@ -21,7 +21,7 @@ export function step(index: number, delta: number, total: number): number {
   template: `
     <dialog #dialog class="lightbox" (close)="closed()" (keydown.arrowLeft)="go(-1)" (keydown.arrowRight)="go(1)" [attr.aria-label]="'gallery.lightbox.label' | transloco">
       @if (shown() && photos()[index()]; as photo) {
-        <img #image [src]="large(photo.src)" [alt]="photo.alt" class="lightbox-img" (pointerdown)="swipeStart($event)" (pointerup)="swipeEnd($event)" />
+        <img #image [src]="large(photo.src)" [alt]="alts()[index()] ?? photo.alt" class="lightbox-img" (pointerdown)="swipeStart($event)" (pointerup)="swipeEnd($event)" />
       }
       <p class="lightbox-pos" aria-live="polite">{{ 'gallery.lightbox.position' | transloco: { n: index() + 1, total: photos().length } }}</p>
       <button type="button" class="lightbox-btn left-4" (click)="go(-1)" [attr.aria-label]="'gallery.lightbox.previous' | transloco">‹</button>
@@ -33,6 +33,8 @@ export function step(index: number, delta: number, total: number): number {
 export class Lightbox {
   /** In the gallery's (chapter) order, so previous/next follow what the guest sees on the page. */
   readonly photos = input.required<Photo[]>();
+  /** Alt text for each photo, in the same order; a photo without one falls back to its own alt. */
+  readonly alts = input<string[]>([]);
   protected readonly index = signal(0);
   /** The large photo is only rendered while the viewer is open, so a closed one downloads nothing. */
   protected readonly shown = signal(false);

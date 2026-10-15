@@ -36,14 +36,14 @@ export class Home {
     };
   });
 
-  /** Five windows: one photo per chapter (09, 08, 12, 13, 16 for Sun Garden). */
+  /** Five windows: one photo per chapter (09, none for the text-only kitchen, 12, 13, 15 for Sun Garden). */
   protected readonly windows = computed(() => {
     const apt = this.featured();
     if (!apt) return [];
-    const pick = ['09', '08', '12', '13', '16'];
-    return roomChapters(apt).map((chapter, i) => ({
+    const pick: Record<string, string> = { 'phong-khach': '09', 'phong-tam': '12', 'phong-ngu-1': '13', 'phong-ngu-2': '15' };
+    return roomChapters(apt).map((chapter) => ({
       chapter,
-      photo: roomPhoto(apt, pick[i]) ?? chapter.photos[0],
+      photo: chapter.textOnly ? undefined : (roomPhoto(apt, pick[chapter.id] ?? '') ?? chapter.photos[0]),
     }));
   });
 

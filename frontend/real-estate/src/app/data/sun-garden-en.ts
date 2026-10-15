@@ -7,11 +7,11 @@ export function localizeSunGarden(apartment: Apartment): Apartment {
   return {
     ...apartment,
     name: 'Sun Garden apartment A04-12',
-    area: 'Nam Ho · Da Lat',
-    address: '2 Nam Ho Street, Da Lat, Lam Dong',
+    area: 'Nam Ho · Đà Lạt',
+    address: '2 Nam Ho Street, Đà Lạt, Lam Dong',
     tagline: 'Fourth-floor corner apartment, 78 m², with two bedrooms and a balcony overlooking Xom Leo.',
     description: [
-      'Apartment A04-12 is on the fourth floor of building A at Sun Garden Da Lat. This airy 78 m² corner apartment has two bedrooms and two bathrooms.',
+      'Apartment A04-12 is on the fourth floor of building A at Sun Garden Đà Lạt. This airy 78 m² corner apartment has two bedrooms and two bathrooms.',
       'The living-room balcony overlooks Xom Leo, while the bedroom balcony faces Nam Ho Street. The apartment is fully furnished, with Wi-Fi, a kitchen and a washer-dryer. There is no air conditioning.',
       'Paid car and motorbike parking is available. Monthly rent does not include management or parking fees.',
     ],
@@ -43,7 +43,7 @@ export function localizeSunGarden(apartment: Apartment): Apartment {
       { place: 'Xóm Lèo grill', distance: '6 min by car · 3.1 km' },
       { place: 'Lang Thang Cloud Hill', distance: '7 min by car · 2.7 km' },
       { place: 'Lâm Viên Square', distance: '11 min by car · 4.9 km' },
-      { place: 'Da Lat Night Market', distance: '13 min by car · 5.7 km' },
+      { place: 'Đà Lạt Night Market', distance: '13 min by car · 5.7 km' },
       { place: 'Valley of Love', distance: '14 min by car · 7.2 km' },
     ],
   };

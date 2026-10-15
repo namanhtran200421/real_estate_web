@@ -1,7 +1,7 @@
 {
   "site": {
-    "tagline": "Your Stay, Your Style, Dalat awaits",
-    "description": "Discover Sun Garden apartment A04-12 in Da Lat: 78 m², 2 bedrooms, 2 bathrooms and an airy balcony.",
+    "tagline": "Your Stay, Your Style, Đà Lạt awaits",
+    "description": "Discover Sun Garden apartment A04-12 in Đà Lạt: 78 m², 2 bedrooms, 2 bathrooms and an airy balcony.",
     "contact": {
       "phone": "Phone",
       "zalo": "Zalo",
@@ -9,7 +9,7 @@
     }
   },
   "titles": {
-    "home": "{{ site }} · Sun Garden apartment in Da Lat",
+    "home": "{{ site }} · Sun Garden apartment in Đà Lạt",
     "apartment": "Apartment details · {{ site }}",
     "gallery": "Photos · {{ site }}",
     "availability": "Availability · {{ site }}",
@@ -24,7 +24,7 @@
     "confirmation": "Booking confirmation · {{ site }}"
   },
   "meta": {
-    "about": "{{ site }}: Sun Garden apartment A04-12 in Da Lat, 78 m², 2 bedrooms and 2 bathrooms.",
+    "about": "{{ site }}: Sun Garden apartment A04-12 in Đà Lạt, 78 m², 2 bedrooms and 2 bathrooms.",
     "policy": "House rules and stay policies for {{ site }}: check-in and check-out, deposit and refund, guest numbers, quiet hours and the check-out procedure.",
     "contact": "Contact {{ site }} by phone, Zalo or email for help with your booking.",
     "apartment": "{{ tagline }} {{ bedrooms }} [[ plural({{ bedrooms }}, bedroom, bedrooms) ]], up to {{ guests }} [[ plural({{ guests }}, guest, guests) ]], from {{ price }} ₫/night. {{ area }}."
@@ -146,6 +146,8 @@
     "viewDetails": "View details",
     "previousPhoto": "Previous photo",
     "nextPhoto": "Next photo",
+    "closingEyebrow": "Book direct",
+    "closingTitle": "Ready for your days in Đà Lạt?",
     "locationEyebrow": "Apartment location",
     "locationTitle": "Find Sun Garden",
     "openMap": "Open Google Maps",
@@ -219,6 +221,12 @@
     "payment": "Payment",
     "status": "Status"
   },
+  "money": {
+    "totalRent": "Total rent",
+    "today": "Today: deposit {{ amount }} ₫",
+    "fromCheckIn": "From check-in: rent {{ amount }} ₫",
+    "atCheckOut": "At check-out: deposit back {{ amount }} ₫ (less any damage)"
+  },
   "summary": {
     "rooms": "{{ bedrooms }} [[ plural({{ bedrooms }}, bedroom, bedrooms) ]] · up to {{ guests }} [[ plural({{ guests }}, guest, guests) ]]",
     "totalNote": "The total is calculated automatically once you choose your dates."
@@ -284,6 +292,11 @@
       "title": "Photos",
       "line": "Real photos of the apartment."
     },
+    "moreViews": {
+      "title": "More views",
+      "line": "More corners of the apartment."
+    },
+    "photoAlt": "{{ title }} – photo {{ n }} of {{ total }}",
     "tourEyebrow": "Walk through",
     "skipTour": "Skip the tour",
     "chapter": "Part {{ n }}/{{ total }}",
@@ -320,8 +333,8 @@
     "closingTitle": "A corner of Đà Lạt is waiting",
     "closingCta": "Book"
   },
-    "eyebrow": "Sun Garden · Da Lat",
-    "titleStart": "A corner of Da\u00a0Lat",
+    "eyebrow": "Sun Garden · Đà Lạt",
+    "titleStart": "A corner of Đà\u00a0Lạt",
     "titleEm": "all your own",
     "intro": "See availability, get the price instantly and book online, all from your phone.",
     "otherApartments": "Other apartments",
@@ -344,8 +357,8 @@
   "about": {
     "titleStart": "A",
     "titleEm": "cosy",
-    "titleEnd": "apartment in Da\u00a0Lat",
-    "intro": "{{ site }} is apartment A04-12 at Sun Garden, Nam Ho Street, Da Lat.",
+    "titleEnd": "apartment in Đà\u00a0Lạt",
+    "intro": "{{ site }} is apartment A04-12 at Sun Garden, Nam Ho Street, Đà Lạt.",
     "photoAlt": "Living room and balcony of Sun Garden apartment A04-12",
     "apartment": "The apartment",
     "story1": "A fourth-floor corner apartment, with a living-room balcony looking towards Xom Leo and a bedroom balcony facing Nam Ho Street.",
@@ -388,6 +401,7 @@
     "viewPrices": "See prices"
   },
   "location": {
+    "eyebrow": "Nearby",
     "mapTitle": "Map of {{ name }}",
     "loadingMap": "Loading map…",
     "address": "Address",
@@ -405,6 +419,7 @@
     "emailNote": "We’ll send your booking confirmation to this email.",
     "messagePlaceholder": "Expected arrival time, special requests…",
     "backToApartment": "← Back to the apartment",
+    "moreGuests": "More than 4 guests? Contact the owner on Zalo.",
     "discountApplied": "{{ amount }} ₫ off for your {{ nights }}-night stay",
     "identity": {
       "title": "Guest identity details",
@@ -728,7 +743,7 @@
       {
         "title": "Deposit, payment and refund policy",
         "body": [
-          "Clause 1 - Deposit ({{ percent }}%): Once your booking is confirmed, please pay a deposit of {{ percent }}% of the total room price to secure the apartment for your registered dates. This amount is held separately to safeguard the use and care of the property throughout your stay.",
+          "Clause 1 - Deposit ({{ percent }}%): To confirm your booking, please pay a deposit of {{ percent }}% of the total room price to secure the apartment for your registered dates. This amount is held separately to safeguard the use and care of the property throughout your stay.",
           "Clause 2 - Apartment rent (100%): At check-in, please pay 100% of the total apartment rent in full, separate from the initial deposit.",
           "Deposit refund: When check-out is complete, we will refund 100% of the initial deposit ({{ percent }}%) after inspecting the apartment and confirming that there is no damage, no lost property and no additional cost for which the guest is responsible. The refund is made promptly and transparently, to protect your rights and give you peace of mind."
         ]

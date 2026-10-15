@@ -147,6 +147,8 @@
     "previousPhoto": "Ảnh trước",
     "nextPhoto": "Ảnh tiếp theo",
     "locationEyebrow": "Vị trí căn hộ",
+    "closingEyebrow": "Đặt trực tiếp",
+    "closingTitle": "Sẵn sàng cho những ngày ở Đà Lạt?",
     "locationTitle": "Tìm đường đến Sun Garden",
     "openMap": "Mở Google Maps",
     "reviewsEyebrow": "Cảm nhận của khách",
@@ -219,6 +221,12 @@
     "payment": "Thanh toán",
     "status": "Trạng thái"
   },
+  "money": {
+    "totalRent": "Tổng tiền phòng",
+    "today": "Hôm nay: tiền cọc {{ amount }} ₫",
+    "fromCheckIn": "Từ ngày nhận phòng: tiền phòng {{ amount }} ₫",
+    "atCheckOut": "Khi trả phòng: hoàn cọc {{ amount }} ₫ (trừ hư hỏng nếu có)"
+  },
   "summary": {
     "rooms": "{{ bedrooms }} phòng ngủ · tối đa {{ guests }} khách",
     "totalNote": "Tổng tiền được tính tự động sau khi bạn chọn ngày."
@@ -284,6 +292,11 @@
       "title": "Hình ảnh",
       "line": "Ảnh thực tế của căn hộ."
     },
+    "moreViews": {
+      "title": "Thêm góc nhìn",
+      "line": "Những góc khác của căn hộ."
+    },
+    "photoAlt": "{{ title }} – ảnh {{ n }}/{{ total }}",
     "tourEyebrow": "Đi một vòng căn hộ",
     "skipTour": "Bỏ qua phần tham quan",
     "chapter": "Phần {{ n }}/{{ total }}",
@@ -388,6 +401,7 @@
     "viewPrices": "Xem bảng giá"
   },
   "location": {
+    "eyebrow": "Xung quanh",
     "mapTitle": "Bản đồ vị trí {{ name }}",
     "loadingMap": "Đang tải bản đồ…",
     "address": "Địa chỉ",
@@ -406,6 +420,7 @@
     "messagePlaceholder": "Giờ đến dự kiến, yêu cầu đặc biệt…",
     "backToApartment": "← Quay lại căn hộ",
     "discountApplied": "Đã giảm {{ amount }} ₫ cho kỳ nghỉ {{ nights }} đêm",
+    "moreGuests": "Hơn 4 khách? Liên hệ chủ nhà qua Zalo.",
     "identity": {
       "title": "Thông tin giấy tờ lưu trú",
       "intro": "Điền thông tin cho từng khách để chủ nhà thực hiện khai báo tạm trú.",
@@ -728,7 +743,7 @@
       {
         "title": "Chính sách đặt cọc, thanh toán và hoàn cọc",
         "body": [
-          "Khoản 1 - Tiền đặt cọc ({{ percent }}%): Sau khi xác nhận đặt phòng, Quý khách vui lòng đặt cọc {{ percent }}% tổng giá trị tiền phòng để đảm bảo giữ căn hộ theo lịch đã đăng ký. Khoản tiền này được giữ riêng nhằm đảm bảo việc sử dụng và bảo quản tài sản trong suốt thời gian lưu trú.",
+          "Khoản 1 - Tiền đặt cọc ({{ percent }}%): Để xác nhận đặt phòng, Quý khách vui lòng đặt cọc {{ percent }}% tổng giá trị tiền phòng để đảm bảo giữ căn hộ theo lịch đã đăng ký. Khoản tiền này được giữ riêng nhằm đảm bảo việc sử dụng và bảo quản tài sản trong suốt thời gian lưu trú.",
           "Khoản 2 - Tiền thuê căn hộ (100%): Khi nhận phòng (Check-in), Quý khách vui lòng thanh toán đầy đủ 100% tổng giá trị tiền thuê căn hộ, độc lập với khoản tiền đặt cọc ban đầu.",
           "Hoàn trả tiền đặt cọc: Khi hoàn tất thủ tục trả phòng (Check-out), chúng tôi sẽ hoàn trả 100% khoản tiền đặt cọc ban đầu ({{ percent }}%) sau khi kiểm tra và xác nhận căn hộ không có hư hỏng, mất mát tài sản hoặc chi phí phát sinh thuộc trách nhiệm của Quý khách. Việc hoàn cọc được thực hiện nhanh chóng, minh bạch, đảm bảo quyền lợi và sự an tâm của Quý khách."
         ]
