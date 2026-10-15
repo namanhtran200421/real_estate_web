@@ -1,7 +1,9 @@
 @if (apartment(); as apt) {
   <div class="pb-24 md:pb-0">
     <section data-apartment-hero>
-      <div class="container-editorial max-w-7xl pb-10 pt-10 md:pt-14 lg:pb-12">
+      <div class="container-editorial max-w-7xl pb-10 pt-8 md:pt-10 lg:pb-12">
+        <!-- The section tabs sit at the top of the title block, aligned with the title. -->
+        <app-apartment-header class="mb-10 block md:mb-12" [apartment]="apt" [tabsOnly]="true" />
         <p class="label-caps text-accent-deep">{{ apt.area }}</p>
         <h1 class="display mt-4 lg:whitespace-nowrap"><app-split [text]="apt.name" /></h1>
         <div class="mt-6 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
@@ -18,8 +20,7 @@
         }
       </div>
     </section>
-    <app-apartment-header [apartment]="apt" [tabsOnly]="true" />
-    <app-room-tour class="block pt-12" [apartment]="apt" />
+    <app-room-tour class="block pt-16 md:pt-20" [apartment]="apt" />
 
     <!-- Details + booking card -->
     <section class="pb-16 pt-12 md:pb-24 md:pt-16">
