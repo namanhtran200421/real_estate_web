@@ -29,6 +29,9 @@
     "contact": "Contact {{ site }} by phone, Zalo or email for help with your booking.",
     "apartment": "{{ tagline }} {{ bedrooms }} [[ plural({{ bedrooms }}, bedroom, bedrooms) ]], up to {{ guests }} [[ plural({{ guests }}, guest, guests) ]], from {{ price }} ₫/night. {{ area }}."
   },
+  "motion": {
+    "cursorView": "View"
+  },
   "nav": {
     "home": "Home",
     "homeLabel": "{{ site }} · Home",
@@ -41,6 +44,7 @@
     "main": "Main navigation",
     "menu": "Menu",
     "openMenu": "Open menu",
+    "skipToContent": "Skip to content",
     "closeMenu": "Close menu",
     "language": "Language"
   },

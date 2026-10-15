@@ -4,11 +4,12 @@ import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { filter, map } from 'rxjs';
 import { SiteFooter } from './components/site-footer/site-footer';
 import { SiteHeader } from './components/site-header/site-header';
+import { CustomCursor } from './motion/custom-cursor';
 import { MotionService } from './motion/motion.service';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, SiteHeader, SiteFooter],
+  imports: [RouterOutlet, SiteHeader, SiteFooter, CustomCursor],
   templateUrl: './app.html',
   styleUrl: './app.css',
   host: { class: 'block', '[class.guest]': '!inAdmin()' },

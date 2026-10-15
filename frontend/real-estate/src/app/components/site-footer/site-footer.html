@@ -1,4 +1,4 @@
-<footer class="border-t border-border bg-card">
+<footer class="bg-muted">
   <div class="container-editorial max-w-6xl py-16 md:py-20">
     <div class="grid gap-12 md:grid-cols-[1fr_auto_minmax(0,20rem)] md:gap-16">
       <div>
@@ -9,7 +9,7 @@
       </div>
 
       <nav [attr.aria-label]="'footer.links' | transloco">
-        <p class="small-caps text-accent-deep">{{ 'footer.explore' | transloco }}</p>
+        <p class="label-caps text-accent-deep">{{ 'footer.explore' | transloco }}</p>
         <ul class="mt-5 space-y-1">
           @for (link of links; track link.path) {
             <li>
@@ -25,8 +25,8 @@
       </nav>
 
       <div>
-        <p class="small-caps text-accent-deep">{{ 'nav.contact' | transloco }}</p>
-        <ul class="mt-5 divide-y divide-border border-y border-border">
+        <p class="label-caps text-accent-deep">{{ 'nav.contact' | transloco }}</p>
+        <ul class="mt-5 divide-y divide-foreground/15 border-y border-foreground/15">
           @for (c of site.contact; track c.label) {
             <li>
               <a
@@ -34,7 +34,7 @@
                 class="flex min-h-11 items-baseline justify-between gap-4 py-3 transition-colors hover:text-accent-deep"
               >
                 <span class="text-sm text-muted-foreground">{{ c.label | transloco }}</span>
-                <span class="font-serif text-lg">{{ c.value }}</span>
+                <span class="font-serif text-lg font-light">{{ c.value }}</span>
               </a>
             </li>
           }

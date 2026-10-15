@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, ElementRef, inject, viewChild } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { IsActiveMatchOptions, NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
@@ -7,6 +7,7 @@ import { filter, map } from 'rxjs';
 import { SITE } from '../../data/site';
 import { LANG } from '../../i18n/i18n';
 import { LANGS, withLangPrefix } from '../../i18n/lang';
+import { MotionService } from '../../motion/motion.service';
 
 @Component({
   selector: 'app-site-header',
@@ -17,7 +18,8 @@ export class SiteHeader {
   private readonly router = inject(Router);
   protected readonly site = SITE;
   protected readonly lang = inject(LANG);
-  protected readonly menuOpen = signal(false);
+  private readonly motion = inject(MotionService);
+  private readonly menu = viewChild.required<ElementRef<HTMLDialogElement>>('menu');
 
   /** `label` is a translation key. */
   protected readonly links = [
@@ -47,5 +49,30 @@ export class SiteHeader {
 
   private languageLinks() {
     return LANGS.map((lang) => ({ lang, href: withLangPrefix(lang, this.router.url) }));
+  }
+
+  protected openMenu(): void {
+    this.menu().nativeElement.showModal();
+    document.documentElement.classList.add('has-dialog');
+    this.motion.engine()?.pause();
+  }
+
+  protected closeMenu(): void {
+    this.menu().nativeElement.close();
+  }
+
+  /** Skip links: focus the target in place (no navigation). */
+  protected skipTo(event: Event, id: string): void {
+    event.preventDefault();
+    const target = document.getElementById(id);
+    if (!target) return;
+    if (!target.hasAttribute('tabindex')) target.setAttribute('tabindex', '-1');
+    target.focus();
+  }
+
+  /** Runs for every close: the button, a link, Esc, or the Android back gesture. */
+  protected menuClosed(): void {
+    document.documentElement.classList.remove('has-dialog');
+    this.motion.engine()?.resume();
   }
 }

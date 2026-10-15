@@ -29,6 +29,9 @@
     "contact": "Liên hệ {{ site }} qua điện thoại, Zalo hoặc email để được hỗ trợ đặt căn hộ.",
     "apartment": "{{ tagline }} {{ bedrooms }} phòng ngủ, tối đa {{ guests }} khách, từ {{ price }} ₫/đêm. {{ area }}."
   },
+  "motion": {
+    "cursorView": "Xem"
+  },
   "nav": {
     "home": "Trang chủ",
     "homeLabel": "{{ site }} · Trang chủ",
@@ -41,6 +44,7 @@
     "main": "Điều hướng chính",
     "menu": "Menu",
     "openMenu": "Mở menu",
+    "skipToContent": "Bỏ qua đến nội dung",
     "closeMenu": "Đóng menu",
     "language": "Ngôn ngữ"
   },
