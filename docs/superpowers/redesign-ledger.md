@@ -34,8 +34,8 @@ brainstorming spec → council review of spec → writing-plans → council revi
 - [x] Plan written (`docs/superpowers/plans/2026-10-13-light-cinematic-redesign.md`, 14 tasks)
 - [x] Council: plan reviewed (47 corrections applied, commit 748b075)
 - [x] Implementation (see plan task list; 14 tasks, each reviewed)
-- [ ] Visual verification
-- [ ] Council: built site reviewed, fixes done
+- [x] Visual verification (screenshots desktop/phone per task; owner reviewed the site 16/10)
+- [x] Council: built site reviewed (final review + 3 council roles); owner revisions and blocking fixes done — R5 a11y polish and R6 fonts/CLS/engine items deferred at the owner's request (16/10 "wrap up")
 - [ ] Final verification, branch pushed, owner summary written
 
 ## Log
@@ -90,3 +90,7 @@ Before merging to main (owner):
 2. Set `GUEST_IDENTITY_ENCRYPTION_KEY` (32+ random characters; keep an offline copy — losing it makes stored identities unreadable) and `GUEST_IDENTITY_RETENTION_DAYS` (35) on Render; the API refuses to start without them.
 3. Push in a quiet hour so the API and the site switch together; afterwards check "Chờ tiền về" and the transfers to check, and record by hand any guest who could not report from an old tab.
 4. Review: the policy page intro sentence; policy item 3 (up to 6 guests with a surcharge) versus the booking form, which still stops at 4 with no surcharge.
+
+## Wrap-up (16/10/2026)
+
+The owner reviewed the built site and asked for revisions (carousel hero, kitchen photo, room index, straight apartment hero, magazine gallery, header hide-on-scroll, neutral banner shade, centred phone hero, tabs at the top of the apartment title), then asked to wrap up. Done and committed. Deferred (follow-up): self-hosted fonts and phone LCP (3.9–4.6 s throttled on Apartment/About), About CLS on font swap, Lenis restoration resize, opening replay, form-error focus and the other R5/R6 accessibility items, gsap.matchMedia listener leak, preloading delay. Verification at wrap-up: backend 110/110 tests, frontend 101/101, production build + motion chunk 52.5 kB; browser checks pass except smoke on localhost with the real captcha key (Cloudflare rejects localhost) and production (meant for the :4000 server).
