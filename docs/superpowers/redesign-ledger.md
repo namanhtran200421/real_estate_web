@@ -33,7 +33,7 @@ brainstorming spec → council review of spec → writing-plans → council revi
 - [x] Council: spec reviewed and revised (spec v2)
 - [x] Plan written (`docs/superpowers/plans/2026-10-13-light-cinematic-redesign.md`, 14 tasks)
 - [x] Council: plan reviewed (47 corrections applied, commit 748b075)
-- [ ] Implementation (see plan task list)
+- [x] Implementation (see plan task list; 14 tasks, each reviewed)
 - [ ] Visual verification
 - [ ] Council: built site reviewed, fixes done
 - [ ] Final verification, branch pushed, owner summary written
