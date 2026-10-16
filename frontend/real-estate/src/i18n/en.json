@@ -420,7 +420,6 @@
     "identity": {
       "title": "Guest identity details",
       "intro": "Enter details for every guest so the owner can complete temporary-stay registration.",
-      "privacy": "For your security, identity details remain in memory only until you book. If you refresh, you’ll need to enter them again. After submission, the data is encrypted and automatically deleted under the retention policy.",
       "guest": "Guest {{ number }}",
       "nationality": "Nationality",
       "dateOfBirth": "Date of birth",

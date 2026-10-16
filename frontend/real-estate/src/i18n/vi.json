@@ -420,7 +420,6 @@
     "identity": {
       "title": "Thông tin giấy tờ lưu trú",
       "intro": "Điền thông tin cho từng khách để chủ nhà thực hiện khai báo tạm trú.",
-      "privacy": "Vì bảo mật, thông tin giấy tờ chỉ được giữ trong bộ nhớ cho đến khi bạn đặt phòng. Nếu tải lại trang, bạn cần nhập lại. Sau khi gửi, dữ liệu được mã hóa và tự xóa theo thời hạn lưu giữ.",
       "guest": "Khách {{ number }}",
       "nationality": "Quốc tịch",
       "dateOfBirth": "Ngày sinh",

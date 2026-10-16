@@ -142,9 +142,6 @@
             <fieldset class="space-y-6">
               <legend class="font-serif text-2xl">{{ 'booking.identity.title' | transloco }}</legend>
               <p class="max-w-2xl text-sm text-muted-foreground">{{ 'booking.identity.intro' | transloco }}</p>
-              <p class="rounded-md border border-border bg-muted p-4 text-sm text-muted-foreground">
-                {{ 'booking.identity.privacy' | transloco }}
-              </p>
               @for (identity of identities(); track $index; let i = $index) {
                 <app-guest-identity-form [identity]="identity" [index]="i" [submitted]="submitted()" [today]="today" />
               }
