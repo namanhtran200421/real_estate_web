@@ -1,6 +1,6 @@
 // Every guest page loads at both sizes without console errors.
 // Forms load the Cloudflare captcha, whose requests never settle: pages wait for load + 1.5 s, not network idle.
-const PAGES = ['/', '/apartment', '/gallery', '/location', '/about', '/availability', '/contact', '/book'];
+const PAGES = ['/', '/apartment', '/gallery', '/location', '/about', '/contact', '/book'];
 
 export default async function check({ browser, site, assert, lib }) {
   for (const [label, viewport] of Object.entries(lib.VIEWPORTS)) {

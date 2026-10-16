@@ -1,4 +1,5 @@
-import { Routes } from '@angular/router';
+import { inject } from '@angular/core';
+import { Router, Routes } from '@angular/router';
 
 import { STORY } from './motion/motion-routes';
 
@@ -28,11 +29,8 @@ export const routes: Routes = [
     title: 'titles.gallery',
     data: STORY,
   },
-  {
-    path: 'availability',
-    loadComponent: () => import('./pages/availability/availability').then((m) => m.Availability),
-    title: 'titles.availability',
-  },
+  // The availability page is gone: the booking page has the calendar. Old links land there (query kept).
+  { path: 'availability', redirectTo: ({ queryParams }) => inject(Router).createUrlTree(['/book'], { queryParams }) },
   {
     path: 'location',
     loadComponent: () => import('./pages/location/location').then((m) => m.LocationPage),

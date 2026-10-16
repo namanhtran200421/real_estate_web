@@ -12,7 +12,6 @@
     "home": "{{ site }} · Căn hộ Sun Garden Đà Lạt",
     "apartment": "Thông tin căn hộ · {{ site }}",
     "gallery": "Hình ảnh · {{ site }}",
-    "availability": "Lịch trống · {{ site }}",
     "location": "Vị trí · {{ site }}",
     "about": "Về chúng tôi · {{ site }}",
     "policy": "Chính sách lưu trú · {{ site }}",
@@ -38,7 +37,6 @@
     "about": "Về chúng tôi",
     "contact": "Liên hệ",
     "apartment": "Căn hộ",
-    "availability": "Lịch trống",
     "book": "Đặt lịch",
     "lookup": "Tra cứu đặt phòng",
     "main": "Điều hướng chính",
@@ -164,7 +162,6 @@
     "tabs": {
       "overview": "Tổng quan",
       "gallery": "Hình ảnh",
-      "availability": "Lịch trống",
       "location": "Vị trí"
     },
     "stats": {
@@ -208,7 +205,6 @@
   "bookingCard": {
     "priceFrom": "Giá từ · Thứ Hai – Thứ Năm",
     "chooseDate": "Chọn ngày",
-    "viewAvailability": "Xem lịch trống",
     "priceNote": "Giá được tính tự động và hiển thị trước khi thanh toán.",
     "depositOrFull": "Đặt cọc để giữ phòng, thanh toán tiền phòng khi nhận phòng",
     "emailConfirmation": "Xác nhận đặt phòng qua email"
@@ -399,13 +395,6 @@
       "close": "Đóng"
     },
     "viewAll": "Xem tất cả {{ count }} ảnh"
-  },
-  "availability": {
-    "note": "Lịch được cập nhật liên tục theo các đặt phòng đã xác nhận.",
-    "ready": "Đã chọn được ngày?",
-    "priceFrom": "Giá từ · mỗi đêm",
-    "priceNote": "Giá cuối tuần, ngày lễ và giảm giá dài ngày được tính tự động khi đặt.",
-    "viewPrices": "Xem bảng giá"
   },
   "location": {
     "eyebrow": "Xung quanh",

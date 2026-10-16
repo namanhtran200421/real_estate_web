@@ -126,7 +126,7 @@ export class SeoService {
               highPrice: Math.max(apt.pricing.weekday, apt.pricing.weekend, apt.pricing.holiday),
               priceCurrency: 'VND',
               offerCount: 1,
-              url: `${this.origin()}${withLangPrefix(this.lang, '/availability')}?apt=${apt.slug}`,
+              url: `${this.origin()}${withLangPrefix(this.lang, '/book')}?apt=${apt.slug}`,
             },
           },
           {

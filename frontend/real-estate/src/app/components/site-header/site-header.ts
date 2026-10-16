@@ -28,7 +28,6 @@ export class SiteHeader {
   protected readonly links = [
     { label: 'nav.home', path: '/' },
     { label: 'nav.apartment', path: '/apartment' },
-    { label: 'nav.availability', path: '/availability' },
     { label: 'nav.about', path: '/about' },
     { label: 'nav.contact', path: '/contact' },
   ];

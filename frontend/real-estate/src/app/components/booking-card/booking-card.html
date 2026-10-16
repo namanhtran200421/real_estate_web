@@ -26,13 +26,6 @@
   </a>
 
   <a routerLink="/book" [queryParams]="{ apt: slug() }" class="btn btn-primary mt-5 w-full">{{ 'nav.book' | transloco }}</a>
-  <a
-    routerLink="/availability"
-    [queryParams]="{ apt: slug() }"
-    class="btn btn-ghost mt-2 w-full"
-  >
-    {{ 'bookingCard.viewAvailability' | transloco }}
-  </a>
   <p class="mt-3 text-center text-sm text-muted-foreground">
     {{ 'bookingCard.priceNote' | transloco }}
   </p>

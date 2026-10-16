@@ -117,7 +117,7 @@ app.get('/sitemap.xml', async (req, res) => {
     '/about',
     '/contact',
     ...slugs.flatMap((slug) =>
-      ['/apartment', '/gallery', '/availability', '/location'].map((p) => `${p}?apt=${slug}`),
+      ['/apartment', '/gallery', '/location'].map((p) => `${p}?apt=${slug}`),
     ),
   ];
   const xmlUrl = (lang: Lang, p: string) => escapeXml(base + withLangPrefix(lang, p));

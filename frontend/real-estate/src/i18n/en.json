@@ -12,7 +12,6 @@
     "home": "{{ site }} · Sun Garden apartment in Đà Lạt",
     "apartment": "Apartment details · {{ site }}",
     "gallery": "Photos · {{ site }}",
-    "availability": "Availability · {{ site }}",
     "location": "Location · {{ site }}",
     "about": "About us · {{ site }}",
     "policy": "House rules & policies · {{ site }}",
@@ -38,7 +37,6 @@
     "about": "About us",
     "contact": "Contact",
     "apartment": "Apartment",
-    "availability": "Availability",
     "book": "Book now",
     "lookup": "Find my booking",
     "main": "Main navigation",
@@ -164,7 +162,6 @@
     "tabs": {
       "overview": "Overview",
       "gallery": "Photos",
-      "availability": "Availability",
       "location": "Location"
     },
     "stats": {
@@ -208,7 +205,6 @@
   "bookingCard": {
     "priceFrom": "From · Monday – Thursday",
     "chooseDate": "Choose date",
-    "viewAvailability": "Check availability",
     "priceNote": "Prices are calculated automatically and shown before you pay.",
     "depositOrFull": "Deposit to hold your dates, rent at check-in",
     "emailConfirmation": "Booking confirmation by email"
@@ -399,13 +395,6 @@
       "close": "Close"
     },
     "viewAll": "View all {{ count }} [[ plural({{ count }}, photo, photos) ]]"
-  },
-  "availability": {
-    "note": "The calendar is kept up to date with confirmed bookings.",
-    "ready": "Found your dates?",
-    "priceFrom": "From · per night",
-    "priceNote": "Weekend and holiday rates and long-stay discounts are applied automatically when you book.",
-    "viewPrices": "See prices"
   },
   "location": {
     "eyebrow": "Nearby",
