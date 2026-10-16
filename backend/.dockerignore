@@ -3,5 +3,4 @@ dist
 seeds
 .env
 .env.*
-!.env.example
 *.log

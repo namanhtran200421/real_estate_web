@@ -7,7 +7,7 @@ All data comes from the backend API (`../../backend`).
 ## Development
 
 ```bash
-cp .env.example .env     # API_URL=http://localhost:3000 by default
+# .env (git-ignored) holds the settings; scripts/write-env.mjs reads them. Minimum: API_URL=http://localhost:3000
 npm install
 npm start                # http://localhost:4200 (the API must be running)
 ```

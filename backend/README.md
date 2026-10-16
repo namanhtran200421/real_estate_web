@@ -11,7 +11,7 @@ Node 22 · Express 5 · PostgreSQL 13+ (Neon) · TypeScript · zod · Resend (em
 ## Quick start (local)
 
 ```bash
-cp .env.example .env              # set DATABASE_URL, BOOKING_TOKEN_SECRET and your bank account
+# create .env (git-ignored): at least DATABASE_URL, BOOKING_TOKEN_SECRET and your bank account (see Configuration)
 npm install
 npm run db:migrate:dev            # create/update tables and load Sun Garden A04-12
 npm run admin:create -- haihoangdo14112004@gmail.com "Chủ nhà"   # prints a generated password once
@@ -38,9 +38,9 @@ The admin area is at http://localhost:4200/admin.
 
 ## Configuration
 
-Every setting is an environment variable; nothing is hard-coded. **`.env.example` documents
-each one.** Locally they come from `.env` (git-ignored); in production, set them in the hosting
-platform. `src/config/env.ts` validates everything at startup and refuses to start with a list
+Every setting is an environment variable; nothing is hard-coded. **`src/config/env.ts` lists
+each one** with its default and limits. Locally they come from `.env` (git-ignored); in
+production, set them in the hosting platform. It validates everything at startup and refuses to start with a list
 of every problem. In production it additionally requires an HTTPS `SITE_URL`, TLS for Postgres,
 a real Turnstile secret and a Resend key.
 

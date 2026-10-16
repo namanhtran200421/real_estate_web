@@ -7,7 +7,7 @@
  * list of every problem, instead of failing later at request time.
  *
  * The rest of the codebase imports `env` from here and never reads `process.env` directly.
- * See `.env.example` for the full list of variables and their meaning.
+ * This file is the full list of variables, with their defaults and limits.
  */
 import dotenv from 'dotenv';
 

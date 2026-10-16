@@ -1,4 +1,4 @@
 node_modules
 dist
-# Keep environment variables out of version control; .env.example documents them.
+# Keep environment variables out of version control; src/config/env.ts lists them.
 .env
