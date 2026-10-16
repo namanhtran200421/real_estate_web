@@ -433,7 +433,7 @@ async function recordManualPayment(
     await recalculate(current, db);
     const requirementMet = await confirmationRequirementMet(current, payment.purpose, db);
     const newlyConfirmed = requirementMet && (await confirmIfPending(current, admin.email, db));
-    if (!requirementMet && payment.purpose === confirmingPurpose(current) && current.status === 'pending' && current.holdExpiresAt === null) {
+    if (!requirementMet && payment.purpose === confirmingPurpose(current) && current.status === 'pending') {
       await bookingRepository.holdForMinutes(current.id, env.booking.holdMinutes, db);
     }
     await queueOwnerPaymentResult(current, payment.amount, payment.purpose, newlyConfirmed, db);

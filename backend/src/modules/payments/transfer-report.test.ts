@@ -152,7 +152,9 @@ describe('reporting a transfer with its screenshot', { skip: !databaseUrl && 'TE
   });
 
   after(async () => {
-    await new Promise((resolve) => server?.close(resolve));
+    if (server) {
+      await new Promise<void>((resolve, reject) => server.close((error) => (error ? reject(error) : resolve())));
+    }
     const { stopImageTextReader } = await import('../../lib/image-text.js');
     await stopImageTextReader();
     const { closePool } = await import('../../db/pool.js');
@@ -398,7 +400,76 @@ describe('reporting a transfer with its screenshot', { skip: !databaseUrl && 'TE
     assert.equal(view.data.status, 'confirmed');
   });
 
+  it('renews an elapsed hold when the owner records only part of the deposit', async () => {
+    const booking = await book(138);
+    const owner = { Authorization: `Bearer ${await signInAsOwner()}`, 'Content-Type': 'application/json' };
+    const { pool } = await import('../../db/pool.js');
+    await pool.query(`UPDATE bookings SET hold_expires_at = now() - interval '1 minute' WHERE reference = $1`, [booking.reference]);
+
+    const recorded = await call(`/admin/bookings/${booking.reference}/payments`, {
+      method: 'POST', headers: owner,
+      body: JSON.stringify({ method: 'cash', purpose: 'asset_security', amount: Math.floor(booking.deposit / 2) }),
+    });
+    assert.equal(recorded.status, 201, await recorded.clone().text());
+    const view = (await (await call(`/bookings/${booking.reference}`, {
+      headers: { 'X-Booking-Token': booking.token },
+    })).json()).data;
+    assert.equal(view.status, 'pending');
+    assert.ok(new Date(view.holdExpiresAt).getTime() > Date.now());
+    assert.equal(view.paymentOptions.assetSecurity, booking.deposit - Math.floor(booking.deposit / 2));
+  });
+
+  for (const method of ['manual', 'reported'] as const) {
+    it(`requires refunded deposit money to be replaced before ${method} payments confirm the booking`, async () => {
+      await clearCalendar();
+      const booking = await book(method === 'manual' ? 143 : 146);
+      const owner = { Authorization: `Bearer ${await signInAsOwner()}`, 'Content-Type': 'application/json' };
+      const guestView = async () => (await (await call(`/bookings/${booking.reference}`, {
+        headers: { 'X-Booking-Token': booking.token },
+      })).json()).data;
+      const detail = async () => (await (await call(`/admin/bookings/${booking.reference}`, { headers: owner })).json()).data;
+      const record = (amount: number) => call(`/admin/bookings/${booking.reference}/payments`, {
+        method: 'POST', headers: owner,
+        body: JSON.stringify({ method: 'cash', purpose: 'asset_security', amount }),
+      });
+      const receive = async (amount: number) => {
+        if (method === 'manual') {
+          const response = await record(amount);
+          assert.equal(response.status, 201, await response.clone().text());
+        } else {
+          assert.equal((await report(booking, PNG)).status, 200);
+          const payment = (await detail()).payments.find((item: { state: string }) => item.state === 'pending');
+          const response = await call(`/admin/payments/${payment.id}/verify`, {
+            method: 'POST', headers: owner, body: JSON.stringify({ amount }),
+          });
+          assert.equal(response.status, 204, await response.clone().text());
+        }
+      };
+      const firstAmount = Math.floor(booking.deposit / 2);
+      const refundAmount = 10_000;
+      assert.equal((await record(firstAmount)).status, 201);
+      const first = (await detail()).payments.find((item: { state: string }) => item.state === 'succeeded');
+      const refunded = await call(`/admin/payments/${first.id}/refunds`, {
+        method: 'POST', headers: owner,
+        body: JSON.stringify({ amount: refundAmount, reason: 'Hoàn một phần tiền cọc' }),
+      });
+      assert.equal(refunded.status, 204, await refunded.clone().text());
+      assert.equal((await guestView()).paymentOptions.assetSecurity, booking.deposit - firstAmount + refundAmount);
+
+      // Gross receipts now equal the required deposit, but some money was given back.
+      await receive(booking.deposit - firstAmount);
+      const short = await guestView();
+      assert.equal(short.status, 'pending');
+      assert.equal(short.paymentOptions.assetSecurity, refundAmount);
+      assert.ok(short.holdExpiresAt);
+
+      await receive(refundAmount);
+      assert.equal((await guestView()).status, 'confirmed');
+    });
+  }
+
   it('asks for the rent on check-in morning, once', async () => {
+    await clearCalendar();
     const booking = await book(140);
     const owner = { Authorization: `Bearer ${await signInAsOwner()}`, 'Content-Type': 'application/json' };
     const recorded = await call(`/admin/bookings/${booking.reference}/payments`, {
@@ -533,6 +604,9 @@ describe('reporting a transfer with its screenshot', { skip: !databaseUrl && 'TE
     // 8. A 100.000 ₫ incident taken from the deposit, then settled; an open one blocks the refund.
     const incident = await admin('/incidents', 'POST', { description: 'Vỡ chao đèn', amount: 100_000, securityApplied: 100_000 });
     assert.equal(incident.status, 201, await incident.clone().text());
+    const afterIncident = (await (await admin('', 'GET')).json()).data.financials;
+    assert.equal(afterIncident.assetSecurityHeld, booking.deposit - 100_000);
+    assert.equal(afterIncident.assetSecurityDue, 0, 'deposit used for an incident does not become due again');
     assert.equal(await errorCode(await admin('/deposit-refund', 'POST'), 409), 'INCIDENT_OPEN');
     const [{ id: incidentId }] = (await (await admin('', 'GET')).json()).data.incidents;
     assert.equal((await admin(`/incidents/${incidentId}`, 'PATCH', { status: 'settled' })).status, 200);

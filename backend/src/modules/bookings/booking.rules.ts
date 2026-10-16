@@ -57,6 +57,11 @@ export function confirmingPurpose(booking: Pick<BookingRecord, 'assetSecurityAmo
   return isDepositFirst(booking) ? 'asset_security' : 'accommodation';
 }
 
+/** Refunded money must be replaced; deposit applied to an incident still counts as received. */
+export function depositAmountDue(required: number, received: number, refunded: number): number {
+  return Math.max(required - (received - refunded), 0);
+}
+
 type PayableBooking = Pick<
   BookingRecord,
   'status' | 'amountPaid' | 'holdExpiresAt' | 'totalAmount' | 'depositAmount' | 'assetSecurityAmount' | 'checkIn'

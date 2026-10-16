@@ -33,9 +33,14 @@ describe('MotionService', () => {
 
   afterEach(() => vi.unstubAllGlobals());
 
+  function engage(): void {
+    window.dispatchEvent(new Event('pointerdown'));
+  }
+
   it('loads the engine on a story page and turns on smooth scrolling', async () => {
     const motion = TestBed.inject(MotionService);
     motion.start();
+    engage();
     expect(await motion.ready()).toBe(engine);
     expect(engine.enableSmoothScroll).toHaveBeenCalled();
   });
@@ -43,6 +48,7 @@ describe('MotionService', () => {
   it('tears everything down when navigating into the booking flow', async () => {
     const motion = TestBed.inject(MotionService);
     motion.start();
+    engage();
     await motion.ready();
     story = false;
     events.next(new NavigationEnd(1, '/book', '/book'));
@@ -53,6 +59,7 @@ describe('MotionService', () => {
   it('restores the saved position on back/forward and the top on forward navigation', async () => {
     const motion = TestBed.inject(MotionService);
     motion.start();
+    engage();
     await motion.ready();
     events.next(new Scroll(new NavigationEnd(2, '/', '/'), [0, 1840], null));
     expect(engine.jumpTo).toHaveBeenLastCalledWith(1840);
@@ -63,6 +70,7 @@ describe('MotionService', () => {
   it('leaves anchor scrolling to the router', async () => {
     const motion = TestBed.inject(MotionService);
     motion.start();
+    engage();
     await motion.ready();
     vi.mocked(engine.jumpTo).mockClear();
     events.next(new Scroll(new NavigationEnd(4, '/apartment#bang-gia', '/apartment#bang-gia'), null, 'bang-gia'));

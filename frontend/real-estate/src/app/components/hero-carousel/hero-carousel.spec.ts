@@ -32,8 +32,11 @@ describe('HeroCarousel', () => {
     expect(region?.getAttribute('aria-roledescription')).toBe('carousel');
   });
 
-  it('mounts all five slides and labelled dots once running in the browser', async () => {
+  it('mounts all five slides and labelled dots after the visitor engages', async () => {
     const fixture = await setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    window.dispatchEvent(new Event('pointerdown'));
     for (let i = 0; i < 4; i++) {
       TestBed.inject(ApplicationRef).tick();
       await fixture.whenStable();

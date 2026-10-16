@@ -6,7 +6,7 @@ const productionEnvironment: NodeJS.ProcessEnv = {
   ...process.env,
   NODE_ENV: 'production',
   SITE_URL: 'https://booking.example.com',
-  DATABASE_URL: 'postgresql://user:password@db.example.com:5432/booking',
+  DATABASE_URL: 'postgresql://db.example.com:5432/booking',
   DB_SSL: 'true',
   BOOKING_TOKEN_SECRET: 'booking-token-secret-with-more-than-32-characters',
   GUEST_IDENTITY_ENCRYPTION_KEY: 'identity-key-with-more-than-32-characters',
@@ -18,7 +18,9 @@ const productionEnvironment: NodeJS.ProcessEnv = {
   BANK_NAME: 'Example Bank',
   BANK_ACCOUNT_NUMBER: '123456789',
   BANK_ACCOUNT_NAME: 'OWNER NAME',
+  JOBS_ENABLED: 'true',
   TURNSTILE_SECRET_KEY: '0x-real-production-secret',
+  TRUST_PROXY_HOPS: '3',
   CORS_ORIGINS: '',
 };
 
@@ -49,10 +51,42 @@ describe('production environment security', () => {
     assert.match(invalid.stderr, /origins must use https:\/\/ in production/);
   });
 
+  it('requires a clean site origin and an explicit trusted proxy count', () => {
+    const missingProxy = loadEnvironment({ TRUST_PROXY_HOPS: '' });
+    assert.equal(missingProxy.status, 1);
+    assert.match(missingProxy.stderr, /TRUST_PROXY_HOPS must be set explicitly in production/);
+
+    for (const siteUrl of [
+      'https://booking.example.com/path',
+      'https://user:password@booking.example.com',
+      'https://booking.example.com?next=https://evil.example',
+    ]) {
+      const invalidSite = loadEnvironment({ SITE_URL: siteUrl });
+      assert.equal(invalidSite.status, 1);
+      assert.match(invalidSite.stderr, /SITE_URL must be an origin without credentials, path, query or fragment/);
+    }
+  });
+
   it('does not allow production to disable retention and delivery jobs', () => {
     const result = loadEnvironment({ JOBS_ENABLED: 'false' });
 
     assert.equal(result.status, 1);
     assert.match(result.stderr, /JOBS_ENABLED must be true in production/);
+  });
+
+  it('requires an explicit identity retention period and encryption key in production', () => {
+    const result = loadEnvironment({ GUEST_IDENTITY_RETENTION_DAYS: '', GUEST_IDENTITY_ENCRYPTION_KEY: '' });
+
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /GUEST_IDENTITY_RETENTION_DAYS is required in production/);
+    assert.match(result.stderr, /GUEST_IDENTITY_ENCRYPTION_KEY is required in production/);
+  });
+
+  it('rejects identity retention periods outside the supported range', () => {
+    for (const days of ['0', '366', 'not-a-number']) {
+      const result = loadEnvironment({ GUEST_IDENTITY_RETENTION_DAYS: days });
+      assert.equal(result.status, 1);
+      assert.match(result.stderr, /GUEST_IDENTITY_RETENTION_DAYS/);
+    }
   });
 });

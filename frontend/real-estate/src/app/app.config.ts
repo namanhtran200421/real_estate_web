@@ -17,14 +17,12 @@ import {
   provideRouter,
   withComponentInputBinding,
   withInMemoryScrolling,
-  withPreloading,
   withViewTransitions,
 } from '@angular/router';
 
 import { routes } from './app.routes';
 import { adminAuthInterceptor } from './admin/admin-auth.service';
 import { apiInterceptor } from './core/api';
-import { GuestPagesPreloading } from './core/preloading';
 import { provideI18n } from './i18n/i18n';
 import { imageLoader } from './image-loader';
 import imageWidths from './image-widths.json';
@@ -43,8 +41,6 @@ export const appConfig: ApplicationConfig = {
       routes,
       withComponentInputBinding(),
       withInMemoryScrolling({ anchorScrolling: 'enabled', scrollPositionRestoration: 'enabled' }),
-      // Page chunks are lazy; fetch the guest pages in the background once the first page is up.
-      withPreloading(GuestPagesPreloading),
       withViewTransitions({
         skipInitialTransition: true,
         onViewTransitionCreated: ({ transition, from, to }) => {

@@ -7,6 +7,17 @@
 @import 'tailwindcss';
 @import 'lenis/dist/lenis.css';
 
+/* One self-hosted variable file covers Latin and Vietnamese display text. It replaces three
+   cross-origin Google Font subsets and keeps the public site's critical path on one origin. */
+@font-face {
+  font-family: 'Fraunces';
+  src: url('/fonts/fraunces-vietnamese-variable.woff2') format('woff2');
+  font-style: normal;
+  font-weight: 300 400;
+  /* Slow connections keep the metric-compatible fallback instead of delaying or shifting text. */
+  font-display: optional;
+}
+
 @theme {
   /* Colour: the logo's navy and gold on warm ivory (guest site). The owner admin restores
      today's values in src/app/admin/admin-theme.css. Contrast ratios: see the redesign spec §3.1. */
@@ -29,8 +40,8 @@
 
   /* Typography */
   --font-serif: 'Fraunces', 'Fraunces Fallback', Georgia, serif;
-  --font-sans: 'Be Vietnam Pro', system-ui, sans-serif;
-  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  --font-sans: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: ui-monospace, 'SFMono-Regular', Consolas, monospace;
 
   /* Radii: Tailwind defaults already match: md = 6px, lg = 8px */
 
@@ -638,7 +649,7 @@
     color: var(--color-foreground);
   }
 
-  /* Labels: Be Vietnam Pro caps, >= 12 px, tracking <= .12em so Vietnamese words keep their gaps. */
+  /* Labels: >= 12 px, tracking <= .12em so Vietnamese words keep their gaps. */
   .guest .small-caps,
   .guest .section-label,
   .label-caps {
@@ -844,16 +855,16 @@
   .room-tour__progress { display: none; }
 
   /* Desktop motion: reserved height (about 250vh), sticky viewport, sideways track scrubbed by GSAP.
-     If the engine fails to load, MotionService removes html.motion and the list above applies again. */
+     MotionService adds html.motion-ready only after the engine loads. */
   @media (prefers-reduced-motion: no-preference) and (hover: hover) and (pointer: fine) and (min-width: 1024px) and (min-height: 700px) {
-    html.motion .room-tour { height: 210vh; }
-    html.motion .room-tour .room-tour__sticky { position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; justify-content: center; overflow-x: clip; }
-    html.motion .room-tour .room-tour__track { display: flex; gap: 4vw; padding-inline: 6vw; width: max-content; margin-top: 3rem; }
-    html.motion .room-tour .room-tour__chapter { width: min(58vw, 54rem); flex: none; display: grid; grid-template-columns: 1.4fr 1fr; gap: 3rem; align-items: end; }
-    html.motion .room-tour .room-tour__photos { height: 62vh; }
-    html.motion .room-tour .room-tour__photos > div { aspect-ratio: auto; }
-    html.motion .room-tour .room-tour__cta { width: 22rem; align-self: center; display: block; }
-    html.motion .room-tour .room-tour__progress { display: block; height: 1px; background: var(--color-accent); transform: scaleX(0); transform-origin: left; margin-top: 1rem; }
+    html.motion-ready .room-tour { height: 210vh; }
+    html.motion-ready .room-tour .room-tour__sticky { position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; justify-content: center; overflow-x: clip; }
+    html.motion-ready .room-tour .room-tour__track { display: flex; gap: 4vw; padding-inline: 6vw; width: max-content; margin-top: 3rem; }
+    html.motion-ready .room-tour .room-tour__chapter { width: min(58vw, 54rem); flex: none; display: grid; grid-template-columns: 1.4fr 1fr; gap: 3rem; align-items: end; }
+    html.motion-ready .room-tour .room-tour__photos { height: 62vh; }
+    html.motion-ready .room-tour .room-tour__photos > div { aspect-ratio: auto; }
+    html.motion-ready .room-tour .room-tour__cta { width: 22rem; align-self: center; display: block; }
+    html.motion-ready .room-tour .room-tour__progress { display: block; height: 1px; background: var(--color-accent); transform: scaleX(0); transform-origin: left; margin-top: 1rem; }
   }
 
   /* Portrait phones: chapters stack like cards (pure CSS), only when a full chapter fits (min-height 700px). */
@@ -929,22 +940,22 @@
 
   /* Desktop with motion: names on the left, a sticky frame on the right. */
   @media (prefers-reduced-motion: no-preference) and (hover: hover) and (pointer: fine) and (min-width: 1024px) {
-    html.motion .room-index { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr); gap: 5vw; align-items: start; }
-    html.motion .room-index ol { gap: 0; }
-    html.motion .room-index__item { min-height: 52vh; display: flex; flex-direction: column; justify-content: center; }
-    html.motion .room-index__inline { display: none; }
-    html.motion .room-index__name { font-size: clamp(3rem, 5vw, 4.75rem); }
-    html.motion .room-index__link { opacity: 0.55; transition: opacity 400ms var(--motion-ease); }
-    html.motion .room-index__line { opacity: 0; transform: translateY(0.5rem); transition: opacity 400ms var(--motion-ease), transform 400ms var(--motion-ease); }
-    html.motion .room-index:not(.is-driven) .room-index__item.is-first .room-index__link,
-    html.motion .room-index__item.is-active .room-index__link { opacity: 1; }
-    html.motion .room-index:not(.is-driven) .room-index__item.is-first .room-index__line,
-    html.motion .room-index__item.is-active .room-index__line { opacity: 1; transform: none; }
-    html.motion .room-index__frame { display: block; position: sticky; top: 7rem; height: min(72vh, 44rem); overflow: clip; border-radius: 0.5rem; background: var(--color-muted); }
-    html.motion .room-index__pane { position: absolute; inset: 0; opacity: 0; transition: opacity 600ms var(--motion-ease); }
-    html.motion .room-index:not(.is-driven) .room-index__pane.is-first,
-    html.motion .room-index__pane.is-active { opacity: 1; }
-    html.motion .room-index__panel { position: absolute; inset: 0; display: grid; place-items: center; padding: 3rem; text-align: center; background: var(--color-muted); font-family: var(--font-serif); font-weight: 300; font-size: clamp(1.75rem, 3vw, 2.75rem); line-height: 1.2; font-variation-settings: 'opsz' 144; }
+    html.motion-ready .room-index { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr); gap: 5vw; align-items: start; }
+    html.motion-ready .room-index ol { gap: 0; }
+    html.motion-ready .room-index__item { min-height: 52vh; display: flex; flex-direction: column; justify-content: center; }
+    html.motion-ready .room-index__inline { display: none; }
+    html.motion-ready .room-index__name { font-size: clamp(3rem, 5vw, 4.75rem); }
+    html.motion-ready .room-index__link { opacity: 0.55; transition: opacity 400ms var(--motion-ease); }
+    html.motion-ready .room-index__line { opacity: 0; transform: translateY(0.5rem); transition: opacity 400ms var(--motion-ease), transform 400ms var(--motion-ease); }
+    html.motion-ready .room-index:not(.is-driven) .room-index__item.is-first .room-index__link,
+    html.motion-ready .room-index__item.is-active .room-index__link { opacity: 1; }
+    html.motion-ready .room-index:not(.is-driven) .room-index__item.is-first .room-index__line,
+    html.motion-ready .room-index__item.is-active .room-index__line { opacity: 1; transform: none; }
+    html.motion-ready .room-index__frame { display: block; position: sticky; top: 7rem; height: min(72vh, 44rem); overflow: clip; border-radius: 0.5rem; background: var(--color-muted); }
+    html.motion-ready .room-index__pane { position: absolute; inset: 0; opacity: 0; transition: opacity 600ms var(--motion-ease); }
+    html.motion-ready .room-index:not(.is-driven) .room-index__pane.is-first,
+    html.motion-ready .room-index__pane.is-active { opacity: 1; }
+    html.motion-ready .room-index__panel { position: absolute; inset: 0; display: grid; place-items: center; padding: 3rem; text-align: center; background: var(--color-muted); font-family: var(--font-serif); font-weight: 300; font-size: clamp(1.75rem, 3vw, 2.75rem); line-height: 1.2; font-variation-settings: 'opsz' 144; }
   }
 
   /* Phone book bar: a pill that slides up once the hero has scrolled away. */

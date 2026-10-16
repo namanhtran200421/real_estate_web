@@ -31,6 +31,21 @@ describe('deploymentOrigin', () => {
     ).toBe('https://booking.example.com');
   });
 
+  it('fails closed for blank production origins and malformed deployment URLs', () => {
+    expect(() =>
+      deploymentOrigin({ NODE_ENV: 'production', PUBLIC_SITE_URL: ' ', VERCEL_URL: ' ' }),
+    ).toThrow(/required in production/);
+    expect(() =>
+      deploymentOrigin({ NODE_ENV: 'production', VERCEL_URL: 'attacker.example/path' }),
+    ).toThrow(/https origin/);
+    expect(() =>
+      deploymentOrigin({ NODE_ENV: 'production', VERCEL_URL: 'user:password@attacker.example' }),
+    ).toThrow(/https origin/);
+    expect(
+      deploymentOrigin({ NODE_ENV: 'production', VERCEL_URL: 'preview-123.vercel.app' }),
+    ).toBe('https://preview-123.vercel.app');
+  });
+
   it('refuses origins that could inject a protocol, credentials or extra URL parts', () => {
     for (const value of [
       'javascript:alert(1)',

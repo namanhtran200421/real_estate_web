@@ -40,9 +40,9 @@ The admin area is at http://localhost:4200/admin.
 
 Every setting is an environment variable; nothing is hard-coded. **`src/config/env.ts` lists
 each one** with its default and limits. Locally they come from `.env` (git-ignored); in
-production, set them in the hosting platform. It validates everything at startup and refuses to start with a list
-of every problem. In production it additionally requires an HTTPS `SITE_URL`, TLS for Postgres,
-a real Turnstile secret and a Resend key.
+production, set them in the hosting platform. `src/config/env.ts` validates everything at startup and refuses to start with a list
+of every problem. In production it additionally requires an origin-only HTTPS `SITE_URL`, an
+explicit trusted-proxy count, TLS for Postgres, a real Turnstile secret and a Resend key.
 
 For Neon, use the pooled connection string as `DATABASE_URL` for the running API and set
 `DB_SSL=true`. Run migrations with a direct Neon connection string (the host has no `-pooler`
@@ -280,8 +280,8 @@ contact inbox. Full list: `src/modules/admin/admin.router.ts`.
 | Stolen or forgotten admin sign-in    | Sessions end after `ADMIN_IDLE_MINUTES` (120) without use and `ADMIN_SESSION_HOURS` (12) in all; the account page lists every signed-in device to sign out; a password change signs out all other devices and emails the admin |
 | Weak admin passwords                 | scrypt hashing; new passwords need 12+ characters, not a common password, not the email name, not the current one (`admin-auth/password.ts`, unit-tested) |
 
-Production startup fails closed when Turnstile or database TLS is missing. The API logs a warning
-when `TRUST_PROXY_HOPS` or `INTERNAL_API_KEY` is missing.
+Production startup fails closed when Turnstile, database TLS or an explicit `TRUST_PROXY_HOPS`
+value is missing. The API logs a warning when `INTERNAL_API_KEY` is missing.
 
 **In front of the app (required in production):** a CDN/WAF with DDoS protection (Cloudflare,
 AWS CloudFront + Shield/WAF, …). Only that layer absorbs network floods.
@@ -308,10 +308,10 @@ Without Docker: `npm ci && npm run build && npm run db:migrate && npm start`.
 - [ ] Resend account, sending domain verified (SPF/DKIM) → `RESEND_API_KEY`, `EMAIL_FROM` on that domain, `OWNER_EMAIL`
 
 **Configuration**
-- [ ] `NODE_ENV=production`; `SITE_URL` is the real `https://` address (links in emails)
+- [ ] `NODE_ENV=production`; `SITE_URL` is the real `https://` origin with no path, query or credentials (links in emails)
 - [ ] Fresh secrets: `BOOKING_TOKEN_SECRET`, `INTERNAL_API_KEY` (same value in the website's environment); `openssl rand -base64 48`
 - [ ] `DATABASE_URL` for production, `DB_SSL=true` for managed Postgres; `instances × DB_POOL_MAX` < `max_connections`
-- [ ] `TRUST_PROXY_HOPS` = number of trusted proxies in front of the API (defaults to 3 on Render: Cloudflare edge, load balancer, local proxy; 0 locally). Check after deploying: the request log's `ip` must be your own address, also when you send a forged `X-Forwarded-For`
+- [ ] Explicitly set `TRUST_PROXY_HOPS` to the verified number of trusted proxies in front of the API (measured as 3 on Render in October 2026: Cloudflare edge, load balancer, local proxy; use 0 only for a directly reached API). Check after deploying: the request log's `ip` must be your own address, also when you send a forged `X-Forwarded-For`
 - [ ] Cloudflare Turnstile widget created for the website's domain(s) → `TURNSTILE_SECRET_KEY` here, `TURNSTILE_SITE_KEY` in the website's build; then submit the contact form once to check
 
 An existing Turnstile widget can be reused after its hostname list includes this website.

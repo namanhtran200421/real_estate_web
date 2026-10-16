@@ -38,9 +38,23 @@ export class HeroCarousel {
     afterNextRender(() => {
       this.reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       if (this.photos().length < 2) return;
-      this.started.set(true);
-      // The other photos are in the page after this render; Embla measures them then.
-      afterNextRender(() => this.init(), { injector: this.injector });
+      // The first server-rendered photo is a complete hero. Delay the other four large images and
+      // carousel work until interaction, with a relaxed fallback for visitors who simply watch.
+      const events = ['pointerdown', 'keydown', 'wheel', 'touchstart'] as const;
+      let timer = 0;
+      const begin = () => {
+        events.forEach((event) => window.removeEventListener(event, begin));
+        clearTimeout(timer);
+        this.started.set(true);
+        // The other photos are in the page after this render; Embla measures them then.
+        afterNextRender(() => this.init(), { injector: this.injector });
+      };
+      events.forEach((event) => window.addEventListener(event, begin, { once: true, passive: true }));
+      timer = window.setTimeout(begin, 12_000);
+      this.cleanupStart = () => {
+        clearTimeout(timer);
+        events.forEach((event) => window.removeEventListener(event, begin));
+      };
     });
     inject(DestroyRef).onDestroy(() => this.embla?.destroy());
   }
@@ -98,5 +112,9 @@ export class HeroCarousel {
   }
 
   private cleanup?: () => void;
-  private readonly _destroy = inject(DestroyRef).onDestroy(() => this.cleanup?.());
+  private cleanupStart?: () => void;
+  private readonly _destroy = inject(DestroyRef).onDestroy(() => {
+    this.cleanupStart?.();
+    this.cleanup?.();
+  });
 }

@@ -4,6 +4,7 @@ import { HttpError } from '../../lib/http-error.js';
 import {
   assertValidStay,
   confirmingPurpose,
+  depositAmountDue,
   derivePaymentStatus,
   isDepositFirst,
   isPayable,
@@ -15,6 +16,20 @@ import {
 const NOW = new Date('2026-10-01T05:00:00Z');
 const LATER = new Date('2026-10-01T05:30:00Z');
 const EARLIER = new Date('2026-10-01T04:30:00Z');
+
+describe('depositAmountDue', () => {
+  it('requires the full deposit net of successful refunds', () => {
+    assert.equal(depositAmountDue(680_000, 340_000, 0), 340_000);
+    assert.equal(depositAmountDue(680_000, 340_000, 100_000), 440_000);
+    assert.equal(depositAmountDue(680_000, 680_000, 100_000), 100_000);
+    assert.equal(depositAmountDue(680_000, 780_000, 100_000), 0);
+  });
+
+  it('never returns a negative amount for a fully paid or legacy booking', () => {
+    assert.equal(depositAmountDue(680_000, 800_000, 0), 0);
+    assert.equal(depositAmountDue(0, 0, 0), 0);
+  });
+});
 
 describe('assertValidStay', () => {
   it('returns the number of nights for a valid stay', () => {

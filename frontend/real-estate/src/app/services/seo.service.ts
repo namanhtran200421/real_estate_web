@@ -55,16 +55,19 @@ export class SeoService {
     this.meta.updateTag({ property: 'og:url', content: url });
     this.meta.updateTag({ property: 'og:locale', content: OG_LOCALES[this.lang] });
     this.meta.updateTag({ property: 'og:image', content: image });
+    this.meta.updateTag({ property: 'og:image:alt', content: data.title });
     this.meta.updateTag({ property: 'og:image:width', content: '1200' });
     this.meta.updateTag({ property: 'og:image:height', content: '630' });
+    this.meta.updateTag({ property: 'og:locale:alternate', content: OG_LOCALES[this.lang === 'vi' ? 'en' : 'vi'] });
     this.meta.updateTag({ name: 'twitter:card', content: 'summary_large_image' });
     this.meta.updateTag({ name: 'twitter:title', content: data.title });
     this.meta.updateTag({ name: 'twitter:description', content: description });
     this.meta.updateTag({ name: 'twitter:image', content: image });
+    this.meta.updateTag({ name: 'twitter:image:alt', content: data.title });
 
     this.setCanonical(url);
     this.setAlternates(data.path);
-    this.setJsonLd(data.jsonLd);
+    this.setJsonLd(this.enrichWebsiteSchema(data.jsonLd, url));
   }
 
   /**
@@ -73,6 +76,10 @@ export class SeoService {
    */
   updateForApartment(apt: Apartment, page: { label: string; path: string }): void {
     const name = page.path === '/apartment' ? apt.name : `${this.transloco.translate(page.label)} · ${apt.name}`;
+    const apartmentUrl = `${this.origin()}${withLangPrefix(this.lang, '/apartment')}?apt=${apt.slug}`;
+    const pageUrl = `${this.origin()}${withLangPrefix(this.lang, page.path)}?apt=${apt.slug}`;
+    const images = apt.photos.map((photo) => new URL(socialImage(photo.src), this.origin()).href);
+    const floorSize = Number.parseFloat(apt.area);
     this.update({
       title: `${name} · ${SITE.name}`,
       description: this.transloco.translate('meta.apartment', {
@@ -86,29 +93,82 @@ export class SeoService {
       image: apt.photos[0]?.src,
       jsonLd: {
         '@context': 'https://schema.org',
-        '@type': 'Apartment',
-        name: apt.name,
-        description: apt.description.join(' '),
-        url: `${this.origin()}${withLangPrefix(this.lang, '/apartment')}?apt=${apt.slug}`,
-        image: apt.photos.map((p) => new URL(socialImage(p.src), this.origin()).href),
-        numberOfRooms: apt.bedrooms,
-        numberOfBedrooms: apt.bedrooms,
-        numberOfBathroomsTotal: apt.bathrooms,
-        occupancy: { '@type': 'QuantitativeValue', maxValue: apt.guests },
-        address: {
-          '@type': 'PostalAddress',
-          streetAddress: apt.address,
-          addressLocality: 'Đà Lạt',
-          addressRegion: 'Lâm Đồng',
-          addressCountry: 'VN',
-        },
-        amenityFeature: apt.facilities.map((name) => ({
-          '@type': 'LocationFeatureSpecification',
-          name,
-          value: true,
-        })),
+        '@graph': [
+          {
+            '@type': 'Apartment',
+            '@id': `${apartmentUrl}#apartment`,
+            name: apt.name,
+            description: apt.description.join(' '),
+            url: apartmentUrl,
+            mainEntityOfPage: pageUrl,
+            image: images,
+            numberOfBedrooms: apt.bedrooms,
+            numberOfBathroomsTotal: apt.bathrooms,
+            ...(Number.isFinite(floorSize)
+              ? { floorSize: { '@type': 'QuantitativeValue', value: floorSize, unitCode: 'MTK' } }
+              : {}),
+            occupancy: { '@type': 'QuantitativeValue', maxValue: apt.guests },
+            address: {
+              '@type': 'PostalAddress',
+              streetAddress: apt.address,
+              addressLocality: 'Đà Lạt',
+              addressRegion: 'Lâm Đồng',
+              addressCountry: 'VN',
+            },
+            amenityFeature: apt.facilities.map((facility) => ({
+              '@type': 'LocationFeatureSpecification',
+              name: facility,
+              value: true,
+            })),
+            offers: {
+              '@type': 'AggregateOffer',
+              lowPrice: Math.min(apt.pricing.weekday, apt.pricing.weekend, apt.pricing.holiday),
+              highPrice: Math.max(apt.pricing.weekday, apt.pricing.weekend, apt.pricing.holiday),
+              priceCurrency: 'VND',
+              offerCount: 1,
+              url: `${this.origin()}${withLangPrefix(this.lang, '/availability')}?apt=${apt.slug}`,
+            },
+          },
+          {
+            '@type': 'BreadcrumbList',
+            itemListElement: [
+              { '@type': 'ListItem', position: 1, name: SITE.name, item: this.origin() + withLangPrefix(this.lang, '/') },
+              { '@type': 'ListItem', position: 2, name: apt.name, item: apartmentUrl },
+              ...(page.path === '/apartment'
+                ? []
+                : [{ '@type': 'ListItem', position: 3, name: this.transloco.translate(page.label), item: pageUrl }]),
+            ],
+          },
+        ],
       },
     });
+  }
+
+  /** Adds stable site identity to the home page's WebSite schema without duplicating it per route. */
+  private enrichWebsiteSchema(data: object | undefined, url: string): object | undefined {
+    if (!data || (data as { '@type'?: string })['@type'] !== 'WebSite') return data;
+    const origin = this.origin();
+    return {
+      '@context': 'https://schema.org',
+      '@graph': [
+        {
+          ...data,
+          '@context': undefined,
+          '@id': `${origin}/#website`,
+          url,
+          publisher: { '@id': `${origin}/#organization` },
+        },
+        {
+          '@type': 'Organization',
+          '@id': `${origin}/#organization`,
+          name: SITE.name,
+          url: origin,
+          logo: new URL('/brand/logo-stacked.png', origin).href,
+          email: 'vnbookinghub@gmail.com',
+          telephone: '+84 869 141 104',
+        },
+      ],
+    };
   }
 
   private origin(): string {

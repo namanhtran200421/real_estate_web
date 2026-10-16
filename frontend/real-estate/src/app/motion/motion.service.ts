@@ -18,6 +18,9 @@ export class MotionService {
   private readonly browser = isPlatformBrowser(inject(PLATFORM_ID));
   private readonly engineState = signal<MotionEngine | undefined>(undefined);
   private readonly storyState = signal(false);
+  private resolveEngagement: () => void = () => undefined;
+  private readonly engagement = new Promise<void>((resolve) => (this.resolveEngagement = resolve));
+  private engaged = false;
   private loading?: Promise<MotionEngine | undefined>;
 
   readonly engine = this.engineState.asReadonly();
@@ -26,6 +29,16 @@ export class MotionService {
   /** Called once by App after the first render. */
   start(): void {
     if (!this.browser) return;
+    // GSAP, SplitText and Lenis are absent from the critical path. The static layouts are complete;
+    // fetch progressive motion only after the visitor actually engages with the page.
+    const events = ['pointerdown', 'keydown', 'wheel', 'touchstart'] as const;
+    const engage = () => {
+      if (this.engaged) return;
+      this.engaged = true;
+      events.forEach((event) => window.removeEventListener(event, engage));
+      this.resolveEngagement();
+    };
+    events.forEach((event) => window.addEventListener(event, engage, { once: true, passive: true }));
     this.onRoute();
     this.router.events.subscribe((event) => {
       if (event instanceof NavigationEnd) this.onRoute();
@@ -36,20 +49,24 @@ export class MotionService {
   /** The engine on story pages with motion allowed; undefined anywhere else. */
   ready(): Promise<MotionEngine | undefined> {
     if (!this.browser || !this.storyState() || !matches('allowed')) return Promise.resolve(undefined);
-    this.loading ??= MotionService.loadEngine()
-      .then((engine) => {
-        this.engineState.set(engine);
-        return engine;
-      })
-      .catch(() => {
-        // No engine (offline, blocked chunk): fall back to the static layouts (e.g. the plain room tour).
-        document.documentElement.classList.remove('motion');
-        return undefined;
-      });
-    return this.loading.then((engine) => {
+    return this.engagement.then(() => {
       if (!this.storyState()) return undefined;
-      engine?.enableSmoothScroll();
-      return engine;
+      this.loading ??= MotionService.loadEngine()
+        .then((engine) => {
+          this.engineState.set(engine);
+          return engine;
+        })
+        .catch(() => {
+          // No engine (offline, blocked chunk): fall back to the static layouts (e.g. the plain room tour).
+          document.documentElement.classList.remove('motion');
+          return undefined;
+        });
+      return this.loading.then((engine) => {
+        if (!this.storyState()) return undefined;
+        document.documentElement.classList.add('motion-ready');
+        engine?.enableSmoothScroll();
+        return engine;
+      });
     });
   }
 
@@ -57,7 +74,10 @@ export class MotionService {
     const story = isStoryRoute(this.router.routerState.snapshot.root);
     this.storyState.set(story);
     if (story) void this.ready();
-    else this.engineState()?.teardown();
+    else {
+      document.documentElement.classList.remove('motion-ready');
+      this.engineState()?.teardown();
+    }
   }
 
   /** Forward navigation → top; back/forward → the saved position. Anchors stay with the router. */

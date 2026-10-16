@@ -16,11 +16,10 @@
   >
     <a routerLink="/" class="shrink-0" [attr.aria-label]="'nav.homeLabel' | transloco: { site: site.name }">
       <img
-        src="brand/logo-horizontal.webp"
+        src="brand/logo-horizontal-320.webp"
         [alt]="site.name"
-        width="758"
-        height="155"
-        fetchpriority="high"
+        width="320"
+        height="65"
         class="h-7 w-auto md:h-8"
       />
     </a>
@@ -70,7 +69,7 @@
   [attr.aria-label]="'nav.menu' | transloco"
 >
   <div class="flex items-center justify-between">
-    <img src="brand/logo-horizontal.webp" alt="" width="758" height="155" class="h-7 w-auto" />
+    <img src="brand/logo-horizontal-320.webp" alt="" width="320" height="65" class="h-7 w-auto" />
     <button type="button" class="icon-btn rounded-full" (click)="closeMenu()" [attr.aria-label]="'nav.closeMenu' | transloco">
       <svg viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
         <path d="M6 6l12 12M18 6 6 18" stroke-linecap="round" />

@@ -124,6 +124,18 @@ function url(name: string, requireHttps: boolean): string {
   return value;
 }
 
+/** A public HTTP(S) origin, without credentials, path, query or fragment. */
+function origin(name: string, requireHttps: boolean): string {
+  const value = url(name, requireHttps);
+  if (value === '' || !URL.canParse(value)) return value;
+
+  const parsed = new URL(value);
+  if (parsed.username || parsed.password || parsed.pathname !== '/' || parsed.search || parsed.hash) {
+    problems.push(`${name} must be an origin without credentials, path, query or fragment`);
+  }
+  return parsed.origin;
+}
+
 function timezone(name: string, fallback: string): string {
   const value = string(name, fallback);
   try {
@@ -165,6 +177,8 @@ const resendApiKey = read('RESEND_API_KEY');
 const captchaSecret = read('TURNSTILE_SECRET_KEY');
 const dbSsl = boolean('DB_SSL', false);
 const jobsEnabled = boolean('JOBS_ENABLED', true);
+const trustProxyConfigured = read('TRUST_PROXY_HOPS') !== undefined;
+const trustProxyHops = integer('TRUST_PROXY_HOPS', process.env.RENDER === 'true' ? 3 : 0, 0, 10);
 const guestIdentityEncryptionKey = optionalSecret('GUEST_IDENTITY_ENCRYPTION_KEY', 32);
 const guestIdentityRetentionConfigured = read('GUEST_IDENTITY_RETENTION_DAYS') !== undefined;
 const turnstileTestSecrets = new Set([
@@ -182,7 +196,7 @@ export const env = Object.freeze({
   /** Brand name used in emails and payment descriptions. */
   siteName: string('SITE_NAME', 'VN Booking Hub'),
   /** Public base URL of the website; links in emails point here. */
-  siteUrl: url('SITE_URL', isProduction),
+  siteUrl: origin('SITE_URL', isProduction),
   /** The business's time zone. Defines "today", night dates and the database session zone. */
   timezone: timezone('BUSINESS_TIMEZONE', 'Asia/Ho_Chi_Minh'),
 
@@ -194,7 +208,7 @@ export const env = Object.freeze({
   // Render injects RENDER=true. Its requests pass Cloudflare (Render's edge), a load balancer and
   // a local proxy: 3 hops, measured in October 2026 (real IP seen, forged X-Forwarded-For ignored).
   // Keep local/direct-host traffic at 0 unless an explicit proxy count is configured.
-  trustProxyHops: integer('TRUST_PROXY_HOPS', process.env.RENDER === 'true' ? 3 : 0, 0, 10),
+  trustProxyHops,
 
   /** Browser origins allowed to call the API. Empty = only SITE_URL. */
   corsOrigins: origins('CORS_ORIGINS', isProduction),
@@ -293,6 +307,7 @@ if (isProduction) {
     problems.push('TURNSTILE_SECRET_KEY is a Cloudflare test key; use a real widget secret in production');
   }
   if (!dbSsl) problems.push('DB_SSL must be true in production');
+  if (!trustProxyConfigured) problems.push('TRUST_PROXY_HOPS must be set explicitly in production');
   if (!jobsEnabled) problems.push('JOBS_ENABLED must be true in production so retention and delivery jobs run');
   if (!guestIdentityEncryptionKey) problems.push('GUEST_IDENTITY_ENCRYPTION_KEY is required in production');
   if (!guestIdentityRetentionConfigured) problems.push('GUEST_IDENTITY_RETENTION_DAYS is required in production');

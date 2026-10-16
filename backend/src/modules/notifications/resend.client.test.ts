@@ -7,7 +7,7 @@ const testEnvironment: NodeJS.ProcessEnv = {
   NODE_ENV: 'test',
   LOG_LEVEL: 'info',
   SITE_URL: 'http://localhost:4200',
-  DATABASE_URL: 'postgresql://user:password@localhost:5432/booking',
+  DATABASE_URL: 'postgresql://localhost:5432/booking',
   BOOKING_TOKEN_SECRET: 'booking-token-secret-with-more-than-32-characters',
   RESEND_API_KEY: '',
   EMAIL_FROM: 'Booking <booking@example.com>',

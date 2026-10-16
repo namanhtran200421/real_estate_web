@@ -5,6 +5,7 @@ import {
   writeResponseToNodeResponse,
 } from '@angular/ssr/node';
 import { isDevMode } from '@angular/core';
+import compression from 'compression';
 import express, { NextFunction, Request, Response as ExpressResponse } from 'express';
 import { randomBytes } from 'node:crypto';
 import { join } from 'node:path';
@@ -19,6 +20,9 @@ const browserDistFolder = join(import.meta.dirname, '../browser');
 const onVercel = !!process.env['VERCEL'];
 
 const app = express();
+// Keep the standalone SSR server production-ready too. Vercel compresses at the edge, while
+// Node deployments otherwise send the rendered HTML, CSS and JavaScript uncompressed.
+app.use(compression());
 // Trust only the protocol header (for https canonical URLs); the host still comes from Host,
 // which is validated against `allowedHosts`. X-Forwarded-Prefix is always set below, never the client's.
 const angularApp = new AngularNodeAppEngine({ trustProxyHeaders: ['x-forwarded-proto', 'x-forwarded-prefix'] });
@@ -122,7 +126,7 @@ app.get('/sitemap.xml', async (req, res) => {
     .flatMap((p) => {
       const alternates = LANGS.map(
         (lang) => `<xhtml:link rel="alternate" hreflang="${lang}" href="${xmlUrl(lang, p)}"/>`,
-      ).join('');
+      ).join('') + `<xhtml:link rel="alternate" hreflang="x-default" href="${xmlUrl('vi', p)}"/>`;
       return LANGS.map((lang) => `  <url><loc>${xmlUrl(lang, p)}</loc>${alternates}</url>`);
     })
     .join('\n');

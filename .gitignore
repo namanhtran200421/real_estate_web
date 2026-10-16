@@ -1,2 +1,5 @@
 # Brainstorming companion mockups (local only)
 .superpowers/
+
+# Angular build and test cache
+.angular/

@@ -1,4 +1,5 @@
 import { query, queryOne, type Db } from '../../db/pool.js';
+import { depositAmountDue } from './booking.rules.js';
 import type {
   AdminAssetIncident,
   AssetIncidentStatus,
@@ -79,7 +80,7 @@ async function financials(bookingId: string, securityRequired: number, db?: Db):
     assetSecurityRefunded: values.security_refunded,
     assetSecurityApplied: values.security_applied,
     assetSecurityHeld: Math.max(values.security_received - values.security_refunded - values.security_applied, 0),
-    assetSecurityDue: Math.max(securityRequired - values.security_received, 0),
+    assetSecurityDue: depositAmountDue(securityRequired, values.security_received, values.security_refunded),
     incidentCharges: values.incident_charges,
     incidentPayments,
     incidentAmountDue: Math.max(values.incident_charges - values.security_applied - incidentPayments, 0),
