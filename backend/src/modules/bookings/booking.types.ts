@@ -53,6 +53,8 @@ export interface VietnameseIdentity extends IdentityBase {
   addressOnDocument?: string;
   issueDate?: string;
   expiryDate?: string;
+  /** The CCCD has no expiry date ("Không thời hạn"); expiryDate is then absent. */
+  noExpiry?: true;
 }
 
 export interface ForeignIdentity extends IdentityBase {

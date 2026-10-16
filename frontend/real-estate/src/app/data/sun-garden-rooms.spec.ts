@@ -55,7 +55,8 @@ describe('gallery chapters', () => {
     const last = chapters[chapters.length - 1];
     expect(last.key).toBe('moreViews');
     expect(last.textOnly).toBe(false);
-    expect(last.photos.map((p) => p.src.slice(-6, -4))).toEqual(['04', '05', '06', '07']);
+    expect(last.photos.map((p) => p.src.slice(-6, -4))).toEqual(['04', '06', '07', '05']); // after the lead, landscape before portrait
+    expect(chapters[0].photos.map((p) => p.src.slice(-6, -4))).toEqual(['10', '09', '08', '02']);
     const shown = chapters.flatMap((c) => c.photos).map((p) => p.src).sort();
     expect(shown).toHaveLength(16);
     expect(shown).toEqual(sunGarden.photos.map((p) => p.src).sort());

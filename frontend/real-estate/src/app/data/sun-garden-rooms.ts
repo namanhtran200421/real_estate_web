@@ -14,6 +14,15 @@ const SUN_GARDEN: { id: string; key: string; files: string[]; textOnly?: true }[
   { id: 'phong-ngu-2', key: 'bedroom2', files: ['16', '15', '03'] },
 ];
 
+/** The Sun Garden photos shot in landscape (4:3); all the others are portrait (3:4). */
+const SUN_GARDEN_LANDSCAPE = new Set(['06', '07', '08', '09', '10']);
+
+/** Whether a photo is portrait (3:4), so a frame can fit it without cutting it off. Other apartments' photos count as landscape. */
+export function isPortrait(photo: Photo): boolean {
+  const file = /\/sun-garden-a04-12\/(\d+)\.jpg$/.exec(photo.src)?.[1];
+  return !!file && !SUN_GARDEN_LANDSCAPE.has(file);
+}
+
 export interface RoomChapter {
   /** Fragment id on the apartment page, e.g. "phong-ngu-2". */
   id: string;
@@ -38,12 +47,21 @@ export function roomChapters(apartment: Apartment): RoomChapter[] {
   })).filter((chapter) => chapter.textOnly || chapter.photos.length > 0);
 }
 
-/** The room chapters plus a last one ("More views") for the photos no room claims, in file order. */
+/**
+ * The room chapters plus a last one ("More views") for the photos no room claims, in file order.
+ * After each chapter's lead photo, landscape photos come before portrait ones, so the gallery's
+ * two-up rows pair photos of one shape and the odd one out is the full-width last.
+ */
 export function galleryChapters(apartment: Apartment): RoomChapter[] {
-  const chapters = roomChapters(apartment);
-  const cast = new Set(chapters.flatMap((c) => c.photos));
+  const rooms = roomChapters(apartment);
+  const cast = new Set(rooms.flatMap((c) => c.photos));
   const rest = apartment.photos.filter((p) => !cast.has(p)).sort((a, b) => a.src.localeCompare(b.src));
-  return rest.length ? [...chapters, { id: 'them-anh', key: 'moreViews', photos: rest, textOnly: false }] : chapters;
+  const chapters = rest.length ? [...rooms, { id: 'them-anh', key: 'moreViews', photos: rest, textOnly: false }] : rooms;
+  return chapters.map((chapter) => {
+    const [lead, ...others] = chapter.photos;
+    if (!others.length) return chapter;
+    return { ...chapter, photos: [lead, ...others.filter((p) => !isPortrait(p)), ...others.filter(isPortrait)] };
+  });
 }
 
 /**

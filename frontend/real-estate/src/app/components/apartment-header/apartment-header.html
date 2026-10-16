@@ -23,20 +23,20 @@
       </div>
     }
 
-    <!-- Pill segmented control; scrolls sideways on phones; a right-edge fade hints at more tabs. -->
+    <!-- Underlined tabs on a hairline; scrolls sideways on phones; a right-edge fade hints at more tabs. -->
     <div [class.mt-8]="!tabsOnly()">
       <nav
         [attr.aria-label]="'apartment.sections' | transloco"
-        class="flex w-max max-w-full gap-1 overflow-x-auto rounded-full border border-border bg-card p-1 [mask-image:linear-gradient(to_right,black_calc(100%-2rem),transparent)] [scrollbar-width:none] sm:[mask-image:none] [&::-webkit-scrollbar]:hidden"
+        class="flex max-w-full gap-8 overflow-x-auto border-b border-border [mask-image:linear-gradient(to_right,black_calc(100%-2rem),transparent)] [scrollbar-width:none] sm:gap-10 sm:[mask-image:none] [&::-webkit-scrollbar]:hidden"
       >
         @for (tab of tabs; track tab.path) {
           <a
             [routerLink]="tab.path"
             [queryParams]="{ apt: apt.slug }"
-            routerLinkActive="is-active bg-foreground text-background"
+            routerLinkActive="is-active"
             [routerLinkActiveOptions]="{ paths: 'exact', queryParams: 'ignored', matrixParams: 'ignored', fragment: 'ignored' }"
             ariaCurrentWhenActive="page"
-            class="label-caps -outline-offset-2 inline-flex min-h-11 shrink-0 items-center rounded-full px-4 py-2 transition-colors hover:text-accent-deep [&.is-active]:hover:text-background"
+            class="label-caps -outline-offset-2 -mb-px inline-flex min-h-12 shrink-0 items-center border-b-2 border-transparent text-muted-foreground transition-colors hover:text-foreground [&.is-active]:border-foreground [&.is-active]:text-foreground"
           >
             {{ tab.label | transloco }}
           </a>

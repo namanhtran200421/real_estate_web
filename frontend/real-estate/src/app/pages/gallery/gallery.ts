@@ -5,7 +5,7 @@ import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { ApartmentHeader } from '../../components/apartment-header/apartment-header';
 import { ApartmentNotFound } from '../../components/apartment-not-found/apartment-not-found';
 import { Lightbox } from '../../components/lightbox/lightbox';
-import { galleryChapters, photoAlt } from '../../data/sun-garden-rooms';
+import { galleryChapters, isPortrait, photoAlt } from '../../data/sun-garden-rooms';
 import { Photo } from '../../models/apartment';
 import { FadeInDirective } from '../../motion/fade-in.directive';
 import { ApartmentService } from '../../services/apartment.service';
@@ -35,6 +35,8 @@ export class Gallery {
   protected readonly alts = computed(() =>
     this.chapters().flatMap((chapter) => chapter.photos.map((_, i) => photoAlt(chapter, i, (key, params) => this.transloco.translate(key, params)))),
   );
+
+  protected readonly isPortrait = isPortrait;
 
   protected indexOf(photo: Photo): number {
     return this.ordered().indexOf(photo);

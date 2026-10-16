@@ -177,7 +177,7 @@
                   <div><dt class="text-muted-foreground">{{ identity.documentType === 'cccd' ? 'CCCD / mã định danh' : 'Passport ID' }}</dt><dd class="font-mono">{{ identity.documentNumber }}</dd></div>
                   <div>
                     <dt class="text-muted-foreground">Ngày cấp · thời hạn</dt>
-                    <dd>{{ identity.issueDate ? (identity.issueDate | date: 'dd/MM/yyyy') : '—' }} · {{ identity.expiryDate ? (identity.expiryDate | date: 'dd/MM/yyyy') : '—' }}</dd>
+                    <dd>{{ identity.issueDate ? (identity.issueDate | date: 'dd/MM/yyyy') : '—' }} · {{ identity.documentType === 'cccd' && identity.noExpiry ? 'Không thời hạn' : identity.expiryDate ? (identity.expiryDate | date: 'dd/MM/yyyy') : '—' }}</dd>
                   </div>
                   @if (identity.documentType === 'cccd') {
                     <div class="sm:col-span-2"><dt class="text-muted-foreground">Địa chỉ trên CCCD</dt><dd>{{ identity.addressOnDocument || '—' }}</dd></div>

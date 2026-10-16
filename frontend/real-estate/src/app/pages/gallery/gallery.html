@@ -1,9 +1,15 @@
 @if (apartment(); as apt) {
   <app-apartment-header [apartment]="apt" />
   <nav class="container-editorial mt-10 max-w-6xl" [attr.aria-label]="'gallery.chapters' | transloco">
-    <ul class="flex flex-wrap gap-2">
-      @for (chapter of chapters(); track chapter.id) {
-        <li><a class="inline-flex min-h-11 items-center rounded-full border border-border bg-card px-4 text-sm" [routerLink]="[]" [fragment]="'g-' + chapter.id" queryParamsHandling="preserve">{{ 'rooms.' + chapter.key + '.title' | transloco }}</a></li>
+    <!-- A numbered index, matching the numbers on the spreads below. -->
+    <ul class="flex flex-wrap gap-x-8 gap-y-1">
+      @for (chapter of chapters(); track chapter.id; let c = $index) {
+        <li>
+          <a class="group inline-flex min-h-11 items-baseline gap-2" [routerLink]="[]" [fragment]="'g-' + chapter.id" queryParamsHandling="preserve">
+            <span class="text-xs tracking-widest text-accent-deep">{{ c + 1 < 10 ? '0' : '' }}{{ c + 1 }}</span>
+            <span class="border-b border-transparent transition-colors group-hover:border-foreground">{{ 'rooms.' + chapter.key + '.title' | transloco }}</span>
+          </a>
+        </li>
       }
     </ul>
   </nav>
@@ -12,17 +18,17 @@
     @let smalls = chapter.photos.slice(1);
     @let flip = c % 2 === 1;
     <section class="container-editorial mt-16 max-w-6xl md:mt-24" [class.mb-24]="last" [id]="'g-' + chapter.id" data-spread [attr.data-side]="flip ? 'right' : 'left'">
-      <div class="grid gap-6 md:grid-cols-12 md:items-stretch md:gap-10">
+      <div class="grid gap-6 md:grid-cols-12 md:items-start md:gap-10">
         @if (big) {
           <div class="md:col-span-7" [class.md:order-2]="flip" appFadeIn>
-            <button type="button" class="focus-photo group block h-full w-full" (click)="lightbox.open(indexOf(big), $any($event.currentTarget).querySelector('img'))" data-cursor="view">
-              <span class="relative block aspect-[4/3] overflow-clip md:aspect-auto md:h-full md:min-h-[26rem]">
-                <img [ngSrc]="big.src" [alt]="alts()[indexOf(big)]" fill [priority]="big === ordered()[0]" sizes="(min-width: 768px) 60vw, 100vw" class="media-zoom object-cover" [style.object-position]="chapter.key === 'bathrooms' ? '50% 15%' : null" />
+            <button type="button" class="focus-photo group block w-full" (click)="lightbox.open(indexOf(big), $any($event.currentTarget).querySelector('img'))" data-cursor="view">
+              <span class="relative block overflow-clip" [class]="isPortrait(big) ? 'aspect-[3/4]' : 'aspect-[4/3]'">
+                <img [ngSrc]="big.src" [alt]="alts()[indexOf(big)]" fill [priority]="big === ordered()[0]" sizes="(min-width: 768px) 60vw, 100vw" class="media-zoom object-cover" />
               </span>
             </button>
           </div>
         }
-        <div class="flex flex-col gap-8" [class]="big ? 'md:col-span-5 md:justify-between' : 'md:col-span-12'" [class.md:order-1]="flip">
+        <div class="flex flex-col gap-8" [class]="big ? 'md:col-span-5' : 'md:col-span-12'" [class.md:order-1]="flip">
           <div [class.border-t]="!big" [class.border-border]="!big" [class.pt-8]="!big">
             <p class="text-sm tracking-widest text-accent-deep">{{ c + 1 < 10 ? '0' : '' }}{{ c + 1 }}</p>
             <h2 class="display-section mt-2">{{ 'rooms.' + chapter.key + '.title' | transloco }}</h2>
@@ -34,10 +40,13 @@
           @if (smalls.length) {
             <ul class="grid grid-cols-2 gap-3 md:gap-4" data-chapter-grid>
               @for (photo of smalls; track photo.src; let i = $index; let n = $count) {
-                <li [class.col-span-2]="n === 1 || (n === 3 && i === 2)" appFadeIn>
-                  <button type="button" class="focus-photo group block w-full" (click)="lightbox.open(indexOf(photo), $any($event.currentTarget).querySelector('img'))" data-cursor="view">
-                    <span class="relative block overflow-clip" [class]="n === 1 || (n === 3 && i === 2) ? 'aspect-[16/9]' : 'aspect-[4/3]'">
-                      <img [ngSrc]="photo.src" [alt]="alts()[indexOf(photo)]" fill sizes="(min-width: 768px) 20vw, 45vw" class="media-zoom object-cover" [style.object-position]="chapter.key === 'bathrooms' ? '50% 15%' : null" />
+                @let wide = n === 1 || (n === 3 && i === 2);
+                @let portrait = isPortrait(photo);
+                <!-- Each frame takes its photo's shape, so nothing is cut off; a lone portrait stays narrower. -->
+                <li [class.col-span-2]="wide" appFadeIn>
+                  <button type="button" class="focus-photo group block" [class]="wide && portrait ? 'w-2/3' : 'w-full'" (click)="lightbox.open(indexOf(photo), $any($event.currentTarget).querySelector('img'))" data-cursor="view">
+                    <span class="relative block overflow-clip" [class]="portrait ? 'aspect-[3/4]' : 'aspect-[4/3]'">
+                      <img [ngSrc]="photo.src" [alt]="alts()[indexOf(photo)]" fill sizes="(min-width: 768px) 20vw, 45vw" class="media-zoom object-cover" />
                     </span>
                   </button>
                 </li>

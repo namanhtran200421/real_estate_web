@@ -321,20 +321,21 @@
     "promisesTitle": "Đà Lạt nights, booked without fuss",
     "promises": {
       "availability": {
-        "title": "Free dates at a glance",
-        "text": "Pick your dates and book; no need to message first."
+        "title": "Check the calendar – Book in a tap",
+        "text": "See which dates are free and book right away, no need to message first."
       },
       "prices": {
-        "title": "Clear prices, night by night",
-        "text": "Prices by date, shown in full before you pay."
+        "title": "Clear prices – Grab your dates fast",
+        "text": "Prices are calculated automatically for each night and shown in full before you pay."
       },
       "vietqr": {
-        "title": "Pay by VietQR",
+        "title": "Easy transfers by VietQR",
         "text": "Scan to pay the deposit that holds your dates; the rent is paid at check-in."
       }
     },
     "aroundEyebrow": "Lamps on",
     "aroundTitle": "Around Sun Garden",
+    "aroundCentre": "Sun Garden",
     "closingTitle": "A corner of Đà Lạt is waiting",
     "closingCta": "Book"
   },
@@ -443,6 +444,7 @@
       "gender": "Gender",
       "issueDate": "Issue date",
       "expiryDate": "Document expiry date",
+      "noExpiry": "No expiry date (CCCD of people aged 60 and over)",
       "temporaryStayExpiry": "Temporary residence certificate/card expiry",
       "stayReason": "Reason for stay",
       "stayReasonPlaceholder": "Holiday, business, visiting family…",

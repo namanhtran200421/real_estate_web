@@ -24,6 +24,8 @@ export function layoutPlaces(count: number, width = 640, height = 420) {
 export class RouteMap {
   readonly places = input.required<NearbyPlace[]>();
   readonly label = input.required<string>();
+  /** The name under the home marker at the centre. */
+  readonly centre = input.required<string>();
   protected readonly width = 640;
   protected readonly height = 420;
   protected readonly points = computed(() => layoutPlaces(this.places().length, this.width, this.height));

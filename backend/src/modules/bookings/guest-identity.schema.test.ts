@@ -77,6 +77,14 @@ describe('guest identity checks', () => {
     assert.ok(check({ ...adult, issueDate: '2031-01-02' })['guestIdentities.0.expiryDate']);
   });
 
+  it('takes a CCCD with no expiry date, but not one that also gives a date', () => {
+    const { expiryDate: _expiry, ...withoutExpiry } = adult;
+
+    assert.deepEqual(check({ ...withoutExpiry, noExpiry: true }), {});
+    assert.ok(check({ ...adult, noExpiry: true })['guestIdentities.0.expiryDate'], 'both a date and "no expiry"');
+    assert.ok(check({ ...withoutExpiry, noExpiry: false })['noExpiry'], 'only true is accepted');
+  });
+
   it('refuses a document that has expired by check-in day, but takes one expiring that day', () => {
     assert.ok(check({ ...adult, expiryDate: '2026-10-31' })['guestIdentities.0.expiryDate']);
     assert.deepEqual(check({ ...adult, expiryDate: CHECK_IN }), {});

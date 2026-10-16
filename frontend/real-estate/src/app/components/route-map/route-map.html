@@ -8,7 +8,12 @@
       <text [attr.x]="p.labelX" [attr.y]="p.y - 4" [attr.text-anchor]="p.anchor" class="fill-foreground font-serif text-[15px]">{{ place.place }}</text>
       <text [attr.x]="p.labelX" [attr.y]="p.y + 14" [attr.text-anchor]="p.anchor" class="fill-muted-foreground text-[12px]">{{ place.distance }}</text>
     }
-    <circle [attr.cx]="width / 2" [attr.cy]="height / 2" r="9" class="fill-accent stroke-foreground" stroke-width="2" />
+    <!-- The apartment itself: a home marker with its name, so the lines read as journeys from here. -->
+    <g [attr.transform]="'translate(' + width / 2 + ' ' + height / 2 + ')'">
+      <circle r="17" class="fill-foreground" />
+      <path d="M -7 0.5 L 0 -6 L 7 0.5 M -4.5 -1.5 V 6 H 4.5 V -1.5" fill="none" class="stroke-accent" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+      <text y="38" text-anchor="middle" paint-order="stroke" stroke-width="10" stroke-linejoin="round" class="fill-foreground stroke-background font-serif text-[16px]">{{ centre() }}</text>
+    </g>
   </svg>
   <!-- The same information as a list: visible on narrow screens, read aloud everywhere. -->
   <ul class="divide-y divide-border md:sr-only">

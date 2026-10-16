@@ -321,20 +321,21 @@
     "promisesTitle": "Đêm Đà Lạt, đặt phòng thật nhẹ nhàng",
     "promises": {
       "availability": {
-        "title": "Lịch trống, thấy ngay",
-        "text": "Chọn ngày và đặt luôn, không cần nhắn hỏi trước."
+        "title": "Xem lịch ngay – Đặt liền tay",
+        "text": "Xem ngày còn trống và đặt ngay, không cần nhắn tin hỏi trước."
       },
       "prices": {
-        "title": "Giá rõ từng đêm",
-        "text": "Giá tính theo ngày, hiện đủ trước khi bạn thanh toán."
+        "title": "Giá cả rõ ràng – Nhanh tay hốt hàng",
+        "text": "Giá được tính tự động theo ngày và hiển thị đầy đủ trước khi thanh toán."
       },
       "vietqr": {
-        "title": "Chuyển khoản VietQR",
+        "title": "Dễ chuyển khoản qua – Mã VietQR",
         "text": "Quét mã để đặt cọc giữ lịch; tiền phòng thanh toán khi nhận phòng."
       }
     },
     "aroundEyebrow": "Đèn lên",
     "aroundTitle": "Quanh Sun Garden",
+    "aroundCentre": "Sun Garden",
     "closingTitle": "Một góc Đà Lạt đang chờ bạn",
     "closingCta": "Đặt lịch"
   },
@@ -443,6 +444,7 @@
       "gender": "Giới tính",
       "issueDate": "Ngày cấp",
       "expiryDate": "Thời hạn giấy tờ",
+      "noExpiry": "Không thời hạn (CCCD của người từ 60 tuổi)",
       "temporaryStayExpiry": "Hạn chứng nhận/thẻ tạm trú",
       "stayReason": "Lý do lưu trú",
       "stayReasonPlaceholder": "Du lịch, công tác, thăm thân…",

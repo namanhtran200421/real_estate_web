@@ -67,6 +67,14 @@ describe('GuestIdentityDraftService', () => {
     expect(service({ ...ADULT, expiryDate: CHECK_IN }).errors()[0]).toEqual({});
   });
 
+  it('takes a CCCD with no expiry date and sends the flag instead of a date', () => {
+    const drafts = service({ ...ADULT, expiryDate: '', noExpiry: true });
+
+    expect(drafts.errors()[0]).toEqual({});
+    expect(drafts.payload()[0]).toMatchObject({ noExpiry: true });
+    expect(drafts.payload()[0]).not.toHaveProperty('expiryDate');
+  });
+
   it('keeps passport details required for a foreign child', () => {
     const drafts = service({
       nationalityChoice: 'foreign',

@@ -43,6 +43,15 @@ export class GuestIdentityForm {
     this.set('nationalityChoice', value as NationalityChoice);
   }
 
+  /** "Không thời hạn": the expiry date no longer applies, so it is cleared. */
+  protected setNoExpiry(noExpiry: boolean): void {
+    this.drafts.update(this.index(), noExpiry ? { noExpiry, expiryDate: '' } : { noExpiry });
+  }
+
+  protected fromCheckbox(event: Event): boolean {
+    return (event.target as HTMLInputElement).checked;
+  }
+
   protected setGender(value: string): void {
     this.set('gender', value as GuestIdentityDraft['gender']);
   }

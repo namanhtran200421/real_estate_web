@@ -30,6 +30,8 @@ export interface GuestIdentityDraft {
   addressOnDocument: string;
   issueDate: string;
   expiryDate: string;
+  /** A CCCD with no expiry date ("Không thời hạn"), as issued to people aged 60 and over. */
+  noExpiry: boolean;
   nationality: string;
   gender: '' | 'female' | 'male' | 'other';
   temporaryStayExpiry: string;
@@ -46,6 +48,7 @@ const EMPTY = (): GuestIdentityDraft => ({
   addressOnDocument: '',
   issueDate: '',
   expiryDate: '',
+  noExpiry: false,
   nationality: '',
   gender: '',
   temporaryStayExpiry: '',
@@ -104,7 +107,8 @@ export class GuestIdentityDraftService {
         const address = identity.addressOnDocument.trim();
         if (address) vietnamese.addressOnDocument = address;
         if (identity.issueDate) vietnamese.issueDate = identity.issueDate;
-        if (identity.expiryDate) vietnamese.expiryDate = identity.expiryDate;
+        if (identity.noExpiry) vietnamese.noExpiry = true;
+        else if (identity.expiryDate) vietnamese.expiryDate = identity.expiryDate;
         return vietnamese;
       }
       return {
@@ -127,13 +131,15 @@ export class GuestIdentityDraftService {
   private validate(identity: GuestIdentityDraft, checkIn: string): IdentityErrors {
     const errors: IdentityErrors = {};
     const child = isChild(identity, checkIn);
+    // Only a CCCD can be without an expiry date; any date left in the field is then not sent.
+    const expiryDate = identity.nationalityChoice === 'VN' && identity.noExpiry ? undefined : identity.expiryDate;
     if (!identity.fullName.trim()) errors.fullName = 'required';
     if (!identity.dateOfBirth) errors.dateOfBirth = 'required';
     else if (identity.dateOfBirth >= todayIso()) errors.dateOfBirth = 'dateOfBirthPast';
     if (!identity.issueDate && !child) errors.issueDate = 'required';
-    if (!identity.expiryDate && !child) errors.expiryDate = 'required';
-    if (identity.issueDate && identity.expiryDate && identity.expiryDate <= identity.issueDate) errors.expiryDate = 'expiryBeforeIssue';
-    else if (identity.expiryDate && checkIn && identity.expiryDate < checkIn) errors.expiryDate = 'documentExpired';
+    if (expiryDate === '' && !child) errors.expiryDate = 'required';
+    if (identity.issueDate && expiryDate && expiryDate <= identity.issueDate) errors.expiryDate = 'expiryBeforeIssue';
+    else if (expiryDate && checkIn && expiryDate < checkIn) errors.expiryDate = 'documentExpired';
     if (!identity.stayReason.trim()) errors.stayReason = 'required';
 
     if (identity.nationalityChoice === 'VN') {

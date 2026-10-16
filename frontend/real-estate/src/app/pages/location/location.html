@@ -6,7 +6,7 @@
     <div class="container-editorial max-w-6xl">
       <p class="label-caps text-accent-deep">{{ 'location.eyebrow' | transloco }}</p>
       <h2 class="display-section mt-4"><app-split [text]="'home.scenes.aroundTitle' | transloco" /></h2>
-      <div class="mt-12"><app-route-map [places]="apt.nearby" [label]="'home.scenes.aroundTitle' | transloco" /></div>
+      <div class="mt-12"><app-route-map [places]="apt.nearby" [label]="'home.scenes.aroundTitle' | transloco" [centre]="'home.scenes.aroundCentre' | transloco" /></div>
     </div>
   </section>
 

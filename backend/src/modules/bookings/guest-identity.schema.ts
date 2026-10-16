@@ -24,6 +24,8 @@ const vietnameseIdentity = z.object({
   addressOnDocument: optionalText(500),
   issueDate: blankAsUndefined(isoDate),
   expiryDate: blankAsUndefined(isoDate),
+  /** A CCCD with no expiry date ("Không thời hạn"), as issued to people aged 60 and over. */
+  noExpiry: z.literal(true).optional(),
   stayReason: text(250),
 });
 
@@ -62,7 +64,8 @@ export interface IdentityIssue {
 /**
  * The problems that depend on the stay or on several fields: missing document details for anyone
  * but a Vietnamese child, a date of birth that is not in the past, an expiry date not after the
- * issue date, and a document already expired on check-in day.
+ * issue date, a document already expired on check-in day, and an expiry date given for a CCCD
+ * marked as having none.
  * @param checkIn the stay's check-in date; @param today the business date (yyyy-mm-dd)
  */
 export function guestIdentityIssues(identities: GuestIdentity[], checkIn: string, today: string): IdentityIssue[] {
@@ -74,10 +77,12 @@ export function guestIdentityIssues(identities: GuestIdentity[], checkIn: string
     if (identity.documentType === 'cccd' && !isChildOn(identity.dateOfBirth, checkIn)) {
       const required = 'Không được để trống (chỉ không bắt buộc với trẻ dưới 14 tuổi).';
       if (!identity.issueDate) at('issueDate', required);
-      if (!identity.expiryDate) at('expiryDate', required);
+      if (!identity.expiryDate && !identity.noExpiry) at('expiryDate', required);
       if (!identity.addressOnDocument) at('addressOnDocument', required);
     }
-    if (identity.issueDate && identity.expiryDate && identity.expiryDate <= identity.issueDate) {
+    if (identity.documentType === 'cccd' && identity.noExpiry && identity.expiryDate) {
+      at('expiryDate', 'Bỏ ngày hết hạn khi chọn "Không thời hạn".');
+    } else if (identity.issueDate && identity.expiryDate && identity.expiryDate <= identity.issueDate) {
       at('expiryDate', 'Ngày hết hạn phải sau ngày cấp.');
     } else if (identity.expiryDate && identity.expiryDate < checkIn) {
       at('expiryDate', 'Giấy tờ đã hết hạn trước ngày nhận phòng.');

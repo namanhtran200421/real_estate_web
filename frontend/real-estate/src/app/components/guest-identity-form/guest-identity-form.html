@@ -181,15 +181,29 @@
           <span class="font-normal text-muted-foreground">{{ 'booking.identity.optionalForChild' | transloco }}</span>
         }
       </label>
+      @let noExpiry = item.nationalityChoice === 'VN' && item.noExpiry;
       <input
         [id]="'identity-expiry-' + i"
-        class="input"
+        class="input disabled:cursor-not-allowed disabled:opacity-50"
         type="date"
         autocomplete="off"
         [value]="item.expiryDate"
+        [disabled]="noExpiry"
         (input)="set('expiryDate', fromInput($event))"
         [attr.aria-invalid]="!!error('expiryDate')"
       />
+      @if (item.nationalityChoice === 'VN') {
+        <div class="mt-1 flex items-center gap-3">
+          <input
+            type="checkbox"
+            [id]="'identity-no-expiry-' + i"
+            class="h-5 w-5 accent-accent-deep"
+            [checked]="noExpiry"
+            (change)="setNoExpiry(fromCheckbox($event))"
+          />
+          <label [for]="'identity-no-expiry-' + i" class="min-h-11 flex-1 py-2.5 text-sm">{{ 'booking.identity.noExpiry' | transloco }}</label>
+        </div>
+      }
       @if (error('expiryDate'); as key) {
         <p class="mt-2 text-sm text-danger" role="alert">{{ key | transloco }}</p>
       }
