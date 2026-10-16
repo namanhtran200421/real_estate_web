@@ -1,0 +1,20 @@
+<div role="region" aria-roledescription="carousel" [attr.aria-label]="label()" (keydown.arrowleft)="previous()" (keydown.arrowright)="next()">
+  <div #viewport class="photo-carousel__viewport" [class.is-started]="started()">
+    <div class="photo-carousel__track">
+      @for (photo of photos(); track photo.src; let i = $index) {
+        <div
+          class="photo-carousel__slide"
+          [class.is-current]="!started() || i === index()"
+          [style.--r]="isPortrait(photo) ? 0.75 : 1.3333"
+          role="group"
+          aria-roledescription="slide"
+          [attr.aria-label]="(i + 1) + ' / ' + photos().length"
+        >
+          <button type="button" class="focus-photo group relative block h-full w-full overflow-clip" (click)="choose(i, $event)" data-cursor="view">
+            <img [ngSrc]="photo.src" [alt]="alts()[i]" fill [priority]="priority() && i === 0" sizes="(min-width: 768px) 60vw, 86vw" class="media-zoom object-cover" />
+          </button>
+        </div>
+      }
+    </div>
+  </div>
+</div>

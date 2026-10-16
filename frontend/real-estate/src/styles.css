@@ -978,6 +978,30 @@
   .text-danger {
     color: var(--color-danger);
   }
+
+  /* Gallery (gallery.html): one carousel of every photo on a dark stage. */
+  .film { background: #0a1424; color: var(--color-background); }
+  .film-title { font-family: var(--font-serif); font-weight: 300; font-size: clamp(2.25rem, 5vw, 4rem); line-height: 1.05; letter-spacing: -0.02em; font-variation-settings: 'opsz' 144; color: var(--color-background); }
+  .film-line { max-width: 32rem; font-size: 1.0625rem; color: rgb(246 241 232 / 0.7); }
+  .film-room-link { display: inline-flex; align-items: baseline; gap: 0.5rem; min-height: 2.75rem; border-bottom: 1px solid transparent; color: rgb(246 241 232 / 0.55); white-space: nowrap; transition: color 300ms, border-color 300ms; cursor: pointer; }
+  .film-room-link:hover { color: var(--color-background); }
+  .film-room-link.is-active { color: var(--color-background); border-color: var(--color-accent); }
+  .film-room-link > span { color: var(--color-accent); }
+  .film-arrow { display: grid; place-items: center; width: 2.75rem; height: 2.75rem; border-radius: 999px; border: 1px solid rgb(246 241 232 / 0.3); cursor: pointer; transition: background-color 200ms, color 200ms, border-color 200ms, opacity 200ms; }
+  .film-arrow:hover:not(:disabled) { background: var(--color-background); border-color: var(--color-background); color: #0a1424; }
+  .film-arrow:disabled { opacity: 0.3; cursor: default; }
+
+  /* Photo carousel (photo-carousel.html): slides share one height and keep their photo's shape;
+     the centred one is lit, its neighbours dimmed. Before Embla starts the row scrolls natively. */
+  .photo-carousel__viewport { overflow-x: auto; scrollbar-width: none; }
+  .photo-carousel__viewport::-webkit-scrollbar { display: none; }
+  .photo-carousel__viewport.is-started { overflow: hidden; }
+  .photo-carousel__track { display: flex; touch-action: pan-y pinch-zoom; }
+  .photo-carousel__slide { flex: 0 0 auto; min-width: 0; margin-inline: 0.5rem; width: min(calc(66svh * var(--r)), calc(44rem * var(--r)), 86vw); aspect-ratio: var(--r); opacity: 0.3; transition: opacity 500ms var(--motion-ease); }
+  .photo-carousel__slide.is-current { opacity: 1; }
+  @media (width >= 48rem) {
+    .photo-carousel__slide { margin-inline: 0.75rem; }
+  }
 }
 
 /* Page transitions: a short crossfade; the header stays put. */

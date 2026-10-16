@@ -3,31 +3,33 @@ export default async function check({ browser, site, assert, lib }) {
   const page = await lib.openPage(browser);
   const { errors } = lib.captureErrors(page);
   await page.goto(site + '/gallery', { waitUntil: 'networkidle' });
-  // Six chapters: the title column on the left stays pinned while the photos scroll past on the right.
-  assert.equal(await page.locator('main a[href*="#g-"]').count(), 6, 'six chapter links');
-  assert.equal(await page.locator('[data-spread]').count(), 6, 'six chapters');
-  assert.equal(await page.locator('#g-bep img').count(), 1, 'kitchen shows its one photo');
+  // One carousel of every photo, in room order, with the six rooms as tabs above it.
+  assert.equal(await page.locator('.film-room-link').count(), 6, 'six room tabs');
   assert.equal(await page.locator('main img').count(), 16, 'sixteen photos, each once');
   const alts = await page.locator('main img').evaluateAll((imgs) => imgs.map((i) => i.alt));
   assert.equal(new Set(alts).size, 16, `unique alt text ${alts}`);
   assert.match(alts[0], /^(Phòng khách & ăn – ảnh 1\/4|Living & dining – photo 1 of 4)$/);
-  const layout = await page.evaluate(() =>
-    [...document.querySelectorAll('[data-spread]')].map((sec) => {
-      const header = sec.querySelector('header');
-      const imgs = [...sec.querySelectorAll('img')].map((i) => i.getBoundingClientRect());
-      return { sticky: getComputedStyle(header).position, headerRight: header.getBoundingClientRect().right, photosLeft: Math.min(...imgs.map((r) => r.left)) };
-    }),
-  );
-  layout.forEach((l, i) => {
-    assert.equal(l.sticky, 'sticky', `chapter ${i} title column is pinned`);
-    assert.ok(l.photosLeft > l.headerRight, `chapter ${i} photos right of the title ${JSON.stringify(l)}`);
-  });
-  // No photo is cut off: every frame has its photo's own shape.
-  await lib.scrollThrough(page);
+  const counter = page.locator('.film p.tabular-nums');
+  await page.locator('app-photo-carousel').scrollIntoViewIfNeeded();
+  assert.match(await counter.textContent(), /01\s*\/\s*16/);
+  // The arrows step one photo; a room tab jumps to that room's first photo and lights up.
+  await page.getByRole('button', { name: /Ảnh tiếp theo|Next photo/ }).click();
+  await page.waitForTimeout(800);
+  assert.match(await counter.textContent(), /02\s*\/\s*16/);
+  await page.locator('.film-room-link').nth(2).click();
+  await page.waitForTimeout(1000);
+  assert.match(await counter.textContent(), /06\s*\/\s*16/, 'bathrooms start at photo 6');
+  assert.equal(await page.locator('.film-room-link').nth(2).getAttribute('aria-current'), 'true');
+  assert.match(await page.locator('.film h2').textContent(), /Hai phòng tắm|Two bathrooms/);
+  // No photo is cut off: every loaded slide has its photo's own shape.
   const shapes = await page.locator('main img').evaluateAll((imgs) =>
-    imgs.map((i) => { const r = i.getBoundingClientRect(); return Math.abs(r.width / r.height - i.naturalWidth / i.naturalHeight); }),
+    imgs.filter((i) => i.naturalWidth).map((i) => { const r = i.getBoundingClientRect(); return Math.abs(r.width / r.height - i.naturalWidth / i.naturalHeight); }),
   );
-  assert.ok(shapes.every((d) => d < 0.03), `frames match photo shapes ${shapes}`);
+  assert.ok(shapes.length > 2 && shapes.every((d) => d < 0.03), `slides match photo shapes ${shapes}`);
+  await page.locator('.film-room-link').first().click();
+  await page.waitForTimeout(1000);
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.waitForTimeout(600);
   const first = page.locator('main button[data-cursor="view"]').first();
   await first.click();
   await page.waitForTimeout(500);
