@@ -36,7 +36,7 @@ brainstorming spec → council review of spec → writing-plans → council revi
 - [x] Implementation (see plan task list; 14 tasks, each reviewed)
 - [x] Visual verification (screenshots desktop/phone per task; owner reviewed the site 16/10)
 - [x] Council: built site reviewed (final review + 3 council roles); owner revisions and blocking fixes done — R5 a11y polish and R6 fonts/CLS/engine items deferred at the owner's request (16/10 "wrap up")
-- [ ] Final verification, branch pushed, owner summary written
+- [x] Final verification, branch pushed, owner summary written — LIVE 16/10/2026 10:55 (main 0318fc3)
 
 ## Log
 
@@ -94,3 +94,11 @@ Before merging to main (owner):
 ## Wrap-up (16/10/2026)
 
 The owner reviewed the built site and asked for revisions (carousel hero, kitchen photo, room index, straight apartment hero, magazine gallery, header hide-on-scroll, neutral banner shade, centred phone hero, tabs at the top of the apartment title), then asked to wrap up. Done and committed. Deferred (follow-up): self-hosted fonts and phone LCP (3.9–4.6 s throttled on Apartment/About), About CLS on font swap, Lenis restoration resize, opening replay, form-error focus and the other R5/R6 accessibility items, gsap.matchMedia listener leak, preloading delay. Verification at wrap-up: backend 110/110 tests, frontend 101/101, production build + motion chunk 52.5 kB; browser checks pass except smoke on localhost with the real captcha key (Cloudflare rejects localhost) and production (meant for the :4000 server).
+
+## Launch (16/10/2026)
+
+- Neon: migrations 014 and 015 applied via the direct host before the push (schema_migrations confirmed; Sun Garden deposit 20%).
+- Render: owner added GUEST_IDENTITY_ENCRYPTION_KEY and GUEST_IDENTITY_RETENTION_DAYS=35 and confirmed DB_SSL/JOBS_ENABLED; RESEND_API_KEY lives outside the listed variables (the live API already required it).
+- main fast-forwarded 479b1b9 → 0318fc3 (redesign + deposit-first payments + security hardening) and pushed. Vercel production deployment dpl_3SyN2L5keKoX3veg7TMTBdBzLFCp READY (real-estate-web-one-gamma.vercel.app); API /health 200.
+- Live browser check (desktop + phone): /, /apartment, /gallery, /policy, /book, /en/ all 200, no console errors, no CSP violations.
+- Rollback: Vercel deployment dpl_Cr1gqHE4jytuFuVHxpHEuETF9qW5 (479b1b9) is the rollback candidate; the database changes are additive, so the old code runs on the migrated schema.
