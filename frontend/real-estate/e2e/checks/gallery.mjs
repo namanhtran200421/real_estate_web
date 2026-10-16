@@ -3,32 +3,31 @@ export default async function check({ browser, site, assert, lib }) {
   const page = await lib.openPage(browser);
   const { errors } = lib.captureErrors(page);
   await page.goto(site + '/gallery', { waitUntil: 'networkidle' });
-  // Six spreads: the large photo alternates left/right and the spread fills the width.
-  assert.equal(await page.locator('main a[href*="#g-"]').count(), 6, 'six chapter chips');
-  assert.equal(await page.locator('[data-spread]').count(), 6, 'six spreads');
+  // Six chapters: the title column on the left stays pinned while the photos scroll past on the right.
+  assert.equal(await page.locator('main a[href*="#g-"]').count(), 6, 'six chapter links');
+  assert.equal(await page.locator('[data-spread]').count(), 6, 'six chapters');
   assert.equal(await page.locator('#g-bep img').count(), 1, 'kitchen shows its one photo');
   assert.equal(await page.locator('main img').count(), 16, 'sixteen photos, each once');
   const alts = await page.locator('main img').evaluateAll((imgs) => imgs.map((i) => i.alt));
   assert.equal(new Set(alts).size, 16, `unique alt text ${alts}`);
   assert.match(alts[0], /^(Phòng khách & ăn – ảnh 1\/4|Living & dining – photo 1 of 4)$/);
-  const spreads = await page.evaluate(() =>
+  const layout = await page.evaluate(() =>
     [...document.querySelectorAll('[data-spread]')].map((sec) => {
-      const r = sec.getBoundingClientRect(); const cs = getComputedStyle(sec); const box = { left: r.left + parseFloat(cs.paddingLeft), right: r.right - parseFloat(cs.paddingRight), width: r.width - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) };
-      const big = sec.querySelector('img').getBoundingClientRect();
-      const rights = [...sec.querySelectorAll('img')].map((i) => i.getBoundingClientRect().right);
-      return { side: sec.dataset.side, bigLeft: Math.round(big.left - box.left), bigWidth: Math.round(big.width / box.width * 100), gap: Math.round(box.right - Math.max(...rights, sec.querySelector('h2').getBoundingClientRect().right)) };
+      const header = sec.querySelector('header');
+      const imgs = [...sec.querySelectorAll('img')].map((i) => i.getBoundingClientRect());
+      return { sticky: getComputedStyle(header).position, headerRight: header.getBoundingClientRect().right, photosLeft: Math.min(...imgs.map((r) => r.left)) };
     }),
   );
-  spreads.forEach((sp, i) => {
-    assert.equal(sp.side, i % 2 ? 'right' : 'left', `spread ${i} side`);
-    assert.ok(i % 2 ? sp.bigLeft > 100 : sp.bigLeft <= 2, `spread ${i} large photo on the ${sp.side}: ${JSON.stringify(sp)}`);
-    assert.ok(sp.bigWidth >= 50 && sp.bigWidth <= 66, `large photo about 60% wide ${JSON.stringify(sp)}`);
+  layout.forEach((l, i) => {
+    assert.equal(l.sticky, 'sticky', `chapter ${i} title column is pinned`);
+    assert.ok(l.photosLeft > l.headerRight, `chapter ${i} photos right of the title ${JSON.stringify(l)}`);
   });
-  // The right edge is filled: some photo ends at the section's right edge on every spread that has small photos.
-  const edges = await page.evaluate(() =>
-    [...document.querySelectorAll('[data-spread]')].map((sec) => Math.round(sec.getBoundingClientRect().right - parseFloat(getComputedStyle(sec).paddingRight) - Math.max(...[...sec.querySelectorAll('img')].map((i) => i.getBoundingClientRect().right)))),
+  // No photo is cut off: every frame has its photo's own shape.
+  await lib.scrollThrough(page);
+  const shapes = await page.locator('main img').evaluateAll((imgs) =>
+    imgs.map((i) => { const r = i.getBoundingClientRect(); return Math.abs(r.width / r.height - i.naturalWidth / i.naturalHeight); }),
   );
-  assert.ok(edges.every((g) => g >= -1 && g <= 2), `right edge filled ${edges}`);
+  assert.ok(shapes.every((d) => d < 0.03), `frames match photo shapes ${shapes}`);
   const first = page.locator('main button[data-cursor="view"]').first();
   await first.click();
   await page.waitForTimeout(500);

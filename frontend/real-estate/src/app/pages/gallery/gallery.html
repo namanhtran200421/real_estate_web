@@ -1,57 +1,86 @@
 @if (apartment(); as apt) {
   <app-apartment-header [apartment]="apt" />
   <nav class="container-editorial mt-10 max-w-6xl" [attr.aria-label]="'gallery.chapters' | transloco">
-    <!-- A numbered index, matching the numbers on the spreads below. -->
+    <!-- A numbered index, matching the numbers on the chapters below. -->
     <ul class="flex flex-wrap gap-x-8 gap-y-1">
       @for (chapter of chapters(); track chapter.id; let c = $index) {
         <li>
           <a class="group inline-flex min-h-11 items-baseline gap-2" [routerLink]="[]" [fragment]="'g-' + chapter.id" queryParamsHandling="preserve">
-            <span class="text-xs tracking-widest text-accent-deep">{{ c + 1 < 10 ? '0' : '' }}{{ c + 1 }}</span>
+            <span class="text-xs tracking-widest text-accent-deep">{{ number(c) }}</span>
             <span class="border-b border-transparent transition-colors group-hover:border-foreground">{{ 'rooms.' + chapter.key + '.title' | transloco }}</span>
           </a>
         </li>
       }
     </ul>
   </nav>
+
+  <!-- One photo frame: it takes the photo's own shape, so nothing is cut off. The inner span carries the reveal's zoom. -->
+  <ng-template #frame let-photo let-sizes="sizes">
+    <button type="button" class="focus-photo group block w-full" (click)="lightbox.open(indexOf(photo), $any($event.currentTarget).querySelector('img'))" data-cursor="view">
+      <span data-photo class="relative block overflow-clip" [class]="isPortrait(photo) ? 'aspect-[3/4]' : 'aspect-[4/3]'">
+        <span data-photo-inner class="absolute inset-0 block">
+          <img [ngSrc]="photo.src" [alt]="alts()[indexOf(photo)]" fill [priority]="photo === ordered()[0]" [sizes]="sizes" class="media-zoom object-cover" />
+        </span>
+      </span>
+    </button>
+  </ng-template>
+
+  <!--
+    Each room: its title column stays pinned while the photos rise past in two staggered columns
+    (the second drifts at its own speed) and each photo opens with a wipe. A landscape lead photo
+    runs the full width first.
+  -->
   @for (chapter of chapters(); track chapter.id; let last = $last; let c = $index) {
-    @let big = chapter.photos[0];
-    @let smalls = chapter.photos.slice(1);
-    @let flip = c % 2 === 1;
-    <section class="container-editorial mt-16 max-w-6xl md:mt-24" [class.mb-24]="last" [id]="'g-' + chapter.id" data-spread [attr.data-side]="flip ? 'right' : 'left'">
-      <div class="grid gap-6 md:grid-cols-12 md:items-start md:gap-10">
-        @if (big) {
-          <div class="md:col-span-7" [class.md:order-2]="flip" appFadeIn>
-            <button type="button" class="focus-photo group block w-full" (click)="lightbox.open(indexOf(big), $any($event.currentTarget).querySelector('img'))" data-cursor="view">
-              <span class="relative block overflow-clip" [class]="isPortrait(big) ? 'aspect-[3/4]' : 'aspect-[4/3]'">
-                <img [ngSrc]="big.src" [alt]="alts()[indexOf(big)]" fill [priority]="big === ordered()[0]" sizes="(min-width: 768px) 60vw, 100vw" class="media-zoom object-cover" />
-              </span>
-            </button>
+    @let lead = chapter.photos[0];
+    @let wideLead = !!lead && !isPortrait(lead) && chapter.photos.length > 1;
+    @let rest = wideLead ? chapter.photos.slice(1) : chapter.photos;
+    <section
+      class="container-editorial mt-20 max-w-6xl md:mt-32"
+      [class.mb-24]="last"
+      [class.md:mb-40]="last"
+      [id]="'g-' + chapter.id"
+      data-spread
+    >
+      <div class="border-t border-border pt-8 md:grid md:grid-cols-12 md:gap-12 md:pt-12">
+        <header class="md:sticky md:top-28 md:col-span-4 md:self-start">
+          <p class="flex items-baseline gap-3 text-sm tracking-widest">
+            <span class="text-accent-deep">{{ number(c) }}</span>
+            <span class="text-muted-foreground">/ {{ number(chapters().length - 1) }}</span>
+          </p>
+          <h2 class="display-section mt-3">{{ 'rooms.' + chapter.key + '.title' | transloco }}</h2>
+          <p class="mt-4 max-w-sm text-lg text-muted-foreground">{{ 'rooms.' + chapter.key + '.line' | transloco }}</p>
+          @if (chapter.photos.length) {
+            <p class="mt-6 text-sm text-muted-foreground">{{ 'gallery.photoCount' | transloco: { count: chapter.photos.length } }}</p>
+          }
+          <!-- Fills as the chapter scrolls past (with motion); a plain hairline without. -->
+          <div class="mt-6 hidden h-px bg-border md:block" aria-hidden="true">
+            <div data-progress class="h-px origin-left bg-foreground"></div>
           </div>
-        }
-        <div class="flex flex-col gap-8" [class]="big ? 'md:col-span-5' : 'md:col-span-12'" [class.md:order-1]="flip">
-          <div [class.border-t]="!big" [class.border-border]="!big" [class.pt-8]="!big">
-            <p class="text-sm tracking-widest text-accent-deep">{{ c + 1 < 10 ? '0' : '' }}{{ c + 1 }}</p>
-            <h2 class="display-section mt-2">{{ 'rooms.' + chapter.key + '.title' | transloco }}</h2>
-            <p class="mt-4 max-w-md text-lg text-muted-foreground">{{ 'rooms.' + chapter.key + '.line' | transloco }}</p>
-            @if (big) {
-              <p class="mt-3 text-sm text-muted-foreground">{{ 'gallery.photoCount' | transloco: { count: chapter.photos.length } }}</p>
-            }
-          </div>
-          @if (smalls.length) {
-            <ul class="grid grid-cols-2 gap-3 md:gap-4" data-chapter-grid>
-              @for (photo of smalls; track photo.src; let i = $index; let n = $count) {
-                @let wide = n === 1 || (n === 3 && i === 2);
-                @let portrait = isPortrait(photo);
-                <!-- Each frame takes its photo's shape, so nothing is cut off; a lone portrait stays narrower. -->
-                <li [class.col-span-2]="wide" appFadeIn>
-                  <button type="button" class="focus-photo group block" [class]="wide && portrait ? 'w-2/3' : 'w-full'" (click)="lightbox.open(indexOf(photo), $any($event.currentTarget).querySelector('img'))" data-cursor="view">
-                    <span class="relative block overflow-clip" [class]="portrait ? 'aspect-[3/4]' : 'aspect-[4/3]'">
-                      <img [ngSrc]="photo.src" [alt]="alts()[indexOf(photo)]" fill sizes="(min-width: 768px) 20vw, 45vw" class="media-zoom object-cover" />
-                    </span>
-                  </button>
-                </li>
+        </header>
+
+        <div class="mt-8 md:col-span-8 md:mt-0">
+          @if (wideLead) {
+            <div class="mb-4 md:mb-6">
+              <ng-container *ngTemplateOutlet="frame; context: { $implicit: lead, sizes: '(min-width: 768px) 62vw, 100vw' }" />
+            </div>
+          }
+          @if (rest.length === 1) {
+            @let only = rest[0];
+            <div [class]="isPortrait(only) ? 'w-3/4 md:w-2/3' : ''">
+              <ng-container *ngTemplateOutlet="frame; context: { $implicit: only, sizes: '(min-width: 768px) 42vw, 75vw' }" />
+            </div>
+          } @else if (rest.length > 1) {
+            <div class="grid grid-cols-2 items-start gap-4 md:gap-6" data-chapter-grid>
+              @for (column of [0, 1]; track column) {
+                <div class="flex flex-col gap-4 md:gap-6" [class.mt-16]="column === 1" [class.md:mt-28]="column === 1" [attr.data-drift]="column === 1 ? '' : null">
+                  @for (photo of rest; track photo.src; let i = $index) {
+                    @if (i % 2 === column) {
+                      <ng-container *ngTemplateOutlet="frame; context: { $implicit: photo, sizes: '(min-width: 768px) 30vw, 50vw' }" />
+                    }
+                  }
+                </div>
               }
-            </ul>
+            </div>
           }
         </div>
       </div>
