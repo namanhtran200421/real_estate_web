@@ -19,6 +19,7 @@ import { SeoService } from '../../services/seo.service';
 import { ApiResponse } from '../../core/api';
 import { GuestReview } from '../../models/guest-review';
 import { GuestReviewService } from '../../services/guest-review.service';
+import { googleMapEmbedUrl, preconnectGoogleMaps } from '../../shared/google-maps';
 
 type FacilityIcon = 'apartment' | 'furnished' | 'kitchen' | 'bathrooms' | 'wifi' | 'laundry' | 'check';
 
@@ -72,12 +73,11 @@ export class ApartmentDetail {
     `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(this.apartment()?.mapQuery ?? '')}`,
   );
   protected readonly mapUrl = computed(() =>
-    this.sanitizer.bypassSecurityTrustResourceUrl(
-      `https://www.google.com/maps?q=${encodeURIComponent(this.apartment()?.mapQuery ?? '')}&output=embed`,
-    ),
+    this.sanitizer.bypassSecurityTrustResourceUrl(googleMapEmbedUrl(this.apartment()?.mapQuery ?? '')),
   );
 
   constructor() {
+    preconnectGoogleMaps();
     const seo = inject(SeoService);
     effect(() => {
       const apt = this.apartment();

@@ -15,12 +15,11 @@
     <div class="container-editorial max-w-6xl">
       <div class="panel grid gap-8 !p-4 md:grid-cols-[1.3fr_0.7fr] md:gap-10 md:!p-6">
         <div class="overflow-hidden rounded-lg bg-muted">
-          <!-- Google Maps is heavy: only load it once the map area is on screen. -->
-          @defer (on viewport) {
+          <!-- The map is what this page is for: create it once the page is idle, not on scroll. -->
+          @defer (on idle) {
             <iframe
               [title]="'location.mapTitle' | transloco: { name: apt.name }"
               [src]="mapUrl()"
-              loading="lazy"
               referrerpolicy="no-referrer-when-downgrade"
               class="block h-80 w-full md:h-full md:min-h-[28rem]"
             ></iframe>

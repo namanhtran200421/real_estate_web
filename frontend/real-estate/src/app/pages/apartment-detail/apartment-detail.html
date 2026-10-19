@@ -155,8 +155,9 @@
     <section class="border-t border-border bg-muted py-14 md:py-20" aria-labelledby="apartment-location-title">
       <div class="container-editorial grid max-w-6xl gap-6 lg:grid-cols-[1.25fr_0.75fr]">
         <div class="panel overflow-hidden !p-0">
-          @defer (on viewport) {
-            <iframe [title]="'location.mapTitle' | transloco: { name: apt.name }" [src]="mapUrl()" loading="lazy" referrerpolicy="no-referrer-when-downgrade" class="block h-80 w-full md:h-96"></iframe>
+          <!-- Google Maps is heavy: create it about a screen and a half before it scrolls into view. -->
+          @defer (on viewport({ rootMargin: '150% 0px' })) {
+            <iframe [title]="'location.mapTitle' | transloco: { name: apt.name }" [src]="mapUrl()" referrerpolicy="no-referrer-when-downgrade" class="block h-80 w-full md:h-96"></iframe>
           } @placeholder {
             <div class="flex h-80 flex-col items-center justify-center gap-3 bg-muted px-6 text-center md:h-96">
               <svg viewBox="0 0 24 24" class="size-8 text-accent-deep" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21Z" /><circle cx="12" cy="9.5" r="2.5" /></svg>

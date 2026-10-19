@@ -8,6 +8,7 @@ import { RouteMap } from '../../components/route-map/route-map';
 import { Split } from '../../motion/split';
 import { ApartmentService } from '../../services/apartment.service';
 import { SeoService } from '../../services/seo.service';
+import { googleMapEmbedUrl, preconnectGoogleMaps } from '../../shared/google-maps';
 
 @Component({
   selector: 'app-location',
@@ -24,6 +25,7 @@ export class LocationPage {
   protected readonly apartment = computed(() => this.apartments.resolve(this.slug()));
 
   constructor() {
+    preconnectGoogleMaps();
     const seo = inject(SeoService);
     effect(() => {
       const apt = this.apartment();
@@ -33,8 +35,6 @@ export class LocationPage {
 
   // Fixed Google Maps origin + encoded query, so trusting the URL is safe.
   protected readonly mapUrl = computed(() =>
-    this.sanitizer.bypassSecurityTrustResourceUrl(
-      `https://www.google.com/maps?q=${encodeURIComponent(this.apartment()?.mapQuery ?? '')}&output=embed`,
-    ),
+    this.sanitizer.bypassSecurityTrustResourceUrl(googleMapEmbedUrl(this.apartment()?.mapQuery ?? '')),
   );
 }
