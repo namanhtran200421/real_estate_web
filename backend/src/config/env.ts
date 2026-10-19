@@ -82,6 +82,12 @@ function list(name: string): string[] {
     .filter(Boolean);
 }
 
+function requiredList(name: string): string[] {
+  const values = list(name);
+  if (values.length === 0) problems.push(`${name} is required`);
+  return values;
+}
+
 /** Browser origins, normalized to scheme + host (+ optional port). */
 function origins(name: string, requireHttps: boolean): string[] {
   const values = list(name);
@@ -283,8 +289,8 @@ export const env = Object.freeze({
     from: requiredString('EMAIL_FROM'),
     /** Where guest replies go, e.g. the Gmail inbox, when the sending domain has no mailbox. */
     replyTo: read('EMAIL_REPLY_TO'),
-    /** Where new-booking, payment and contact-form alerts go. */
-    ownerAddress: requiredString('OWNER_EMAIL'),
+    /** Where new-booking, payment and contact-form alerts go; comma-separated, one copy each. */
+    ownerAddresses: requiredList('OWNER_EMAIL'),
   }),
 
   /**

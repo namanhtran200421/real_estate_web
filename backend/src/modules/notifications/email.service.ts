@@ -8,7 +8,7 @@ import { env } from '../../config/env.js';
 import type { Db } from '../../db/pool.js';
 import { logger } from '../../lib/logger.js';
 import type { PaymentPurpose } from '../bookings/booking.types.js';
-import { emailRepository } from './email.repository.js';
+import { emailRepository, type OutgoingEmail } from './email.repository.js';
 import {
   adminPasswordChangedEmail,
   bookingCancelledEmail,
@@ -37,20 +37,25 @@ const MAX_ATTEMPTS = 8;
 /** Sent emails are kept this long for support questions, then deleted. */
 const RETENTION_DAYS = 90;
 
+/** One copy to each OWNER_EMAIL address, so each is delivered and retried on its own. */
+async function queueToOwner(content: Omit<OutgoingEmail, 'to'>, db: Db): Promise<void> {
+  for (const to of env.email.ownerAddresses) await emailRepository.enqueue({ to, ...content }, db);
+}
+
 /** New booking: how to pay, to the guest; "watch for this transfer", to the owner. */
 async function queueBookingHeld(booking: BookingEmailContext, note: string, db: Db): Promise<void> {
   await emailRepository.enqueue({ to: booking.customerEmail, ...bookingHeldEmail(booking, note) }, db);
-  await emailRepository.enqueue({ to: env.email.ownerAddress, ...ownerNewBookingEmail(booking, note) }, db);
+  await queueToOwner(ownerNewBookingEmail(booking, note), db);
 }
 
 async function queueHoldEndingReminder(booking: BookingEmailContext, note: string, db: Db): Promise<void> {
-  await emailRepository.enqueue({ to: env.email.ownerAddress, ...ownerHoldEndingEmail(booking, note) }, db);
+  await queueToOwner(ownerHoldEndingEmail(booking, note), db);
 }
 
 /** Acknowledgement to the guest; "please check your bank account" to the owner. */
 async function queueTransferReported(booking: BookingEmailContext, transfer: TransferContext, db: Db): Promise<void> {
   await emailRepository.enqueue({ to: booking.customerEmail, ...transferReportedEmail(booking, transfer) }, db);
-  await emailRepository.enqueue({ to: env.email.ownerAddress, ...ownerTransferReportedEmail(booking, transfer) }, db);
+  await queueToOwner(ownerTransferReportedEmail(booking, transfer), db);
 }
 
 async function queueTransferNotReceived(booking: BookingEmailContext, reason: string, holdMinutes: number | null, db: Db): Promise<void> {
@@ -87,10 +92,7 @@ async function queueLateCheckoutAlert(
   nextArrivalReference: string | null,
   db: Db,
 ): Promise<void> {
-  await emailRepository.enqueue(
-    { to: env.email.ownerAddress, ...ownerLateCheckoutEmail(booking, nextArrivalReference) },
-    db,
-  );
+  await queueToOwner(ownerLateCheckoutEmail(booking, nextArrivalReference), db);
 }
 
 async function queueAdminPasswordChanged(change: PasswordChangedContext): Promise<void> {
@@ -98,7 +100,7 @@ async function queueAdminPasswordChanged(change: PasswordChangedContext): Promis
 }
 
 async function queueContactMessage(contact: ContactEmailContext, db: Db): Promise<void> {
-  await emailRepository.enqueue({ to: env.email.ownerAddress, ...ownerContactEmail(contact) }, db);
+  await queueToOwner(ownerContactEmail(contact), db);
 }
 
 function retryDelaySeconds(attempts: number): number | null {

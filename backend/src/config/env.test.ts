@@ -90,3 +90,25 @@ describe('production environment security', () => {
     }
   });
 });
+
+describe('owner alert addresses', () => {
+  function ownerAddresses(value: string) {
+    return spawnSync(
+      process.execPath,
+      ['--import', 'tsx', '--input-type=module', '--eval', "const { env } = await import('./src/config/env.ts'); console.log(JSON.stringify(env.email.ownerAddresses));"],
+      { cwd: process.cwd(), encoding: 'utf8', env: { ...productionEnvironment, OWNER_EMAIL: value } },
+    );
+  }
+
+  it('sends to every comma-separated address', () => {
+    const result = ownerAddresses(' owner@example.com, inbox@example.com ,');
+    assert.equal(result.status, 0, result.stderr);
+    assert.deepEqual(JSON.parse(result.stdout.trim()), ['owner@example.com', 'inbox@example.com']);
+  });
+
+  it('requires at least one address', () => {
+    const result = ownerAddresses(' , ');
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /OWNER_EMAIL is required/);
+  });
+});
