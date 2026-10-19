@@ -14,8 +14,9 @@
   src: url('/fonts/fraunces-vietnamese-variable.woff2') format('woff2');
   font-style: normal;
   font-weight: 300 400;
-  /* Slow connections keep the metric-compatible fallback instead of delaying or shifting text. */
-  font-display: optional;
+  /* Preloaded in index.html. Swap, not optional: optional left first-time visitors on the
+     fallback for the whole page view. The metric-matched fallback keeps the swap shift small. */
+  font-display: swap;
 }
 
 @theme {
@@ -39,7 +40,7 @@
   --color-danger: #a3261b;
 
   /* Typography */
-  --font-serif: 'Fraunces', 'Fraunces Fallback', Georgia, serif;
+  --font-serif: 'Fraunces', 'Fraunces Fallback', 'Times New Roman', serif;
   --font-sans: system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-mono: ui-monospace, 'SFMono-Regular', Consolas, monospace;
 
@@ -83,12 +84,14 @@
 /* ───────────────────────── Base ───────────────────────── */
 
 @layer base {
-  /* Georgia sized like Fraunces, so the display text barely moves when the web font swaps in. */
+  /* Times New Roman sized like Fraunces, so the display text barely moves when the web font swaps
+     in. Not Georgia: it lacks the stacked Vietnamese letters (ầ, ố, ắ…) and draws their accents
+     detached from the base letter. */
   @font-face {
     font-family: 'Fraunces Fallback';
-    src: local('Georgia');
-    size-adjust: 103%;
-    ascent-override: 95%;
+    src: local('Times New Roman'), local('TimesNewRomanPSMT');
+    size-adjust: 101%;
+    ascent-override: 89%;
     descent-override: 25%;
     line-gap-override: 0%;
   }
