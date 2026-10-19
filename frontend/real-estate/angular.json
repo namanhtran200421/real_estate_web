@@ -29,12 +29,14 @@
             ],
             "server": "src/main.server.ts",
             "outputMode": "server",
-            "security": {
-              "allowedHosts": [
-                "localhost",
-                "*.vercel.app"
-              ]
-            },
+          "security": {
+  "allowedHosts": [
+    "localhost",
+    "*.vercel.app",
+    "vnbookinghub.com",
+    "www.vnbookinghub.com"
+  ]
+},
             "ssr": {
               "entry": "src/server.ts"
             }
