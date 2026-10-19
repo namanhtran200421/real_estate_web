@@ -274,7 +274,7 @@
     },
     "bathrooms": {
       "title": "Two bathrooms",
-      "line": "Hot water in both; nobody waits."
+      "line": "Hot water in both. Nobody waits."
     },
     "bedroom1": {
       "title": "Bedroom 1",
@@ -305,7 +305,7 @@
     "statement": "A fourth-floor corner flat: early sun through the curtains, warm wood, and a coffee before the hill town wakes.",
     "placeEyebrow": "Midday",
     "placeTitle": "Room for the whole family",
-    "cool": "Đà Lạt is cool all year; a ceiling fan is all you need.",
+    "cool": "Đà Lạt is cool all year. A ceiling fan is all you need.",
     "hero": {
       "region": "Apartment photos",
       "slide": "Photo {{ n }}/{{ total }}",
@@ -326,7 +326,7 @@
       },
       "vietqr": {
         "title": "Easy transfers by VietQR",
-        "text": "Scan to pay the deposit that holds your dates; the rent is paid at check-in."
+        "text": "Scan to pay the deposit that holds your dates. The rent is paid at check-in."
       }
     },
     "aroundEyebrow": "Lamps on",
@@ -352,7 +352,7 @@
       },
       "vietqr": {
         "title": "Pay by VietQR transfer",
-        "text": "Scan the code to transfer the deposit when you book and the rent at check-in; the deposit is refunded at check-out. The owner confirms once the money arrives."
+        "text": "Scan the code to transfer the deposit when you book and the rent at check-in. The deposit is refunded at check-out. The owner confirms once the money arrives."
       }
     }
   },
@@ -684,7 +684,7 @@
     "lookupHint": "Look it up with your booking reference and email or phone number."
   },
   "captcha": {
-    "failed": "The robot check couldn’t load. Check your connection; it will retry by itself."
+    "failed": "The robot check couldn’t load. Check your connection. It will retry by itself."
   },
   "apiErrors": {
     "NETWORK": "Couldn’t reach the server. Please check your connection and try again.",

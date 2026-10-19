@@ -938,7 +938,26 @@
   .room-index__number { color: var(--color-accent-deep); }
   .room-index__name { font-family: var(--font-serif); font-weight: 300; font-size: clamp(2rem, 6vw, 3.5rem); line-height: 1.1; letter-spacing: -0.02em; font-variation-settings: 'opsz' 144; }
   .room-index__line { margin-top: 0.75rem; max-width: 28rem; color: var(--color-muted-foreground); font-size: 1.125rem; }
-  .room-index__inline { margin-top: 1.25rem; aspect-ratio: 4 / 3; overflow: clip; border-radius: 0.5rem; }
+  /* Ivory picture mat with two fine gold rules, shared by the inline and sticky photos. */
+  .room-index__inline,
+  .room-index__frame {
+    --room-photo-mat: clamp(0.875rem, 1.5vw, 1.5rem);
+    border: 1px solid var(--color-accent);
+    border-radius: 1rem;
+    background: var(--color-card);
+    box-shadow: var(--shadow-lg);
+  }
+  .room-index__inline::before,
+  .room-index__frame::before {
+    content: '';
+    position: absolute;
+    inset: 0.3125rem;
+    border: 1px solid var(--color-border);
+    border-radius: 0.6875rem;
+    pointer-events: none;
+  }
+  .room-index__inline { margin-top: 1.25rem; aspect-ratio: 4 / 3; }
+  .room-index__photo { position: absolute; inset: var(--room-photo-mat); overflow: clip; border-radius: 0.375rem; }
   .room-index__frame { display: none; }
 
   /* Desktop with motion: names on the left, a sticky frame on the right. */
@@ -954,8 +973,8 @@
     html.motion-ready .room-index__item.is-active .room-index__link { opacity: 1; }
     html.motion-ready .room-index:not(.is-driven) .room-index__item.is-first .room-index__line,
     html.motion-ready .room-index__item.is-active .room-index__line { opacity: 1; transform: none; }
-    html.motion-ready .room-index__frame { display: block; position: sticky; top: 7rem; height: min(72vh, 44rem); overflow: clip; border-radius: 0.5rem; background: var(--color-muted); }
-    html.motion-ready .room-index__pane { position: absolute; inset: 0; opacity: 0; transition: opacity 600ms var(--motion-ease); }
+    html.motion-ready .room-index__frame { display: block; position: sticky; top: 7rem; height: min(72vh, 44rem); }
+    html.motion-ready .room-index__pane { position: absolute; inset: var(--room-photo-mat); overflow: clip; border-radius: 0.375rem; opacity: 0; transition: opacity 600ms var(--motion-ease); }
     html.motion-ready .room-index:not(.is-driven) .room-index__pane.is-first,
     html.motion-ready .room-index__pane.is-active { opacity: 1; }
     html.motion-ready .room-index__panel { position: absolute; inset: 0; display: grid; place-items: center; padding: 3rem; text-align: center; background: var(--color-muted); font-family: var(--font-serif); font-weight: 300; font-size: clamp(1.75rem, 3vw, 2.75rem); line-height: 1.2; font-variation-settings: 'opsz' 144; }

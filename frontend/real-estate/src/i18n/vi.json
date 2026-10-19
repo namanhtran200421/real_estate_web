@@ -326,7 +326,7 @@
       },
       "vietqr": {
         "title": "Dễ chuyển khoản qua – Mã VietQR",
-        "text": "Quét mã để đặt cọc giữ lịch; tiền phòng thanh toán khi nhận phòng."
+        "text": "Quét mã để đặt cọc giữ lịch. Tiền phòng thanh toán khi nhận phòng."
       }
     },
     "aroundEyebrow": "Đèn lên",
@@ -352,7 +352,7 @@
       },
       "vietqr": {
         "title": "Dễ chuyển khoản qua - Mã VietQR",
-        "text": "Quét mã để chuyển khoản tiền đặt cọc khi đặt phòng và tiền phòng khi nhận phòng; tiền cọc được hoàn lại khi trả phòng. Chủ căn hộ xác nhận khi nhận được tiền."
+        "text": "Quét mã để chuyển khoản tiền đặt cọc khi đặt phòng và tiền phòng khi nhận phòng. Tiền cọc được hoàn lại khi trả phòng. Chủ căn hộ xác nhận khi nhận được tiền."
       }
     }
   },
@@ -364,7 +364,7 @@
     "photoAlt": "Phòng khách và ban công của căn hộ Sun Garden A04-12",
     "apartment": "Căn hộ",
     "story1": "Căn góc tầng 4 có ban công phòng khách nhìn về phía Xóm Lèo và ban công phòng ngủ hướng ra đường Nam Hồ.",
-    "story2": "Căn hộ rộng 78 m², có hai phòng ngủ, hai phòng tắm, Wi-Fi và bếp. Căn hộ không có điều hòa; khu đỗ xe có thu phí.",
+    "story2": "Căn hộ rộng 78 m², có hai phòng ngủ, hai phòng tắm, Wi-Fi và bếp. Căn hộ không có điều hòa. Khu đỗ xe có thu phí.",
     "promises": "Điều chúng tôi cam kết",
     "values": {
       "privacy": {

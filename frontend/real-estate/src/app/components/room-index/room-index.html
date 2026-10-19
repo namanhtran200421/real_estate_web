@@ -16,8 +16,10 @@
           </a>
           <p class="room-index__line">{{ 'rooms.' + item.chapter.key + '.line' | transloco }}</p>
           @if (item.photo; as photo) {
-            <div class="room-index__inline relative" [attr.data-photo]="item.chapter.id">
-              <img [ngSrc]="photo.src" [alt]="alt(item)" fill sizes="(min-width: 1024px) 40vw, 90vw" class="object-cover" [style.object-position]="item.position" />
+            <div class="room-index__inline relative">
+              <div class="room-index__photo" [attr.data-photo]="item.chapter.id">
+                <img [ngSrc]="photo.src" [alt]="alt(item)" fill sizes="(min-width: 1024px) 40vw, 90vw" class="object-cover" [style.object-position]="item.position" />
+              </div>
             </div>
           }
         </li>
