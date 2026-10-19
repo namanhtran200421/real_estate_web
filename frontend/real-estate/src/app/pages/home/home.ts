@@ -3,12 +3,11 @@ import { DecimalPipe, NgOptimizedImage } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { HeroCarousel } from '../../components/hero-carousel/hero-carousel';
-import { RoomIndex } from '../../components/room-index/room-index';
 import { Photo } from '../../models/apartment';
 import { ApartmentCard } from '../../components/apartment-card/apartment-card';
 import { NavyBand } from '../../components/navy-band/navy-band';
 import { RouteMap } from '../../components/route-map/route-map';
-import { roomChapters, roomPhoto } from '../../data/sun-garden-rooms';
+import { roomPhoto } from '../../data/sun-garden-rooms';
 import { RevealDirective } from '../../motion/reveal.directive';
 import { Split } from '../../motion/split';
 import { inView } from '../../motion/in-view';
@@ -17,7 +16,7 @@ import { ApartmentService } from '../../services/apartment.service';
 
 @Component({
   selector: 'app-home',
-  imports: [ApartmentCard, DecimalPipe, HeroCarousel, NavyBand, NgOptimizedImage, RevealDirective, RoomIndex, RouteMap, RouterLink, Split, TranslocoPipe],
+  imports: [ApartmentCard, DecimalPipe, HeroCarousel, NavyBand, NgOptimizedImage, RevealDirective, RouteMap, RouterLink, Split, TranslocoPipe],
   templateUrl: './home.html',
   host: { class: 'block' },
 })
@@ -26,6 +25,16 @@ export class Home {
 
   protected readonly featured = computed(() => this.apartments()[0]);
   protected readonly others = computed(() => this.apartments().slice(1));
+
+  /** Two glimpses of the apartment, separate from the hero carousel and the full room tour. */
+  protected readonly previewPhotos = computed(() => {
+    const apt = this.featured();
+    if (!apt) return [];
+    const photos = ['06', '13']
+      .map((file, index) => roomPhoto(apt, file) ?? apt.photos[index])
+      .filter((photo): photo is Photo => !!photo);
+    return photos.filter((photo, index) => photos.findIndex((other) => other.src === photo.src) === index);
+  });
 
   /** Hero carousel photos (05 leads and is the LCP) and the detail photo of the "place" section. */
   protected readonly hero = computed(() => {
@@ -36,11 +45,6 @@ export class Home {
       slides: slides.length === 5 ? slides : apt.photos.slice(0, 5),
       detail: roomPhoto(apt, '02') ?? apt.photos[3],
     };
-  });
-
-  protected readonly chapters = computed(() => {
-    const apt = this.featured();
-    return apt ? roomChapters(apt) : [];
   });
 
   protected readonly promises = ['availability', 'prices', 'vietqr'].map((key) => `home.scenes.promises.${key}`);

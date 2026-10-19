@@ -56,12 +56,31 @@
       </div>
     </section>
 
-    <!-- 4 · Dusk: the room index -->
+    <!-- 4 · An invitation to the apartment page, where the full room tour lives. -->
     <section class="section">
-      <div class="container-editorial max-w-7xl">
-        <!-- The owner removed the visible eyebrow and title (16/10/2026); the section keeps a heading for screen readers. -->
-        <h2 class="sr-only">{{ 'home.scenes.windowsTitle' | transloco }}</h2>
-        <div><app-room-index [chapters]="chapters()" [apartmentSlug]="apt.slug" /></div>
+      <div class="container-editorial max-w-6xl">
+        <a class="apartment-invitation" [class.apartment-invitation--with-photos]="previewPhotos().length > 0" routerLink="/apartment" [queryParams]="{ apt: apt.slug }">
+          @if (previewPhotos().length) {
+            <div class="apartment-invitation__photos" [class.apartment-invitation__photos--single]="previewPhotos().length === 1">
+              @for (photo of previewPhotos(); track photo.src; let i = $index) {
+                <div class="apartment-invitation__print" [class.apartment-invitation__print--detail]="i === 1">
+                  <div class="apartment-invitation__image">
+                    <img [ngSrc]="photo.src" [alt]="photo.alt" fill [sizes]="i === 0 ? '(min-width: 1024px) 34vw, (min-width: 640px) 60vw, 75vw' : '(min-width: 1024px) 17vw, 35vw'" class="object-cover" />
+                  </div>
+                </div>
+              }
+            </div>
+          }
+          <div class="apartment-invitation__copy">
+            <p class="label-caps text-accent-deep">{{ 'nav.apartment' | transloco }}</p>
+            <h2 id="apartment-invitation-title" class="display-section mt-4 max-w-3xl">{{ 'home.scenes.apartmentPreview.title' | transloco }}</h2>
+            <p class="mt-6 max-w-xl text-lg text-muted-foreground">{{ 'home.scenes.apartmentPreview.text' | transloco }}</p>
+            <span class="apartment-invitation__action mt-8">
+              <span>{{ 'home.scenes.apartmentPreview.cta' | transloco }}</span>
+              <span class="apartment-invitation__arrow" aria-hidden="true">↗</span>
+            </span>
+          </div>
+        </a>
       </div>
     </section>
 

@@ -311,8 +311,11 @@
       "slide": "Ảnh {{ n }}/{{ total }}",
       "controls": "Chuyển ảnh"
     },
-    "windowsEyebrow": "Chiều buông",
-    "windowsTitle": "Năm khung cửa, năm góc nhỏ",
+    "apartmentPreview": {
+      "title": "Xem kỹ trước khi chọn ngày.",
+      "text": "Khám phá từng không gian, xem ảnh thực tế và tìm hiểu tiện nghi tại Sun Garden.",
+      "cta": "Xem căn hộ"
+    },
     "promisesEyebrow": "Đặt trực tiếp",
     "promisesTitle": "Đêm Đà Lạt, đặt phòng thật nhẹ nhàng",
     "promises": {

@@ -311,8 +311,11 @@
       "slide": "Photo {{ n }}/{{ total }}",
       "controls": "Change photo"
     },
-    "windowsEyebrow": "Dusk",
-    "windowsTitle": "Five windows, five corners",
+    "apartmentPreview": {
+      "title": "Take a closer look before choosing your dates.",
+      "text": "Explore each space, browse real photos and discover the amenities at Sun Garden.",
+      "cta": "Explore the apartment"
+    },
     "promisesEyebrow": "Book direct",
     "promisesTitle": "Đà Lạt nights, booked without fuss",
     "promises": {
