@@ -305,7 +305,7 @@ Without Docker: `npm ci && npm run build && npm run db:migrate && npm start`.
 
 **Accounts**
 - [ ] Bank account for payments: `BANK_BIN`, `BANK_NAME`, `BANK_ACCOUNT_NUMBER`, `BANK_ACCOUNT_NAME` (scan the generated QR with a banking app once to check the name shown)
-- [ ] Resend account, sending domain verified (SPF/DKIM) → `RESEND_API_KEY`, `EMAIL_FROM` on that domain, `OWNER_EMAIL`
+- [ ] Resend account, sending domain verified (SPF/DKIM) → `RESEND_API_KEY`, `EMAIL_FROM` on that domain, `OWNER_EMAIL`, optional `EMAIL_REPLY_TO` (a real inbox for guest replies)
 
 **Configuration**
 - [ ] `NODE_ENV=production`; `SITE_URL` is the real `https://` origin with no path, query or credentials (links in emails)

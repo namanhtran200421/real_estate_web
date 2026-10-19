@@ -166,6 +166,7 @@ export class SeoService {
           logo: new URL('/brand/logo-stacked.png', origin).href,
           email: 'vnbookinghub@gmail.com',
           telephone: '+84 869 141 104',
+          sameAs: SITE.social.map((s) => s.href),
         },
       ],
     };

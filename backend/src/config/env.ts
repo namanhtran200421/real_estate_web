@@ -281,6 +281,8 @@ export const env = Object.freeze({
     resendApiKey,
     /** Sender, e.g. "VN Booking Hub <datphong@example.com>"; the domain must be verified in Resend. */
     from: requiredString('EMAIL_FROM'),
+    /** Where guest replies go, e.g. the Gmail inbox, when the sending domain has no mailbox. */
+    replyTo: read('EMAIL_REPLY_TO'),
     /** Where new-booking, payment and contact-form alerts go. */
     ownerAddress: requiredString('OWNER_EMAIL'),
   }),

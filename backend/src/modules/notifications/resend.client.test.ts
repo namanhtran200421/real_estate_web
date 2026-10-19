@@ -42,3 +42,34 @@ describe('Resend development fallback', () => {
     }
   });
 });
+
+describe('Resend request', () => {
+  function sentBody(overrides: NodeJS.ProcessEnv): Record<string, unknown> {
+    const script = `
+      globalThis.fetch = async (_url, init) => {
+        console.log(init.body);
+        return new Response(JSON.stringify({ id: 'resend-1' }), { status: 200 });
+      };
+      const { sendEmail } = await import('./src/modules/notifications/resend.client.ts');
+      await sendEmail({ to: 'guest@example.com', subject: 'S', text: 'T', html: '<p>H</p>' }, 'email-outbox-7');
+    `;
+    const result = spawnSync(process.execPath, ['--import', 'tsx', '--input-type=module', '--eval', script], {
+      cwd: process.cwd(),
+      encoding: 'utf8',
+      env: { ...testEnvironment, RESEND_API_KEY: 're_test_key', ...overrides },
+    });
+    assert.equal(result.status, 0, result.stderr);
+    return JSON.parse(result.stdout.trim()) as Record<string, unknown>;
+  }
+
+  it('sends guest replies to EMAIL_REPLY_TO when it is set', () => {
+    const body = sentBody({ EMAIL_REPLY_TO: 'inbox@example.com' });
+    assert.equal(body['from'], 'Booking <booking@example.com>');
+    assert.equal(body['reply_to'], 'inbox@example.com');
+  });
+
+  it('leaves replies to the sender when EMAIL_REPLY_TO is not set', () => {
+    const body = sentBody({ EMAIL_REPLY_TO: '' });
+    assert.equal('reply_to' in body, false);
+  });
+});

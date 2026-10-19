@@ -10,4 +10,9 @@ export const SITE = {
     { label: 'site.contact.zalo', value: '0919 8888 21', href: 'https://zalo.me/0919888821' },
     { label: 'site.contact.email', value: 'vnbookinghub@gmail.com', href: 'mailto:vnbookinghub@gmail.com' },
   ],
+  /** Social profiles: footer icons and the Organization's `sameAs` in structured data. */
+  social: [
+    { name: 'Facebook', href: 'https://www.facebook.com/profile.php?id=61594604577939' },
+    { name: 'TikTok', href: 'https://www.tiktok.com/@sammy.canhodalat' },
+  ],
 };

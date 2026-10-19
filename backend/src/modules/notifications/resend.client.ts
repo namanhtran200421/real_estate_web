@@ -23,7 +23,14 @@ export async function sendEmail(email: OutgoingEmail, idempotencyKey: string): P
 
   const response = await postJson<{ id: string }>(
     RESEND_URL,
-    { from: env.email.from, to: [email.to], subject: email.subject, html: email.html, text: email.text },
+    {
+      from: env.email.from,
+      to: [email.to],
+      ...(env.email.replyTo ? { reply_to: env.email.replyTo } : {}),
+      subject: email.subject,
+      html: email.html,
+      text: email.text,
+    },
     {
       headers: { Authorization: `Bearer ${env.email.resendApiKey}`, 'Idempotency-Key': idempotencyKey },
       timeoutMs: TIMEOUT_MS,
