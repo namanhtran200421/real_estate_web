@@ -39,8 +39,11 @@
           <p class="label-caps text-accent-deep">{{ 'home.scenes.placeEyebrow' | transloco }}</p>
           <h2 class="display-section mt-4"><app-split [text]="'home.scenes.placeTitle' | transloco" /></h2>
           <dl class="mt-10 grid grid-cols-2 gap-x-8 gap-y-6">
+            <div class="border-t border-border pt-4">
+              <dt class="label-caps text-muted-foreground">{{ 'home.scenes.guestCapacity' | transloco }}<sup class="ml-0.5" aria-hidden="true">*</sup></dt>
+              <dd class="mt-1 font-serif text-5xl font-light" aria-describedby="guest-capacity-note">{{ apt.guests }}+</dd>
+            </div>
             @for (stat of [
-              { value: apt.guests, label: 'apartment.stats.guests' },
               { value: apt.bedrooms, label: 'apartment.stats.bedrooms' },
               { value: apt.beds, label: 'apartment.stats.beds' },
               { value: apt.bathrooms, label: 'apartment.stats.bathrooms' },
@@ -51,6 +54,9 @@
               </div>
             }
           </dl>
+          <p id="guest-capacity-note" class="mt-4 max-w-md text-sm text-muted-foreground">
+            * <a class="link-subtle underline underline-offset-4" routerLink="/policy" fragment="item-3">{{ 'home.scenes.guestCapacityNote' | transloco }}</a>
+          </p>
           <p class="mt-10 max-w-md text-lg text-muted-foreground">{{ 'home.scenes.cool' | transloco }}</p>
         </div>
       </div>
