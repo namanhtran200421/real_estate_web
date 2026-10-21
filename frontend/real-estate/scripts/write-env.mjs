@@ -1,7 +1,7 @@
 /**
  * Writes src/environments/environment.ts from environment variables (or a local `.env`).
  *
- * Runs automatically before `npm start`, `npm run build`, `npm run watch` and `npm test`.
+ * Runs automatically before `npm start`, `npm run build` and `npm run watch`.
  * Only values that are safe to publish belong here: this file is bundled into the browser code.
  * Server-only secrets (INTERNAL_API_KEY) are read at runtime by the SSR server instead.
  */

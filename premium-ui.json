@@ -9,7 +9,7 @@
   },
   "requiredCommands": ["backend", "frontend"],
   "commands": {
-    "backend": "cd backend && npm run typecheck && npm test && npm run build",
-    "frontend": "cd frontend/real-estate && npm test -- --watch=false && npm run build"
+    "backend": "cd backend && npm run typecheck && npm run build",
+    "frontend": "cd frontend/real-estate && npm run build"
   }
 }

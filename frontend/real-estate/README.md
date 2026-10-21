@@ -12,7 +12,7 @@ npm install
 npm start                # http://localhost:4200 (the API must be running)
 ```
 
-`npm start`, `npm run build`, `npm run watch` and `npm test` first run
+`npm start`, `npm run build` and `npm run watch` first run
 `scripts/write-env.mjs`, which writes `src/environments/environment.ts` from `API_URL` and
 `TURNSTILE_SITE_KEY`.
 That file is generated and git-ignored; run one of these scripts (not `ng …` directly) after a

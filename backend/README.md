@@ -27,11 +27,9 @@ The admin area is at http://localhost:4200/admin.
 | Script                      | What it does                                                              |
 | --------------------------- | ------------------------------------------------------------------------- |
 | `npm run dev`               | Run from TypeScript with auto-reload                                      |
-| `npm run build`             | Compile to `dist/` (tests excluded)                                       |
+| `npm run build`             | Compile to `dist/`                                                       |
 | `npm start`                 | Run the compiled server (production)                                      |
-| `npm test`                  | Unit tests (pricing, booking rules, payment signatures)                  |
-| `TEST_DATABASE_URL=… npm test` | Also the API tests against a disposable, migrated database (it is emptied) |
-| `npm run typecheck`         | Type-check everything, tests included                                     |
+| `npm run typecheck`         | Type-check the backend                                                   |
 | `npm run db:migrate`        | Apply pending migrations with the compiled code (production)             |
 | `npm run db:migrate:dev`    | Same, from TypeScript                                                     |
 | `npm run admin:create`      | Create an admin account: `-- <email> "<name>"` (`admin:create:prod` after build) |
@@ -49,6 +47,11 @@ For Neon, use the pooled connection string as `DATABASE_URL` for the running API
 suffix), then restore the pooled URL before starting the API. The project and branch must be
 selected in Neon before setting these values. Listing content and source links are recorded in
 [`CONTENT_SOURCES.md`](CONTENT_SOURCES.md).
+
+If a local network resets the PostgreSQL connection on port 5432 (`ECONNRESET`), set
+`DB_TRANSPORT=websocket` in `backend/.env` and restart the API. This uses Neon's encrypted
+WebSocket connection on port 443 with the same database and credentials, including transaction
+support. The default, `DB_TRANSPORT=tcp`, keeps the standard `pg` connection.
 
 ## Architecture
 

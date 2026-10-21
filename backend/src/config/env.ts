@@ -242,6 +242,8 @@ export const env = Object.freeze({
 
   db: Object.freeze({
     url: url('DATABASE_URL', false),
+    /** Neon WebSockets use port 443 on networks that block PostgreSQL TCP connections. */
+    transport: oneOf('DB_TRANSPORT', ['tcp', 'websocket'] as const, 'tcp'),
     /** Maximum open connections per app instance. Keep instances × poolMax below the DB's max_connections. */
     poolMax: integer('DB_POOL_MAX', 10, 1, 100),
     /** Queries running longer than this are cancelled by Postgres, so slow queries cannot pile up. */
@@ -307,6 +309,11 @@ export const env = Object.freeze({
     accountName: requiredString('BANK_ACCOUNT_NAME'),
   }),
 });
+
+if (env.db.transport === 'websocket') {
+  const host = URL.canParse(env.db.url) ? new URL(env.db.url).hostname : '';
+  if (!host.endsWith('.neon.tech')) problems.push('DB_TRANSPORT=websocket requires a Neon DATABASE_URL');
+}
 
 if (isProduction) {
   if (!resendApiKey) problems.push('RESEND_API_KEY is required in production');

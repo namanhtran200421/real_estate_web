@@ -12,6 +12,8 @@
  * - `statement_timeout` makes Postgres cancel any runaway query.
  */
 import pg from 'pg';
+import { Pool as NeonPool, DatabaseError as NeonDatabaseError, neonConfig, types as neonTypes } from '@neondatabase/serverless';
+import WebSocket from 'ws';
 import { env } from '../config/env.js';
 import { logger } from '../lib/logger.js';
 
@@ -19,16 +21,29 @@ import { logger } from '../lib/logger.js';
 // local midnight, which silently shifts the day when server and business time zones differ.
 const DATE_OID = 1082;
 pg.types.setTypeParser(DATE_OID, (value) => value);
+neonTypes.setTypeParser(DATE_OID, (value) => value);
 
 /** The pool itself, or a client checked out for a transaction. Repositories accept either. */
-export type Db = pg.Pool | pg.PoolClient;
+export interface Db {
+  query<Row extends pg.QueryResultRow = pg.QueryResultRow>(text: string, params?: unknown[]): Promise<pg.QueryResult<Row>>;
+}
+
+interface TransactionClient extends Db {
+  release(broken?: boolean): void;
+}
+
+interface DatabasePool extends Db {
+  connect(): Promise<TransactionClient>;
+  end(): Promise<void>;
+  on(event: 'error', listener: (error: Error) => void): unknown;
+}
 
 function sslOptions(): pg.PoolConfig['ssl'] {
   if (!env.db.ssl) return false;
   return { rejectUnauthorized: true };
 }
 
-export const pool = new pg.Pool({
+const poolOptions = {
   connectionString: env.db.url,
   max: env.db.poolMax,
   idleTimeoutMillis: 30_000,
@@ -38,8 +53,14 @@ export const pool = new pg.Pool({
   query_timeout: env.db.statementTimeoutMs + 1_000,
   options: `-c timezone=${env.timezone}`,
   application_name: 'real-estate-api',
-  ssl: sslOptions(),
-});
+};
+
+// The WebSocket connection is encrypted by WSS with certificate verification. Keep TCP as
+// the default for deployments and ordinary Postgres databases; select WebSockets explicitly.
+neonConfig.webSocketConstructor = WebSocket;
+export const pool: DatabasePool = env.db.transport === 'websocket'
+  ? new NeonPool(poolOptions)
+  : new pg.Pool({ ...poolOptions, ssl: sslOptions() });
 
 // An idle client can lose its connection (DB restart, network blip). Without this listener
 // the error would be unhandled and crash the process; the pool replaces the client itself.
@@ -74,14 +95,14 @@ export const PG_ERROR = {
 } as const;
 
 export function isPgError(error: unknown, code: string): boolean {
-  return error instanceof pg.DatabaseError && error.code === code;
+  return (error instanceof pg.DatabaseError || error instanceof NeonDatabaseError) && error.code === code;
 }
 
 /**
  * Runs `work` inside a transaction on a dedicated client: commits if it resolves, rolls back
  * if it throws. Use it whenever several statements must succeed or fail together.
  */
-export async function withTransaction<T>(work: (client: pg.PoolClient) => Promise<T>): Promise<T> {
+export async function withTransaction<T>(work: (client: TransactionClient) => Promise<T>): Promise<T> {
   const client = await pool.connect();
   // A connection whose transaction state is unknown (ROLLBACK failed) is destroyed, not reused.
   let broken = false;

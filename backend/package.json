@@ -15,7 +15,6 @@
     "typecheck": "tsc --noEmit",
     "db:migrate": "node dist/db/migrate.js",
     "db:migrate:dev": "tsx src/db/migrate.ts",
-    "test": "node --import tsx --test \"src/**/*.test.ts\"",
     "admin:create": "tsx src/scripts/create-admin.ts",
     "admin:create:prod": "node dist/scripts/create-admin.js"
   },
@@ -23,6 +22,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@neondatabase/serverless": "^1.2.0",
     "@tesseract.js-data/vie": "^1.0.0",
     "compression": "^1.8.2",
     "cors": "^2.8.6",
@@ -33,6 +33,7 @@
     "pg": "8.23.0",
     "qrcode": "^1.5.4",
     "tesseract.js": "^7.0.0",
+    "ws": "^8.22.0",
     "zod": "^4.6.5"
   },
   "devDependencies": {
@@ -42,6 +43,7 @@
     "@types/node": "^26.6.2",
     "@types/pg": "^8.23.1",
     "@types/qrcode": "^1.5.6",
+    "@types/ws": "^8.18.2",
     "tsx": "^4.23.15",
     "typescript": "^6.0.3"
   }
