@@ -3,8 +3,6 @@ import { DomSanitizer } from '@angular/platform-browser';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { ApartmentHeader } from '../../components/apartment-header/apartment-header';
 import { ApartmentNotFound } from '../../components/apartment-not-found/apartment-not-found';
-import { ContactCards } from '../../components/contact-cards/contact-cards';
-import { RouteMap } from '../../components/route-map/route-map';
 import { Split } from '../../motion/split';
 import { ApartmentService } from '../../services/apartment.service';
 import { SeoService } from '../../services/seo.service';
@@ -12,7 +10,7 @@ import { googleMapEmbedUrl, preconnectGoogleMaps } from '../../shared/google-map
 
 @Component({
   selector: 'app-location',
-  imports: [TranslocoPipe, ApartmentHeader, ApartmentNotFound, ContactCards, RouteMap, Split],
+  imports: [TranslocoPipe, ApartmentHeader, ApartmentNotFound, Split],
   templateUrl: './location.html',
 })
 export class LocationPage {

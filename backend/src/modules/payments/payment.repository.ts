@@ -142,6 +142,27 @@ async function listForBooking(bookingId: string, db?: Db): Promise<PaymentRecord
   return query<PaymentRecord>(`SELECT ${PAYMENT_COLUMNS} ${FROM_PAYMENTS} WHERE p.booking_id = $1 ORDER BY p.created_at`, [bookingId], db);
 }
 
+/** Caller holds the booking lock. Lock every deposit before reading fresh refund totals. */
+async function lockRefundableDeposits(bookingId: string, db: Db): Promise<{ id: string; refundable: number }[]> {
+  const deposits = await query<{ id: string; amount: number }>(
+    `SELECT p.id, p.amount FROM payments p
+     WHERE p.booking_id = $1 AND p.purpose = 'asset_security' AND p.state = 'succeeded'
+     ORDER BY p.created_at, p.id FOR UPDATE OF p`,
+    [bookingId],
+    db,
+  );
+  if (deposits.length === 0) return [];
+  // A separate statement sees refunds committed while we waited for a payment lock.
+  const refunds = await query<{ paymentId: string; amount: number }>(
+    `SELECT payment_id AS "paymentId", sum(amount)::int AS amount FROM refunds
+     WHERE payment_id = ANY($1::uuid[]) AND state = 'succeeded' GROUP BY payment_id`,
+    [deposits.map((deposit) => deposit.id)],
+    db,
+  );
+  const refunded = new Map(refunds.map((refund) => [refund.paymentId, refund.amount]));
+  return deposits.map((deposit) => ({ id: deposit.id, refundable: deposit.amount - (refunded.get(deposit.id) ?? 0) }));
+}
+
 /** The transfer the guest reported and the owner has not checked yet, if any. */
 async function findPendingForBooking(bookingId: string, db?: Db): Promise<PaymentRecord | undefined> {
   return queryOne<PaymentRecord>(
@@ -206,6 +227,21 @@ async function insertRefund(refund: { paymentId: string; amount: number; reason:
   );
 }
 
+async function insertRefunds(
+  refunds: readonly { paymentId: string; amount: number; reason: string; createdBy: string }[],
+  db: Db,
+): Promise<void> {
+  if (refunds.length === 0) return;
+  await query(
+    `INSERT INTO refunds (payment_id, amount, reason, created_by, state, completed_at)
+     SELECT payment_id, amount, reason, created_by, 'succeeded', now()
+     FROM unnest($1::uuid[], $2::int[], $3::text[], $4::uuid[]) AS input(payment_id, amount, reason, created_by)`,
+    [refunds.map((refund) => refund.paymentId), refunds.map((refund) => refund.amount),
+      refunds.map((refund) => refund.reason), refunds.map((refund) => refund.createdBy)],
+    db,
+  );
+}
+
 async function refundedTotal(paymentId: string, db: Db): Promise<number> {
   const row = await queryOne<{ total: number }>(
     `SELECT coalesce(sum(amount), 0)::int AS total FROM refunds WHERE payment_id = $1 AND state = 'succeeded'`,
@@ -233,12 +269,14 @@ export const paymentRepository = {
   insertManual,
   findById,
   listForBooking,
+  lockRefundableDeposits,
   findPendingForBooking,
   markVerified,
   markFailed,
   failPendingForBooking,
   totals,
   insertRefund,
+  insertRefunds,
   refundedTotal,
   listRefundsForBooking,
 };

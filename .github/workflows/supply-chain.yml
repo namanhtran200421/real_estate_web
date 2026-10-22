@@ -17,6 +17,8 @@ on:
       - 'frontend/real-estate/package-lock.json'
       - '.github/workflows/supply-chain.yml'
   workflow_dispatch:
+  schedule:
+    - cron: '17 21 * * *'
 
 permissions:
   contents: read

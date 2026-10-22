@@ -30,9 +30,11 @@ fresh clone.
 
 ## Security
 
-- **Content-Security-Policy** on every page (`src/csp.ts`): scripts only from this site,
-  Cloudflare Turnstile, or inline with a fresh per-response nonce that `src/server.ts` stamps on
-  Angular's own inline scripts. Injected markup cannot run; the page cannot be framed.
+- **Content-Security-Policy** on production HTML (`src/csp.ts`): scripts only from this site,
+  Cloudflare Turnstile, or inline with a SHA-256 hash of the completed SSR output. HTML and its
+  matching policy can share a public cache entry without reusing a nonce. Script attributes are
+  blocked; the page cannot be framed. This final renderer step assumes Angular has escaped
+  untrusted content; it is not an HTML sanitizer.
 - **Headers** on every response: `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy`,
   `Permissions-Policy`, `Cross-Origin-Opener-Policy`, HSTS over HTTPS. Files served straight
   from Vercel's CDN get theirs from `vercel.json`.
@@ -41,6 +43,9 @@ fresh clone.
 - The admin token is kept in tab-scoped session storage and sent only to this site's own API (`admin-auth.service.ts`).
 - If the CSP ever blocks something new (e.g. another embed), add its origin to the matching
   directive in `src/csp.ts`; never add `'unsafe-inline'` to `script-src`.
+- Vercel static caching and hardening headers live inside `routes` before the filesystem handler.
+  Fingerprinted bundles get a year of immutable caching; photos and unversioned fonts get a week.
+  Booking and owner HTML keep their private cache policies from the SSR routes.
 
 ## Structure
 

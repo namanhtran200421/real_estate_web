@@ -1,19 +1,11 @@
 @if (apartment(); as apt) {
   <app-apartment-header [apartment]="apt" />
 
-  <!-- Around: the apartment at the centre, journey times to each place. -->
-  <section class="section">
-    <div class="container-editorial max-w-6xl">
-      <p class="label-caps text-accent-deep">{{ 'location.eyebrow' | transloco }}</p>
-      <h2 class="display-section mt-4"><app-split [text]="'home.scenes.aroundTitle' | transloco" /></h2>
-      <div class="mt-12"><app-route-map [places]="apt.nearby" [label]="'home.scenes.aroundTitle' | transloco" [centre]="'home.scenes.aroundCentre' | transloco" /></div>
-    </div>
-  </section>
-
   <!-- The map and the address. -->
-  <section class="bg-muted pb-20 pt-4 md:pb-24">
+  <section class="pb-20 pt-14 md:pb-28 md:pt-20">
     <div class="container-editorial max-w-6xl">
-      <div class="panel grid gap-8 !p-4 md:grid-cols-[1.3fr_0.7fr] md:gap-10 md:!p-6">
+      <h1 class="display-section"><app-split [text]="'apartment.locationTitle' | transloco" /></h1>
+      <div class="panel mt-10 grid gap-8 !p-4 md:grid-cols-[1.3fr_0.7fr] md:gap-10 md:!p-6">
         <div class="overflow-hidden rounded-lg bg-muted">
           <!-- The map is what this page is for: create it once the page is idle, not on scroll. -->
           @defer (on idle) {
@@ -41,13 +33,6 @@
     </div>
   </section>
 
-  <section class="section">
-    <div class="container-editorial max-w-6xl">
-      <p class="label-caps text-center text-accent-deep">{{ 'nav.contact' | transloco }}</p>
-      <h2 class="display-section mt-4 text-center"><app-split [text]="'location.callUs' | transloco" /></h2>
-      <app-contact-cards class="mt-12 block" />
-    </div>
-  </section>
 } @else {
   <app-apartment-not-found />
 }

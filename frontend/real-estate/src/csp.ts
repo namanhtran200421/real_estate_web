@@ -1,15 +1,14 @@
+import { createHash } from 'node:crypto';
+import { parse, type DefaultTreeAdapterMap } from 'parse5';
+
 /**
- * Content-Security-Policy for rendered pages (used by server.ts).
- *
- * Scripts run only from this site, Cloudflare Turnstile, or inline with the response's nonce, so
- * injected markup cannot execute. Styles may be inline (Angular and critical CSS use them). The
- * browser talks only to our API and Turnstile, frames only Turnstile and Google Maps, and the
- * page itself cannot be framed.
+ * Hash-based script policy for completed SSR HTML. Hashes can be cached with the HTML without
+ * sharing a nonce between visitors. Styles remain inline for Angular and critical CSS.
  */
-export function contentSecurityPolicy(nonce: string, apiOrigin: string, https: boolean): string {
+export function contentSecurityPolicy(scriptHashes: readonly string[], apiOrigin: string, https: boolean): string {
   const directives = [
     "default-src 'self'",
-    `script-src 'self' 'nonce-${nonce}' https://challenges.cloudflare.com`,
+    `script-src 'self' ${scriptHashes.join(' ')} https://challenges.cloudflare.com`,
     "script-src-attr 'none'",
     "style-src 'self' 'unsafe-inline'",
     "font-src 'self' data:",
@@ -27,15 +26,48 @@ export function contentSecurityPolicy(nonce: string, apiOrigin: string, https: b
   return directives.join('; ');
 }
 
-/**
- * `<script` start tags that run code and carry no nonce yet: JSON data blocks (transfer state,
- * JSON-LD) are left alone. Angular escapes every value it renders and the JSON blocks escape
- * "<", so each such tag in a rendered page was written by Angular itself (hydration event
- * replay, critical CSS loader, the app bundle), never by data.
- */
-const EXECUTABLE_SCRIPT = /<script(?=[\s>])(?![^>]*\bnonce=)(?![^>]*\btype=["']?application\/(?:ld\+)?json)/gi;
+const JAVASCRIPT_TYPES = new Set([
+  '', 'module', 'importmap', 'speculationrules',
+  'application/ecmascript', 'application/javascript', 'application/x-ecmascript', 'application/x-javascript',
+  'text/ecmascript', 'text/javascript', 'text/javascript1.0', 'text/javascript1.1',
+  'text/javascript1.2', 'text/javascript1.3', 'text/javascript1.4', 'text/javascript1.5',
+  'text/jscript', 'text/livescript', 'text/x-ecmascript', 'text/x-javascript',
+]);
 
-/** Gives every executable `<script>` in a rendered page the response's nonce. */
-export function stampScriptNonces(html: string, nonce: string): string {
-  return html.replace(EXECUTABLE_SCRIPT, `<script nonce="${nonce}"`);
+/**
+ * Inspect renderer-owned scripts using an HTML parser, not a regular expression. Hash the
+ * parsed inline text (including browser line-ending normalization), skip inert data and
+ * external scripts, and remove legacy nonce attributes without reserializing the document.
+ *
+ * This is a final SSR transform, not a sanitizer: templates must continue escaping untrusted
+ * data and must never insert raw executable markup from a guest or listing field.
+ */
+export function protectInlineScripts(html: string): { html: string; hashes: string[] } {
+  const document = parse(html, { sourceCodeLocationInfo: true });
+  const hashes = new Set<string>();
+  const nonceRanges: { startOffset: number; endOffset: number }[] = [];
+
+  function visit(node: DefaultTreeAdapterMap['node']): void {
+    if ('tagName' in node && node.tagName === 'script') {
+      const nonce = node.sourceCodeLocation?.attrs?.['nonce'];
+      if (nonce) nonceRanges.push(nonce);
+      const type = node.attrs.find((attr) => attr.name === 'type')?.value.trim().toLowerCase() ?? '';
+      const external = node.attrs.some((attr) => attr.name === 'src');
+      if (!external && JAVASCRIPT_TYPES.has(type)) {
+        const text = node.childNodes.filter((child) => 'value' in child).map((child) => child.value).join('');
+        if (text) hashes.add(`'sha256-${createHash('sha256').update(text, 'utf8').digest('base64')}'`);
+      }
+    }
+    if ('childNodes' in node) node.childNodes.forEach(visit);
+  }
+
+  visit(document);
+  for (const range of nonceRanges.sort((a, b) => b.startOffset - a.startOffset)) {
+    html = html.slice(0, range.startOffset) + html.slice(range.endOffset);
+  }
+  return { html, hashes: [...hashes] };
+}
+
+export function inlineScriptHashes(html: string): string[] {
+  return protectInlineScripts(html).hashes;
 }

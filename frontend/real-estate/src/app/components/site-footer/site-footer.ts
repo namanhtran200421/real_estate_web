@@ -16,6 +16,8 @@ export class SiteFooter {
   protected readonly links = [
     { label: 'nav.about', path: '/about' },
     { label: 'nav.apartment', path: '/apartment' },
+    { label: 'apartment.tabs.gallery', path: '/gallery' },
+    { label: 'apartment.tabs.location', path: '/location' },
     { label: 'nav.book', path: '/book' },
     { label: 'nav.lookup', path: '/booking/manage' },
     { label: 'nav.contact', path: '/contact' },

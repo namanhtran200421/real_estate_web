@@ -9,3 +9,5 @@ VN Booking Hub apartment rental website, now featuring Sun Garden A04-12 in Đà
 
 Local setup: follow the quick start in `backend/README.md`, then `frontend/real-estate/README.md`.
 Before launch: the go-live checklist at the end of `backend/README.md`.
+
+Security review: [22 October remediation and verification](docs/security-remediation-2026-10-22.md).

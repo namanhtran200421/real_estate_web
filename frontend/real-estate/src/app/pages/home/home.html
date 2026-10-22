@@ -29,64 +29,38 @@
       </div>
     </section>
 
-    <!-- 3 · Daylight -->
-    <section id="can-ho" class="bg-muted py-24 md:py-32">
-      <div class="container-editorial grid max-w-6xl items-center gap-12 md:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-        <div class="arch lights aspect-[3/4]" appReveal>
-          <img [ngSrc]="h.detail.src" [alt]="h.detail.alt" fill sizes="(min-width: 768px) 40vw, 90vw" class="object-cover object-[60%_70%]" />
+    <!-- 4 · An invitation to the apartment page (where the full room tour lives): two rooms, straight
+         on the grid, each opening that room; the button opens the whole apartment. -->
+    <section class="section" aria-labelledby="rooms-preview-title">
+      <div class="rooms-preview container-editorial max-w-6xl">
+        <div class="rooms-preview__copy">
+          <h2 id="rooms-preview-title" class="display-section">{{ 'home.scenes.apartmentPreview.title' | transloco }}</h2>
+          <p class="mt-6 max-w-md text-lg text-muted-foreground">{{ 'home.scenes.apartmentPreview.text' | transloco }}</p>
+          <a class="btn btn-primary mt-9" routerLink="/apartment" [queryParams]="{ apt: apt.slug }">{{ 'home.scenes.apartmentPreview.cta' | transloco }}</a>
         </div>
-        <div>
-          <p class="label-caps text-accent-deep">{{ 'home.scenes.placeEyebrow' | transloco }}</p>
-          <h2 class="display-section mt-4"><app-split [text]="'home.scenes.placeTitle' | transloco" /></h2>
-          <dl class="mt-10 grid grid-cols-2 gap-x-8 gap-y-6">
-            <div class="border-t border-border pt-4">
-              <dt class="label-caps text-muted-foreground">{{ 'home.scenes.guestCapacity' | transloco }}<sup class="ml-0.5" aria-hidden="true">*</sup></dt>
-              <dd class="mt-1 font-serif text-5xl font-light" aria-describedby="guest-capacity-note">{{ apt.guests }}+</dd>
-            </div>
-            @for (stat of [
-              { value: apt.bedrooms, label: 'apartment.stats.bedrooms' },
-              { value: apt.beds, label: 'apartment.stats.beds' },
-              { value: apt.bathrooms, label: 'apartment.stats.bathrooms' },
-            ]; track stat.label) {
-              <div class="border-t border-border pt-4">
-                <dt class="label-caps text-muted-foreground">{{ stat.label | transloco }}</dt>
-                <dd class="mt-1 font-serif text-5xl font-light">{{ stat.value }}</dd>
-              </div>
+        @if (rooms().length) {
+          <ul class="rooms-preview__photos">
+            @for (room of rooms(); track room.id) {
+              <li>
+                <a class="rooms-preview__room group" routerLink="/gallery" [queryParams]="{ apt: apt.slug }" [fragment]="room.id">
+                  <span class="rooms-preview__photo">
+                    <img [ngSrc]="room.photo.src" [alt]="room.photo.alt" fill sizes="(min-width: 1024px) 30vw, 50vw" class="media-zoom object-cover" />
+                  </span>
+                  <span class="rooms-preview__name">{{ 'rooms.' + room.key + '.title' | transloco }}</span>
+                </a>
+              </li>
             }
-          </dl>
-          <p id="guest-capacity-note" class="mt-4 max-w-md text-sm text-muted-foreground">
-            * <a class="link-subtle underline underline-offset-4" routerLink="/policy" fragment="item-3">{{ 'home.scenes.guestCapacityNote' | transloco }}</a>
-          </p>
-          <p class="mt-10 max-w-md text-lg text-muted-foreground">{{ 'home.scenes.cool' | transloco }}</p>
-        </div>
+          </ul>
+        }
       </div>
     </section>
 
-    <!-- 4 · An invitation to the apartment page, where the full room tour lives. -->
-    <section class="section">
+    <!-- Around: the apartment at the centre, journey times to each place; the map itself is on Location. -->
+    <section class="section pt-0 md:pt-0 lg:pt-0" aria-labelledby="around-title">
       <div class="container-editorial max-w-6xl">
-        <a class="apartment-invitation" [class.apartment-invitation--with-photos]="previewPhotos().length > 0" routerLink="/apartment" [queryParams]="{ apt: apt.slug }">
-          @if (previewPhotos().length) {
-            <div class="apartment-invitation__photos" [class.apartment-invitation__photos--single]="previewPhotos().length === 1">
-              @for (photo of previewPhotos(); track photo.src; let i = $index) {
-                <div class="apartment-invitation__print" [class.apartment-invitation__print--detail]="i === 1">
-                  <div class="apartment-invitation__image">
-                    <img [ngSrc]="photo.src" [alt]="photo.alt" fill [sizes]="i === 0 ? '(min-width: 1024px) 34vw, (min-width: 640px) 60vw, 75vw' : '(min-width: 1024px) 17vw, 35vw'" class="object-cover" />
-                  </div>
-                </div>
-              }
-            </div>
-          }
-          <div class="apartment-invitation__copy">
-            <p class="label-caps text-accent-deep">{{ 'nav.apartment' | transloco }}</p>
-            <h2 id="apartment-invitation-title" class="display-section mt-4 max-w-3xl">{{ 'home.scenes.apartmentPreview.title' | transloco }}</h2>
-            <p class="mt-6 max-w-xl text-lg text-muted-foreground">{{ 'home.scenes.apartmentPreview.text' | transloco }}</p>
-            <span class="apartment-invitation__action mt-8">
-              <span>{{ 'home.scenes.apartmentPreview.cta' | transloco }}</span>
-              <span class="apartment-invitation__arrow" aria-hidden="true">↗</span>
-            </span>
-          </div>
-        </a>
+        <h2 id="around-title" class="display-section"><app-split [text]="'home.scenes.aroundTitle' | transloco" /></h2>
+        <div class="mt-12"><app-route-map [places]="apt.nearby" [label]="'home.scenes.aroundTitle' | transloco" [centre]="'home.scenes.aroundCentre' | transloco" /></div>
+        <a class="link mt-10 inline-flex min-h-11 items-center" routerLink="/location" [queryParams]="{ apt: apt.slug }">{{ 'apartment.locationTitle' | transloco }}</a>
       </div>
     </section>
 
@@ -104,24 +78,15 @@
       </div>
     </app-navy-band>
 
-    <!-- 6 · Lamps: around + final call -->
-    <section class="section">
-      <div class="container-editorial max-w-6xl">
-        <p class="label-caps text-accent-deep">{{ 'home.scenes.aroundEyebrow' | transloco }}</p>
-        <h2 class="display-section mt-4"><app-split [text]="'home.scenes.aroundTitle' | transloco" /></h2>
-        <div class="mt-12"><app-route-map [places]="apt.nearby" [label]="'home.scenes.aroundTitle' | transloco" [centre]="'home.scenes.aroundCentre' | transloco" /></div>
-        <div class="relative isolate mt-24 py-16 text-center">
-          <div class="final-glow" data-final-glow aria-hidden="true"></div>
-          <h2 class="display-section mx-auto max-w-3xl"><app-split [text]="'home.scenes.closingTitle' | transloco" /></h2>
-          <a class="btn btn-primary mt-10 px-10 py-5 text-lg" routerLink="/book" [queryParams]="{ apt: apt.slug }">{{ 'home.scenes.closingCta' | transloco }} →</a>
-        </div>
-        @if (others().length) {
-          <h2 class="display-section mt-24">{{ 'home.otherApartments' | transloco }}</h2>
+    @if (others().length) {
+      <section class="section">
+        <div class="container-editorial max-w-6xl">
+          <h2 class="display-section">{{ 'home.otherApartments' | transloco }}</h2>
           <div class="mt-8 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
             @for (other of others(); track other.id) { <app-apartment-card [apartment]="other" /> }
           </div>
-        }
-      </div>
-    </section>
+        </div>
+      </section>
+    }
   }
 }

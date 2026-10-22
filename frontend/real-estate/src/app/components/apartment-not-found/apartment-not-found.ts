@@ -27,7 +27,7 @@ import { ApartmentService } from '../../services/apartment.service';
           <p class="section-label mx-auto max-w-xs">404</p>
           <h1 class="text-4xl md:text-5xl">{{ 'notFound.title' | transloco }}</h1>
           <p class="mt-6 text-muted-foreground">{{ 'notFound.text' | transloco }}</p>
-          <a routerLink="/" fragment="can-ho" class="btn btn-outline mt-10">{{ 'notFound.browse' | transloco }}</a>
+          <a routerLink="/apartment" class="btn btn-outline mt-10">{{ 'notFound.browse' | transloco }}</a>
         }
       </div>
     </section>

@@ -1,4 +1,6 @@
 import { Component, computed, effect, inject, input } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { ActivatedRoute } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { ApartmentHeader } from '../../components/apartment-header/apartment-header';
 import { ApartmentNotFound } from '../../components/apartment-not-found/apartment-not-found';
@@ -42,6 +44,13 @@ export class Gallery {
   private readonly starts = computed(() => {
     let at = 0;
     return this.chapters().map((chapter) => ((at += chapter.photos.length), at - chapter.photos.length));
+  });
+
+  private readonly fragment = toSignal(inject(ActivatedRoute).fragment);
+  /** A link to /gallery#<room id> (Home's room photos) opens the carousel at that room's first photo. */
+  protected readonly startIndex = computed(() => {
+    const room = this.chapters().findIndex((chapter) => chapter.id === this.fragment());
+    return room < 0 ? 0 : this.roomStart(room);
   });
 
   /** The first photo of room `c`. */

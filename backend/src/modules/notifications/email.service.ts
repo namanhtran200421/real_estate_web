@@ -38,8 +38,12 @@ const MAX_ATTEMPTS = 8;
 const RETENTION_DAYS = 90;
 
 /** One copy to each OWNER_EMAIL address, so each is delivered and retried on its own. */
+function ownerEmails(content: Omit<OutgoingEmail, 'to'>): OutgoingEmail[] {
+  return env.email.ownerAddresses.map((to) => ({ to, ...content }));
+}
+
 async function queueToOwner(content: Omit<OutgoingEmail, 'to'>, db: Db): Promise<void> {
-  for (const to of env.email.ownerAddresses) await emailRepository.enqueue({ to, ...content }, db);
+  await emailRepository.enqueueAll(ownerEmails(content), db);
 }
 
 /** New booking: how to pay, to the guest; "watch for this transfer", to the owner. */
@@ -48,8 +52,11 @@ async function queueBookingHeld(booking: BookingEmailContext, note: string, db: 
   await queueToOwner(ownerNewBookingEmail(booking, note), db);
 }
 
-async function queueHoldEndingReminder(booking: BookingEmailContext, note: string, db: Db): Promise<void> {
-  await queueToOwner(ownerHoldEndingEmail(booking, note), db);
+async function queueHoldEndingReminders(reminders: { booking: BookingEmailContext; note: string }[], db: Db): Promise<void> {
+  await emailRepository.enqueueAll(
+    reminders.flatMap(({ booking, note }) => ownerEmails(ownerHoldEndingEmail(booking, note))),
+    db,
+  );
 }
 
 /** Acknowledgement to the guest; "please check your bank account" to the owner. */
@@ -79,24 +86,26 @@ async function queueRefundIssued(booking: BookingEmailContext, amount: number, d
   await emailRepository.enqueue({ to: booking.customerEmail, ...refundIssuedEmail(booking, amount) }, db);
 }
 
-async function queueCheckoutReminder(booking: BookingEmailContext, db: Db): Promise<void> {
-  await emailRepository.enqueue({ to: booking.customerEmail, ...checkoutReminderEmail(booking) }, db);
+async function queueCheckoutReminders(bookings: BookingEmailContext[], db: Db): Promise<void> {
+  await emailRepository.enqueueAll(bookings.map((booking) => ({ to: booking.customerEmail, ...checkoutReminderEmail(booking) })), db);
 }
 
-async function queueRentRequest(booking: BookingEmailContext, db: Db): Promise<void> {
-  await emailRepository.enqueue({ to: booking.customerEmail, ...rentRequestEmail(booking) }, db);
+async function queueRentRequests(bookings: BookingEmailContext[], db: Db): Promise<void> {
+  await emailRepository.enqueueAll(bookings.map((booking) => ({ to: booking.customerEmail, ...rentRequestEmail(booking) })), db);
 }
 
-async function queueLateCheckoutAlert(
-  booking: BookingEmailContext,
-  nextArrivalReference: string | null,
+async function queueLateCheckoutAlerts(
+  alerts: { booking: BookingEmailContext; nextArrivalReference: string | null }[],
   db: Db,
 ): Promise<void> {
-  await queueToOwner(ownerLateCheckoutEmail(booking, nextArrivalReference), db);
+  await emailRepository.enqueueAll(
+    alerts.flatMap(({ booking, nextArrivalReference }) => ownerEmails(ownerLateCheckoutEmail(booking, nextArrivalReference))),
+    db,
+  );
 }
 
-async function queueAdminPasswordChanged(change: PasswordChangedContext): Promise<void> {
-  await emailRepository.enqueue({ to: change.email, ...adminPasswordChangedEmail(change) });
+async function queueAdminPasswordChanged(change: PasswordChangedContext, db: Db): Promise<void> {
+  await emailRepository.enqueue({ to: change.email, ...adminPasswordChangedEmail(change) }, db);
 }
 
 async function queueContactMessage(contact: ContactEmailContext, db: Db): Promise<void> {
@@ -135,16 +144,16 @@ async function purgeOldEmails(): Promise<number> {
 export const emailService = {
   purgeOldEmails,
   queueBookingHeld,
-  queueHoldEndingReminder,
+  queueHoldEndingReminders,
   queueTransferReported,
   queueTransferNotReceived,
   queuePaymentReceived,
   queueBookingConfirmed,
   queueBookingCancelled,
   queueRefundIssued,
-  queueCheckoutReminder,
-  queueRentRequest,
-  queueLateCheckoutAlert,
+  queueCheckoutReminders,
+  queueRentRequests,
+  queueLateCheckoutAlerts,
   queueAdminPasswordChanged,
   queueContactMessage,
   deliverDueEmails,

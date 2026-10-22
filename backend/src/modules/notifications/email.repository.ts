@@ -26,6 +26,18 @@ async function enqueue(email: OutgoingEmail, db?: Db): Promise<void> {
   await query('INSERT INTO email_outbox (to_address, subject, html, text) VALUES ($1, $2, $3, $4)', [email.to, email.subject, email.html, email.text], db);
 }
 
+/** Queue a notification batch atomically without one round trip per recipient. */
+async function enqueueAll(emails: readonly OutgoingEmail[], db?: Db): Promise<void> {
+  if (emails.length === 0) return;
+  await query(
+    `INSERT INTO email_outbox (to_address, subject, html, text)
+     SELECT * FROM unnest($1::text[], $2::text[], $3::text[], $4::text[])`,
+    [emails.map((email) => email.to), emails.map((email) => email.subject),
+      emails.map((email) => email.html), emails.map((email) => email.text)],
+    db,
+  );
+}
+
 /** Reserves up to `limit` due emails and counts the attempt. */
 async function claimDue(limit: number): Promise<QueuedEmail[]> {
   return query<QueuedEmail>(
@@ -74,4 +86,4 @@ async function purgeFinished(days: number): Promise<number> {
   return rows.length;
 }
 
-export const emailRepository = { enqueue, claimDue, markSent, markFailed, purgeFinished };
+export const emailRepository = { enqueue, enqueueAll, claimDue, markSent, markFailed, purgeFinished };

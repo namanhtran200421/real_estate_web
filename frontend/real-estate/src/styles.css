@@ -845,55 +845,6 @@
     background: var(--color-navy-deep);
   }
 
-  /* Room tour, default (no JS, engine failed, reduced motion, landscape phones, tablets): a vertical list. */
-  .room-tour__track { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4rem; padding-inline: 1.5rem; margin-top: 2rem; list-style: none; }
-  .room-tour__chapter { min-width: 0; }
-  .room-tour__photos { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 0.75rem; }
-  .room-tour__photos > div { aspect-ratio: 3 / 4; }
-  .room-tour__photos > .room-tour__lead { grid-row: span 2; aspect-ratio: auto; }
-  /* Two photos: the second takes both rows (and sets the height); one photo: it fills the width. */
-  .room-tour__photos > .room-tour__lead + div:last-child { grid-row: span 2; }
-  .room-tour__photos > .room-tour__lead:only-child { grid-column: 1 / -1; aspect-ratio: 3 / 4; }
-  .room-tour__text { margin-top: 1.5rem; }
-  .room-tour__progress { display: none; }
-
-  /* Desktop motion: reserved height (about 250vh), sticky viewport, sideways track scrubbed by GSAP.
-     MotionService adds html.motion-ready only after the engine loads. */
-  @media (prefers-reduced-motion: no-preference) and (hover: hover) and (pointer: fine) and (min-width: 1024px) and (min-height: 700px) {
-    html.motion-ready .room-tour { height: 210vh; }
-    html.motion-ready .room-tour .room-tour__sticky { position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; justify-content: center; overflow-x: clip; }
-    html.motion-ready .room-tour .room-tour__track { display: flex; gap: 4vw; padding-inline: 6vw; width: max-content; margin-top: 3rem; }
-    html.motion-ready .room-tour .room-tour__chapter { width: min(58vw, 54rem); flex: none; display: grid; grid-template-columns: 1.4fr 1fr; gap: 3rem; align-items: end; }
-    html.motion-ready .room-tour .room-tour__photos { height: 62vh; }
-    html.motion-ready .room-tour .room-tour__photos > div { aspect-ratio: auto; }
-    html.motion-ready .room-tour .room-tour__cta { width: 22rem; align-self: center; display: block; }
-    html.motion-ready .room-tour .room-tour__progress { display: block; height: 1px; background: var(--color-accent); transform: scaleX(0); transform-origin: left; margin-top: 1rem; }
-  }
-
-  /* Portrait phones: chapters stack like cards (pure CSS), only when a full chapter fits (min-height 700px). */
-  @media (prefers-reduced-motion: no-preference) and (max-width: 767px) and (min-height: 700px) and (orientation: portrait) {
-    .room-tour__chapter:not(.room-tour__cta) {
-      position: sticky;
-      top: 5.5rem;
-      min-height: calc(100svh - 5.5rem);
-      background: var(--color-background);
-      padding: 1.5rem 1.25rem;
-      margin-inline: -1.5rem;
-      border: 1px solid var(--color-border);
-      border-radius: 24px 24px 0 0;
-      box-shadow: 0 -12px 28px -18px rgb(17 48 90 / 0.35);
-      text-align: center;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-    }
-    .room-tour__chapter:not(.room-tour__cta) .room-tour__photos { width: 100%; height: 58svh; }
-    .room-tour__chapter:not(.room-tour__cta) .room-tour__photos > div { aspect-ratio: auto; }
-    .room-tour__chapter:not(.room-tour__cta) .room-tour__text p { margin-inline: auto; }
-    .room-tour__cta { position: static; padding-block: 3rem; text-align: center; }
-  }
-
   /* Home hero carousel: slow settle per photo, controls. */
   @media (prefers-reduced-motion: no-preference) {
     .hero-zoom { transform: scale(1.04); transition: transform 7s cubic-bezier(0.22, 1, 0.36, 1); }
@@ -923,77 +874,21 @@
 
   .hero-dot__mark.is-active { background: var(--color-background); transform: scale(1.5); }
 
-  /* Closing call: a warm gold glow behind the headline (it blooms with scroll, opacity only). */
-  .final-glow {
-    position: absolute;
-    inset: -10% -5%;
-    z-index: -1;
-    pointer-events: none;
-    background: radial-gradient(ellipse at center, rgb(221 179 127 / 0.38), rgb(221 179 127 / 0.12) 45%, transparent 70%);
-  }
-
-  /* Two offset photographic prints invite guests into the full apartment page. */
-  .apartment-invitation {
-    display: grid;
-    gap: 2.5rem;
-    align-items: center;
-    padding-block: clamp(2.5rem, 6vw, 5rem);
-    border-block: 1px solid var(--color-border);
-    text-decoration: none;
-    cursor: pointer;
-  }
-  .apartment-invitation__photos { position: relative; isolation: isolate; min-width: 0; aspect-ratio: 1.2; margin-inline: 0.5rem; }
-  .apartment-invitation__photos::before {
-    content: '';
-    position: absolute;
-    inset: 1.5rem 1rem 1.5rem 0.75rem;
-    z-index: -1;
-    border: 1px solid var(--color-accent);
-    border-radius: 0.5rem;
-    background: var(--color-accent-muted);
-    transform: rotate(2deg);
-  }
-  .apartment-invitation__print {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 86%;
-    aspect-ratio: 4 / 3;
-    padding: clamp(0.375rem, 0.8vw, 0.625rem);
-    border: 1px solid var(--color-border);
-    border-radius: 0.5rem;
-    background: var(--color-card);
-    box-shadow: var(--shadow-lg);
-    transform: rotate(-3deg);
-  }
-  .apartment-invitation__print--detail { top: auto; left: auto; right: 0; bottom: 0; width: 40%; aspect-ratio: 3 / 4; transform: rotate(5deg); }
-  .apartment-invitation__image { position: relative; width: 100%; height: 100%; overflow: clip; border-radius: 0.1875rem; }
-  .apartment-invitation__photos--single { aspect-ratio: 4 / 3; }
-  .apartment-invitation__photos--single .apartment-invitation__print { width: 100%; }
-  .apartment-invitation__copy { min-width: 0; }
-  .apartment-invitation__action { display: inline-flex; align-items: center; gap: 1.25rem; font-size: 1rem; font-weight: 500; }
-  .apartment-invitation__arrow {
-    display: grid;
-    place-items: center;
-    flex: none;
-    width: 4rem;
-    height: 4rem;
-    border: 1px solid var(--color-accent);
-    border-radius: 50%;
-    background: var(--color-accent-muted);
-    font-size: 1.75rem;
-    transition: background-color 250ms, color 250ms, transform 250ms;
-  }
-  .apartment-invitation:hover .apartment-invitation__arrow,
-  .apartment-invitation:focus-visible .apartment-invitation__arrow { background: var(--color-foreground); color: var(--color-background); transform: translate(2px, -2px); }
-  .apartment-invitation:focus-visible { outline: 2px solid var(--color-ring); outline-offset: 8px; }
-  .apartment-invitation:active .apartment-invitation__arrow { transform: none; }
+  /* The invitation: copy and button beside two room photos set straight on the grid, the second
+     smaller and lower. Phones: copy first, the photos side by side beneath. */
+  .rooms-preview { display: grid; gap: 3rem; }
+  .rooms-preview__copy { min-width: 0; }
+  .rooms-preview__photos { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 1rem; align-items: start; margin: 0; padding: 0; list-style: none; }
+  .rooms-preview__photos > li:nth-child(2) { margin-top: clamp(2.5rem, 7vw, 6.5rem); }
+  .rooms-preview__room { display: block; text-decoration: none; }
+  .rooms-preview__photo { position: relative; display: block; aspect-ratio: 4 / 5; overflow: clip; border-radius: var(--radius-md); background: var(--color-muted); }
+  .rooms-preview__photos > li:nth-child(2) .rooms-preview__photo { aspect-ratio: 3 / 4; }
+  .rooms-preview__name { display: block; margin-top: 0.875rem; font-family: var(--font-serif); font-size: 1.25rem; line-height: 1.3; transition: color var(--motion-base) var(--motion-ease); }
+  .rooms-preview__room:hover .rooms-preview__name { color: var(--color-accent-deep); }
+  .rooms-preview__room:focus-visible { outline: 2px solid var(--color-ring); outline-offset: 6px; border-radius: var(--radius-md); }
   @media (min-width: 1024px) {
-    .apartment-invitation--with-photos { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 4rem; }
-    .apartment-invitation__copy .display-section { font-size: clamp(2.75rem, 4vw, 4rem); }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .apartment-invitation__arrow { transition: none; transform: none !important; }
+    .rooms-preview { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); align-items: center; gap: 4.5rem; }
+    .rooms-preview__photos { gap: 1.5rem; }
   }
 
   /* Phone book bar: a pill that slides up once the hero has scrolled away. */
@@ -1061,4 +956,23 @@
 
 app-site-header > header {
   view-transition-name: site-header;
+}
+
+/* Scroll fade (motion/scroll-fade.ts): blocks below the first screen rise 12px and fade in once.
+   The classes are added by script only when motion is allowed, and removed once the block arrives. */
+.fade-pending {
+  opacity: 0;
+  transform: translateY(12px);
+  transition:
+    opacity 600ms var(--motion-ease) var(--fade-delay, 0ms),
+    transform 700ms var(--motion-ease) var(--fade-delay, 0ms);
+}
+
+.fade-pending.fade-still {
+  transform: none;
+}
+
+.fade-pending.fade-in {
+  opacity: 1;
+  transform: none;
 }

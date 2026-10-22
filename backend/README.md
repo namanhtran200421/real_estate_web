@@ -228,6 +228,14 @@ that changes bookings) clears the cache at once; quotes and bookings always re-c
 availability in the database, so a cached calendar can never cause a double booking. Public
 responses also carry `Cache-Control: s-maxage=30` for a CDN, and JSON is compressed.
 
+Reminder jobs fetch notification details for all claimed bookings in one query, including next
+arrivals for late check-outs, and insert each notification type's outbox messages in one batch.
+Deposit refunds lock the booking first, lock its deposit payments in one ordered query, then
+fetch refund totals in one grouped query and insert the planned refunds in one batch. These
+database round trips stay constant as the number of bookings or payments grows. Claims, outbox
+messages and refunds retain their transaction boundaries. Focused checks run with
+`npm run test:security` after installing both projects' locked dependencies.
+
 ## API
 
 Base path `/api/v1`. Success: `{ "data": … }`. Error: `{ "error": { "code", "message", "details"? } }`.
@@ -282,6 +290,12 @@ contact inbox. Full list: `src/modules/admin/admin.router.ts`.
 | Leaking internals / stolen DB dump   | Bare 500s (details only in logs); admin session tokens stored as SHA-256 hashes; sent emails purged after 90 days |
 | Stolen or forgotten admin sign-in    | Sessions end after `ADMIN_IDLE_MINUTES` (120) without use and `ADMIN_SESSION_HOURS` (12) in all; the account page lists every signed-in device to sign out; a password change signs out all other devices and emails the admin |
 | Weak admin passwords                 | scrypt hashing; new passwords need 12+ characters, not a common password, not the email name, not the current one (`admin-auth/password.ts`, unit-tested) |
+
+Login session creation and password changes serialize on the owner's account row and recheck
+the password hash verified before acquiring that lock. Password replacement, revocation of
+other sessions and the notification outbox insert commit together. A login using an obsolete
+password cannot create a session after the change; one that commits first is revoked by it.
+The repository ignores `.env.*` variants while allowing explicitly named example templates.
 
 Production startup fails closed when Turnstile, database TLS or an explicit `TRUST_PROXY_HOPS`
 value is missing. The API logs a warning when `INTERNAL_API_KEY` is missing.

@@ -256,11 +256,33 @@ async function reactivate(id: string, db: Db): Promise<boolean> {
   }
 }
 
-/** Unpaid bookings currently holding dates for this email, phone or IP. */
-async function countActiveHolds(identity: { email: string; phone: string; ip: string | undefined }, db: Db): Promise<number> {
+interface HoldIdentity {
+  email: string;
+  phone: string;
+  ip: string | undefined;
+}
+
+/**
+ * Serialize creation for any shared identity until this transaction commits. Row locks on
+ * existing bookings cannot protect a count-and-insert budget when no matching row exists.
+ * Always acquire the namespaced keys in lexical namespace order (email, IP, phone) to avoid
+ * lock-order cycles. There is only one key in each namespace for a booking request.
+ * PostgreSQL canonicalizes the IP exactly as it does for the budget's inet comparison.
+ */
+async function lockHoldBudget(identity: HoldIdentity, db: Db): Promise<void> {
+  await query("SELECT pg_advisory_xact_lock(hashtextextended('booking-hold:email:' || lower($1), 0))", [identity.email], db);
+  if (identity.ip) {
+    await query("SELECT pg_advisory_xact_lock(hashtextextended('booking-hold:ip:' || host($1::inet), 0))", [identity.ip], db);
+  }
+  await query("SELECT pg_advisory_xact_lock(hashtextextended('booking-hold:phone:' || $1, 0))", [identity.phone], db);
+}
+
+/** Unpaid bookings blocking dates, including reported transfers awaiting the owner. */
+async function countActiveHolds(identity: HoldIdentity, db: Db): Promise<number> {
   const row = await queryOne<{ count: number }>(
     `SELECT count(*)::int AS count FROM bookings
-     WHERE status = 'pending' AND amount_paid = 0 AND hold_expires_at > now()
+     WHERE status = 'pending' AND amount_paid = 0
+       AND (hold_expires_at IS NULL OR hold_expires_at > now())
        AND (lower(customer_email) = lower($1) OR customer_phone = $2 OR ($3::inet IS NOT NULL AND created_ip = $3::inet))`,
     [identity.email, identity.phone, identity.ip ?? null],
     db,
@@ -416,9 +438,7 @@ async function nextArrival(booking: BookingRecord, db?: Db): Promise<string | nu
   return row?.reference ?? null;
 }
 
-async function emailContext(bookingId: string, db?: Db): Promise<BookingEmailContext> {
-  const row = await queryOne<BookingEmailContext>(
-    `SELECT b.reference, b.customer_name AS "customerName", b.customer_email AS "customerEmail",
+const EMAIL_CONTEXT_COLUMNS = `b.reference, b.customer_name AS "customerName", b.customer_email AS "customerEmail",
             b.customer_phone AS "customerPhone", a.name AS "apartmentName", a.address AS "apartmentAddress",
             b.check_in AS "checkIn", b.check_out AS "checkOut",
             to_char(a.check_in_time, 'HH24:MI') AS "checkInTime", to_char(a.check_out_time, 'HH24:MI') AS "checkOutTime",
@@ -428,13 +448,41 @@ async function emailContext(bookingId: string, db?: Db): Promise<BookingEmailCon
               WHERE p.booking_id = b.id AND p.purpose = 'asset_security' AND p.state = 'succeeded')
             - (SELECT coalesce(sum(rf.amount), 0)::int FROM refunds rf JOIN payments p ON p.id = rf.payment_id
                 WHERE p.booking_id = b.id AND p.purpose = 'asset_security' AND rf.state = 'succeeded') AS "depositReceivedNet",
-            b.amount_paid AS "amountPaid", b.hold_expires_at AS "holdExpiresAt", b.status::text AS status, b.message
+            b.amount_paid AS "amountPaid", b.hold_expires_at AS "holdExpiresAt", b.status::text AS status, b.message`;
+
+async function emailContext(bookingId: string, db?: Db): Promise<BookingEmailContext> {
+  const row = await queryOne<BookingEmailContext>(
+    `SELECT ${EMAIL_CONTEXT_COLUMNS}
      FROM bookings b JOIN apartments a ON a.id = b.apartment_id
      WHERE b.id = $1`,
     [bookingId],
     db,
   );
   return row!;
+}
+
+export interface BookingNotificationContext extends BookingEmailContext {
+  id: string;
+  nextArrivalReference: string | null;
+}
+
+/** All claimed notifications share one read, including the next arrival for late check-outs. */
+async function emailContexts(bookingIds: string[], db?: Db): Promise<BookingNotificationContext[]> {
+  if (bookingIds.length === 0) return [];
+  return query<BookingNotificationContext>(
+    `SELECT b.id, ${EMAIL_CONTEXT_COLUMNS}, arrival.reference AS "nextArrivalReference"
+     FROM bookings b JOIN apartments a ON a.id = b.apartment_id
+     LEFT JOIN LATERAL (
+       SELECT n.reference FROM bookings n
+       WHERE n.apartment_id = b.apartment_id AND n.check_in = b.check_out AND n.id <> b.id
+         AND n.status IN ('pending', 'confirmed')
+         AND (n.status = 'confirmed' OR n.hold_expires_at IS NULL OR n.hold_expires_at > now())
+       ORDER BY n.check_in, n.created_at LIMIT 1
+     ) arrival ON true
+     WHERE b.id = ANY($1::uuid[])`,
+    [bookingIds],
+    db,
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -748,6 +796,7 @@ export const bookingRepository = {
   expireStaleHolds,
   claimHoldsEndingSoon,
   reactivate,
+  lockHoldBudget,
   countActiveHolds,
   hasGuestOverlap,
   markConfirmed,
@@ -762,6 +811,7 @@ export const bookingRepository = {
   claimLateCheckoutAlerts,
   nextArrival,
   emailContext,
+  emailContexts,
   list,
   summary,
   monthlyStats,

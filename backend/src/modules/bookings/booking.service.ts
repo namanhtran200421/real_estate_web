@@ -241,6 +241,10 @@ async function createBooking(
   ip: string | undefined,
 ): Promise<{ booking: GuestBooking; accessToken: string }> {
   const bookingId = await withTransaction(async (db) => {
+    const identity = { email: request.customer.email, phone: request.customer.phone, ip };
+    // This lock spans the budget check and insert even for nonoverlapping stays. Reported
+    // transfers still block inventory and count toward this budget until the owner answers.
+    await bookingRepository.lockHoldBudget(identity, db);
     // Free dates held by abandoned bookings first; the database still counts them until then.
     await bookingRepository.expireStaleHolds(db);
 
@@ -248,10 +252,7 @@ async function createBooking(
       throw duplicateGuestBooking();
     }
 
-    const holds = await bookingRepository.countActiveHolds(
-      { email: request.customer.email, phone: request.customer.phone, ip },
-      db,
-    );
+    const holds = await bookingRepository.countActiveHolds(identity, db);
     if (holds >= MAX_ACTIVE_HOLDS) {
       throw new HttpError(
         429,
@@ -459,13 +460,13 @@ async function confirm(reference: string, admin: AdminIdentity): Promise<AdminBo
     if (booking.status !== 'pending') throw invalidStatus('Chỉ xác nhận được đặt phòng đang chờ xác nhận.');
     // A booking only counts once its money has arrived; that path confirms it automatically.
     if (isDepositFirst(booking)) {
-      const { assetSecurityReceived, assetSecurityRefunded } = await assetIncidentRepository.financials(
+      const { assetSecurityDue } = await assetIncidentRepository.financials(
         booking.id,
         booking.assetSecurityAmount,
         db,
       );
-      if (assetSecurityReceived - assetSecurityRefunded <= 0) {
-        throw invalidStatus('Chưa nhận tiền đặt cọc. Hãy xác nhận khoản chuyển khoản hoặc ghi nhận thanh toán, đặt phòng sẽ được xác nhận.');
+      if (assetSecurityDue !== 0) {
+        throw invalidStatus('Chưa nhận đủ tiền đặt cọc. Hãy xác nhận khoản chuyển khoản hoặc ghi nhận thanh toán, đặt phòng sẽ được xác nhận.');
       }
     } else if (booking.amountPaid === 0) {
       throw invalidStatus('Chưa nhận thanh toán. Hãy xác nhận khoản chuyển khoản hoặc ghi nhận thanh toán, đặt phòng sẽ được xác nhận.');
@@ -595,18 +596,22 @@ async function completeFinishedStays(now = new Date()): Promise<number> {
   return completed;
 }
 
+/** Missing context must roll back the claim, rather than silently losing a notification. */
+async function notificationContexts(ids: string[], db: Db) {
+  const contexts = new Map((await bookingRepository.emailContexts(ids, db)).map((context) => [context.id, context]));
+  if (ids.some((id) => !contexts.has(id))) throw new Error('Claimed booking is missing notification context');
+  return contexts;
+}
+
 /** Reminds the owner, once per booking, to look for the transfer before the hold runs out. */
 async function remindOwnerOfEndingHolds(): Promise<number> {
   return withTransaction(async (db) => {
     const ids = await bookingRepository.claimHoldsEndingSoon(REMINDER_LEAD_MINUTES, db);
-    for (const id of ids) {
-      const context = await bookingRepository.emailContext(id, db);
-      await emailService.queueHoldEndingReminder(
-        context,
-        transferNote(context.reference, confirmingPurpose({ assetSecurityAmount: context.assetSecurityAmount })),
-        db,
-      );
-    }
+    const contexts = await notificationContexts(ids, db);
+    await emailService.queueHoldEndingReminders(ids.map((id) => {
+      const booking = contexts.get(id)!;
+      return { booking, note: transferNote(booking.reference, confirmingPurpose({ assetSecurityAmount: booking.assetSecurityAmount })) };
+    }), db);
     return ids.length;
   });
 }
@@ -618,17 +623,12 @@ async function sendCheckoutNotifications(): Promise<number> {
       bookingRepository.claimCheckoutReminders(db),
       bookingRepository.claimLateCheckoutAlerts(db),
     ]);
-    for (const id of reminders) {
-      await emailService.queueCheckoutReminder(await bookingRepository.emailContext(id, db), db);
-    }
-    for (const id of late) {
-      const booking = (await bookingRepository.findById(id, db))!;
-      await emailService.queueLateCheckoutAlert(
-        await bookingRepository.emailContext(id, db),
-        await bookingRepository.nextArrival(booking, db),
-        db,
-      );
-    }
+    const contexts = await notificationContexts([...new Set([...reminders, ...late])], db);
+    await emailService.queueCheckoutReminders(reminders.map((id) => contexts.get(id)!), db);
+    await emailService.queueLateCheckoutAlerts(late.map((id) => {
+      const booking = contexts.get(id)!;
+      return { booking, nextArrivalReference: booking.nextArrivalReference };
+    }), db);
     return reminders.length + late.length;
   });
 }
@@ -637,9 +637,8 @@ async function sendCheckoutNotifications(): Promise<number> {
 async function sendRentRequests(): Promise<number> {
   return withTransaction(async (db) => {
     const ids = await bookingRepository.claimRentRequests(env.timezone, db);
-    for (const id of ids) {
-      await emailService.queueRentRequest(await bookingRepository.emailContext(id, db), db);
-    }
+    const contexts = await notificationContexts(ids, db);
+    await emailService.queueRentRequests(ids.map((id) => contexts.get(id)!), db);
     return ids.length;
   });
 }

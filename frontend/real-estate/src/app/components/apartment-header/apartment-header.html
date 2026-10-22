@@ -1,30 +1,11 @@
 @let apt = apartment();
 
-<!-- tabsOnly: just the tabs, laid out by the page that embeds them (the apartment title block). -->
+<!-- The section tabs (Overview, Photos, Location). The apartment page shows the title and price once;
+     Gallery and Location only need the tabs. tabsOnly: laid out by the page that embeds them. -->
 <div [class]="tabsOnly() ? '' : 'pt-8 md:pt-12'">
   <div [class]="tabsOnly() ? '' : 'container-editorial max-w-6xl'">
-    @if (!tabsOnly()) {
-      <nav aria-label="Breadcrumb" class="small-caps text-muted-foreground">
-        <a routerLink="/" class="link-subtle">{{ 'nav.home' | transloco }}</a>
-        <span class="mx-2 text-border" aria-hidden="true">/</span>
-        <span class="text-foreground" aria-current="page">{{ apt.name }}</span>
-      </nav>
-
-      <div class="mt-6 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p class="label-caps text-accent-deep">{{ apt.area }}</p>
-          <h1 class="display-section mt-2">{{ apt.name }}</h1>
-        </div>
-        <p class="text-muted-foreground">
-          {{ 'common.from' | transloco }}
-          <span class="font-serif text-2xl text-foreground">{{ apt.pricing.weekday | number }} ₫</span>
-          {{ 'common.perNight' | transloco }}
-        </p>
-      </div>
-    }
-
     <!-- Underlined tabs on a hairline; scrolls sideways on phones; a right-edge fade hints at more tabs. -->
-    <div [class.mt-8]="!tabsOnly()">
+    <div>
       <nav
         [attr.aria-label]="'apartment.sections' | transloco"
         class="flex max-w-full gap-8 overflow-x-auto border-b border-border [mask-image:linear-gradient(to_right,black_calc(100%-2rem),transparent)] [scrollbar-width:none] sm:gap-10 sm:[mask-image:none] [&::-webkit-scrollbar]:hidden"

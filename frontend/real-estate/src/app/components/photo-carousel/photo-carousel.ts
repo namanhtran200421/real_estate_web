@@ -25,6 +25,8 @@ export class PhotoCarousel {
   readonly label = input.required<string>();
   /** Prioritise the first image only when this carousel is the page's initial above-the-fold content. */
   readonly priority = input(false);
+  /** The photo centred when the carousel starts (the gallery opens at a room this way). */
+  readonly startIndex = input(0);
   /** The centred photo was chosen: its index and the image, for the lightbox's return focus. */
   readonly opened = output<{ index: number; image: HTMLImageElement }>();
 
@@ -41,7 +43,8 @@ export class PhotoCarousel {
     afterNextRender(() => {
       this.reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       if (this.photos().length < 2) return;
-      const embla = EmblaCarousel(this.viewport().nativeElement, { align: 'center', containScroll: false, duration: 34 });
+      const embla = EmblaCarousel(this.viewport().nativeElement, { align: 'center', containScroll: false, duration: 34, startIndex: this.startIndex() });
+      this.index.set(embla.selectedScrollSnap());
       embla.on('select', () => this.index.set(embla.selectedScrollSnap()));
       this.embla = embla;
       this.started.set(true);

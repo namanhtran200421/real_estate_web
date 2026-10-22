@@ -6,6 +6,7 @@ import { SiteFooter } from './components/site-footer/site-footer';
 import { SiteHeader } from './components/site-header/site-header';
 import { CustomCursor } from './motion/custom-cursor';
 import { MotionService } from './motion/motion.service';
+import { ScrollFade } from './motion/scroll-fade';
 
 @Component({
   selector: 'app-root',
@@ -28,7 +29,11 @@ export class App {
 
   constructor() {
     const motion = inject(MotionService);
-    afterNextRender(() => motion.start());
+    const fade = inject(ScrollFade);
+    afterNextRender(() => {
+      motion.start();
+      fade.watch();
+    });
 
     // After a navigation (not the first page), screen-reader and keyboard users start at the new page's h1.
     let previousPath: string | undefined;
@@ -36,6 +41,7 @@ export class App {
       const path = (e as NavigationEnd).urlAfterRedirects.split(/[?#]/)[0];
       const changed = previousPath !== undefined && previousPath !== path;
       previousPath = path;
+      if (typeof document !== 'undefined') fade.watch();
       // First page, or only the fragment/query changed (#chapter, ?apt): leave focus alone.
       if (!changed || typeof document === 'undefined') return;
       requestAnimationFrame(() => {

@@ -8,37 +8,56 @@
  * other device and emails the admin).
  */
 import { env } from '../../config/env.js';
-import { isPgError, PG_ERROR } from '../../db/pool.js';
+import { isPgError, PG_ERROR, withTransaction } from '../../db/pool.js';
 import { randomToken, sha256Hex } from '../../lib/crypto.js';
 import { HttpError } from '../../lib/http-error.js';
 import { emailService } from '../notifications/email.service.js';
 import { adminAuthRepository } from './admin-auth.repository.js';
 import type { AdminIdentity, AdminSession, AdminSessionInfo } from './admin-auth.types.js';
-import { DUMMY_HASH, hashPassword, passwordProblem, verifyPassword } from './password.js';
+import { DUMMY_HASH, hashPassword, needsPasswordRehash, passwordProblem, verifyPassword } from './password.js';
 
 interface ClientInfo {
   ip: string | undefined;
   userAgent: string | undefined;
 }
 
+function credentialsChanged(): HttpError {
+  return HttpError.unauthorized('Thông tin đăng nhập đã thay đổi, vui lòng đăng nhập lại.');
+}
+
 /** @throws HttpError 401 with the same message whether the email or the password is wrong. */
 async function login(email: string, password: string, client: ClientInfo): Promise<AdminSession> {
   const admin = await adminAuthRepository.findByEmail(email);
-  // Always run the (slow) hash check so timing does not reveal whether the email exists.
+  // Unknown emails still run a real hash check. Legacy costs can be faster until the next
+  // successful login upgrades them, so this is not a constant-time account-existence guarantee.
   const valid = await verifyPassword(password, admin?.password_hash ?? DUMMY_HASH);
   if (!admin || !valid) throw HttpError.unauthorized('Email hoặc mật khẩu không đúng.');
 
-  const token = randomToken();
-  const expiresAt = await adminAuthRepository.createSession(
-    admin.id,
-    sha256Hex(token),
-    env.admin.sessionHours,
-    client.ip,
-    client.userAgent,
-  );
-  await adminAuthRepository.recordLogin(admin.id);
+  // Do expensive hashing before taking the account lock, then recheck the verified snapshot.
+  const upgradedHash = needsPasswordRehash(admin.password_hash) ? await hashPassword(password) : undefined;
+  return withTransaction(async (db) => {
+    const current = await adminAuthRepository.findById(admin.id, db, true);
+    if (!current || current.password_hash !== admin.password_hash) throw credentialsChanged();
+    if (upgradedHash) {
+      if (!(await adminAuthRepository.upgradePasswordHash(admin.id, admin.password_hash, upgradedHash, db))) {
+        throw credentialsChanged();
+      }
+    }
 
-  return { token, expiresAt: expiresAt.toISOString(), admin: { id: admin.id, email: admin.email, name: admin.name } };
+    // Password changes take the same account lock. Either this session is created first and
+    // later revoked, or a changed credential snapshot prevents its creation altogether.
+    const token = randomToken();
+    const expiresAt = await adminAuthRepository.createSession(
+      admin.id,
+      sha256Hex(token),
+      env.admin.sessionHours,
+      client.ip,
+      client.userAgent,
+      db,
+    );
+    await adminAuthRepository.recordLogin(admin.id, db);
+    return { token, expiresAt: expiresAt.toISOString(), admin: { id: current.id, email: current.email, name: current.name } };
+  });
 }
 
 /** @returns the admin and session for a live token (marking it used), or undefined. */
@@ -90,9 +109,15 @@ async function changePassword(
     throw HttpError.validation([{ path: 'newPassword', message: 'Mật khẩu mới phải khác mật khẩu hiện tại.' }]);
   }
 
-  await adminAuthRepository.updatePassword(admin.id, await hashPassword(passwords.newPassword));
-  await adminAuthRepository.deleteOtherSessions(admin.id, sha256Hex(currentToken));
-  await emailService.queueAdminPasswordChanged({ name: account.name, email: account.email, ...client, at: new Date() });
+  const passwordHash = await hashPassword(passwords.newPassword);
+  await withTransaction(async (db) => {
+    const current = await adminAuthRepository.findById(admin.id, db, true);
+    if (!current || current.password_hash !== account.password_hash) throw credentialsChanged();
+
+    await adminAuthRepository.updatePassword(admin.id, passwordHash, db);
+    await adminAuthRepository.deleteOtherSessions(admin.id, sha256Hex(currentToken), db);
+    await emailService.queueAdminPasswordChanged({ name: current.name, email: current.email, ...client, at: new Date() }, db);
+  });
 }
 
 /** Used by the `admin:create` command. */

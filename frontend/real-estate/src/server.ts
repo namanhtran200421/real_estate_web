@@ -7,10 +7,9 @@ import {
 import { isDevMode } from '@angular/core';
 import compression from 'compression';
 import express, { NextFunction, Request, Response as ExpressResponse } from 'express';
-import { randomBytes } from 'node:crypto';
 import { join } from 'node:path';
 import { LANGS, Lang, RenderContext, splitLangPrefix, withLangPrefix } from './app/i18n/lang';
-import { contentSecurityPolicy, stampScriptNonces } from './csp';
+import { contentSecurityPolicy, protectInlineScripts } from './csp';
 import { environment } from './environments/environment';
 import { deploymentOrigin } from './deployment-origin';
 
@@ -32,9 +31,9 @@ app.disable('x-powered-by');
 app.set('trust proxy', onVercel ? true : 'loopback');
 app.use(securityHeaders);
 
-// The generated CSR shell contains an inline bootstrap script without a response nonce. It is an
+// The generated CSR shell contains an inline bootstrap script without the response's CSP. It is an
 // implementation detail, not a public page; all real routes pass through Angular below and receive
-// a fresh nonce-bearing CSP. Do not let an explicit artifact URL bypass that policy.
+// a CSP matching its inline scripts. Do not let an explicit artifact URL bypass that policy.
 app.get(['/index.html', '/index.csr.html'], (_req, res) => {
   res.set('Cache-Control', 'no-store').redirect(308, '/');
 });
@@ -64,14 +63,13 @@ function securityHeaders(req: Request, res: ExpressResponse, next: NextFunction)
 
 const apiOrigin = new URL(environment.apiUrl).origin;
 
-/** Adds the CSP (with a fresh nonce) to an HTML page; other responses pass through unchanged. */
+/** Hash completed inline scripts so public HTML and its CSP can safely share a cache entry. */
 async function withContentSecurityPolicy(response: Response, https: boolean): Promise<Response> {
   if (isDevMode() || !response.headers.get('content-type')?.includes('text/html')) return response;
 
-  const nonce = randomBytes(16).toString('base64');
-  const html = stampScriptNonces(await response.text(), nonce);
+  const { html, hashes } = protectInlineScripts(await response.text());
   const headers = new Headers(response.headers);
-  headers.set('Content-Security-Policy', contentSecurityPolicy(nonce, apiOrigin, https));
+  headers.set('Content-Security-Policy', contentSecurityPolicy(hashes, apiOrigin, https));
   headers.delete('content-length');
   return new Response(html, { status: response.status, statusText: response.statusText, headers });
 }

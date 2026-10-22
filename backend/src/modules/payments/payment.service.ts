@@ -464,6 +464,10 @@ async function recordRefund(paymentId: string, request: { amount: number; reason
     }
 
     if (payment.purpose === 'asset_security') {
+      // Cancelled/expired stays never happened, so their existing reason-required refund path
+      // does not need a check-out inspection. Every other deposit return follows the same
+      // stay, rent and inspection guards as the dedicated action.
+      if (booking.status !== 'cancelled' && booking.status !== 'expired') await assertDepositRefundReady(booking, db);
       // Deposit applied to damage is no longer the guest's: a manual refund cannot give it back.
       const { assetSecurityHeld } = await assetIncidentRepository.financials(booking.id, booking.assetSecurityAmount, db);
       if (request.amount > assetSecurityHeld) {
@@ -475,9 +479,44 @@ async function recordRefund(paymentId: string, request: { amount: number; reason
     }
     await paymentRepository.insertRefund({ paymentId, amount: request.amount, reason: request.reason, createdBy: admin.id }, db);
     await bookingRepository.addEvent(booking.id, 'refund_recorded', admin.email, { amount: request.amount, reason: request.reason }, db);
+    if (payment.purpose === 'asset_security' && booking.status === 'completed') {
+      // Even a partial return was based on the saved inspection: preserve that evidence just
+      // as the dedicated action does. Financial totals, not this event, determine money held.
+      await bookingRepository.addEvent(
+        booking.id,
+        'deposit_refunded',
+        admin.email,
+        { amount: request.amount, paymentId, reason: request.reason, source: 'manual_refund' },
+        db,
+      );
+    }
     await recalculate(booking, db);
     await emailService.queueRefundIssued(await bookingRepository.emailContext(booking.id, db), request.amount, db);
   });
+}
+
+/** Shared gates for returning a deposit after a stay; cancelled/expired stays use the exception above. */
+async function assertDepositRefundReady(booking: BookingRecord, db: Db): Promise<void> {
+  if (booking.status !== 'completed') {
+    throw HttpError.conflict('INVALID_STATUS', 'Hãy ghi nhận khách trả phòng trước khi hoàn cọc.');
+  }
+  if (booking.totalAmount - booking.amountPaid >= 1000) {
+    throw HttpError.conflict('RENT_DUE', 'Khách chưa thanh toán đủ tiền phòng. Hãy ghi nhận tiền phòng trước khi hoàn cọc.');
+  }
+  if (!(await inspectionRepository.get(booking.id, db))) {
+    throw HttpError.conflict('INSPECTION_REQUIRED', 'Hãy lưu kết quả kiểm tra trả phòng trước khi hoàn cọc.');
+  }
+  const incidents = await assetIncidentRepository.list(booking.id, db);
+  if (incidents.some((incident) => incident.status === 'open')) {
+    throw HttpError.conflict('INCIDENT_OPEN', 'Còn khoản hư hỏng chưa xử lý.');
+  }
+  const { incidentAmountDue } = await assetIncidentRepository.financials(booking.id, booking.assetSecurityAmount, db);
+  if (incidentAmountDue >= 1000) {
+    throw HttpError.conflict(
+      'INCIDENT_DUE',
+      'Khách còn nợ tiền bồi thường. Hãy ghi nhận khoản bồi thường trước khi hoàn cọc.',
+    );
+  }
 }
 
 /**
@@ -490,46 +529,18 @@ async function refundDeposit(reference: string, admin: AdminIdentity): Promise<v
   await withTransaction(async (db) => {
     const booking = await bookingRepository.findByReference(reference, db, true);
     if (!booking) throw HttpError.notFound('Không tìm thấy đặt phòng.');
-    if (booking.status !== 'completed') {
-      throw HttpError.conflict('INVALID_STATUS', 'Hãy ghi nhận khách trả phòng trước khi hoàn cọc.');
-    }
-    if (booking.totalAmount - booking.amountPaid >= 1000) {
-      throw HttpError.conflict('RENT_DUE', 'Khách chưa thanh toán đủ tiền phòng. Hãy ghi nhận tiền phòng trước khi hoàn cọc.');
-    }
-    if (!(await inspectionRepository.get(booking.id, db))) {
-      throw HttpError.conflict('INSPECTION_REQUIRED', 'Hãy lưu kết quả kiểm tra trả phòng trước khi hoàn cọc.');
-    }
-    const incidents = await assetIncidentRepository.list(booking.id, db);
-    if (incidents.some((incident) => incident.status === 'open')) {
-      throw HttpError.conflict('INCIDENT_OPEN', 'Còn khoản hư hỏng chưa xử lý.');
-    }
-    const { incidentAmountDue } = await assetIncidentRepository.financials(booking.id, booking.assetSecurityAmount, db);
-    if (incidentAmountDue >= 1000) {
-      throw HttpError.conflict(
-        'INCIDENT_DUE',
-        'Khách còn nợ tiền bồi thường. Hãy ghi nhận khoản bồi thường trước khi hoàn cọc.',
-      );
-    }
+    await assertDepositRefundReady(booking, db);
 
-    // Lock the deposit payments, then read what is held and refundable: two clicks queue here.
-    const deposits = (await paymentRepository.listForBooking(booking.id, db)).filter(
-      (payment) => payment.purpose === 'asset_security' && payment.state === 'succeeded',
-    );
-    const refundable: { id: string; refundable: number }[] = [];
-    for (const deposit of deposits) {
-      const locked = (await paymentRepository.findById(deposit.id, db, true))!;
-      refundable.push({ id: locked.id, refundable: locked.amount - (await paymentRepository.refundedTotal(locked.id, db)) });
-    }
+    // Two reads regardless of payment count; locks last until the refund transaction commits.
+    const refundable = await paymentRepository.lockRefundableDeposits(booking.id, db);
     const { assetSecurityHeld } = await assetIncidentRepository.financials(booking.id, booking.assetSecurityAmount, db);
     if (assetSecurityHeld < 1000) throw HttpError.conflict('NOTHING_TO_REFUND', 'Không còn tiền cọc để hoàn.');
 
     const plan = depositRefundPlan(refundable, assetSecurityHeld);
-    for (const { paymentId, amount } of plan) {
-      await paymentRepository.insertRefund(
-        { paymentId, amount, reason: 'Hoàn cọc sau kiểm tra trả phòng', createdBy: admin.id },
-        db,
-      );
-    }
+    await paymentRepository.insertRefunds(
+      plan.map(({ paymentId, amount }) => ({ paymentId, amount, reason: 'Hoàn cọc sau kiểm tra trả phòng', createdBy: admin.id })),
+      db,
+    );
     const total = plan.reduce((sum, step) => sum + step.amount, 0);
     await bookingRepository.addEvent(booking.id, 'deposit_refunded', admin.email, { amount: total }, db);
     await recalculate(booking, db);

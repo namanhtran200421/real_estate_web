@@ -5,8 +5,6 @@
 export const MOTION_QUERIES = {
   allowed: '(prefers-reduced-motion: no-preference)',
   desktop: '(prefers-reduced-motion: no-preference) and (hover: hover) and (pointer: fine) and (min-width: 1024px)',
-  pinTour: '(prefers-reduced-motion: no-preference) and (hover: hover) and (pointer: fine) and (min-width: 1024px) and (min-height: 700px)',
-  stackTour: '(prefers-reduced-motion: no-preference) and (max-width: 767px) and (min-height: 600px) and (orientation: portrait)',
 } as const;
 
 export type MotionQuery = keyof typeof MOTION_QUERIES;

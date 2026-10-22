@@ -1,5 +1,6 @@
 @if (apartment(); as apt) {
   <app-apartment-header [apartment]="apt" />
+  <h1 class="sr-only">{{ 'apartment.tabs.gallery' | transloco }}: {{ apt.name }}</h1>
 
   <!--
     One carousel for every photo, in room order, on a dark stage. The room names above follow the
@@ -33,6 +34,7 @@
       [alts]="alts()"
       [label]="apt.name"
       [priority]="true"
+      [startIndex]="startIndex()"
       (opened)="lightbox.open($event.index, $event.image)"
     />
 

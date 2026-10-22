@@ -47,12 +47,3 @@
     </div>
   </div>
 </section>
-
-<!-- Closing call -->
-@if (apartment(); as apt) {
-  <app-navy-band [eyebrow]="'nav.about' | transloco" [title]="'about.ctaTitle' | transloco"
-                 [ctaLabel]="'rooms.seeDates' | transloco" ctaLink="/book" [ctaQuery]="{ apt: apt.slug }">
-    <p class="mt-6 max-w-xl text-lg text-muted-foreground">{{ 'about.ctaText' | transloco }}</p>
-    <p bandAfter class="mt-6"><a routerLink="/contact" class="link-subtle">{{ 'about.contactUs' | transloco }} →</a></p>
-  </app-navy-band>
-}
