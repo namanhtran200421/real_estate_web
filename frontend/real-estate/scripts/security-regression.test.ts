@@ -10,7 +10,7 @@ const hash = (source: string) => `'sha256-${createHash('sha256').update(source).
 const source = (path: string) => readFile(new URL(path, import.meta.url), 'utf8');
 
 /** Run the real pre-bundle boot script with deterministic readiness and timeout signals. */
-async function loadingBoot(pathname = '/') {
+async function loadingBoot(pathname = '/', motion = true) {
   const html = await source('../src/index.html');
   const script = html.match(/<script id="site-loading-boot">([\s\S]*?)<\/script>/)?.[1];
   assert.ok(script);
@@ -47,6 +47,7 @@ async function loadingBoot(pathname = '/') {
   runInNewContext(script, {
     document: { documentElement: page, querySelector: () => root, getElementById: () => loader },
     window: {
+      matchMedia: () => ({ matches: motion }),
       addEventListener: (name: string, callback: () => void) => events.set(name, callback),
       removeEventListener: (name: string) => events.delete(name),
     },
@@ -61,7 +62,7 @@ async function loadingBoot(pathname = '/') {
   return { attributes, classes, events, wheel, timers, page, loader, html, script, advanceTo };
 }
 
-test('early startup readiness waits for the six-second showcase, then clears both timers', async () => {
+test('early readiness starts the entrance at six seconds and cleans it up after the reveal', async () => {
   const boot = await loadingBoot('/en/');
   assert.equal(boot.page.lang, 'en');
   assert.equal(boot.loader.hidden, false);
@@ -75,6 +76,10 @@ test('early startup readiness waits for the six-second showcase, then clears bot
   boot.advanceTo(6000);
   assert.ok(!boot.attributes.has('inert') && !boot.attributes.has('aria-busy'));
   assert.equal(boot.attributes.get('loader:aria-hidden'), 'true');
+  assert.ok(boot.classes.has('site-entering'));
+  assert.equal(boot.events.size + boot.wheel.size, 0);
+  boot.advanceTo(7600);
+  assert.equal(boot.loader.hidden, true);
   assert.equal(boot.classes.size + boot.timers.size + boot.events.size + boot.wheel.size, 0);
 });
 
@@ -84,6 +89,17 @@ test('startup waits for late page readiness between the minimum and the watchdog
   assert.ok(boot.attributes.has('inert') && boot.classes.has('site-loading'));
   boot.events.get('vnbooking:ready')!();
   assert.ok(!boot.attributes.has('inert') && !boot.attributes.has('aria-busy'));
+  assert.ok(boot.classes.has('site-entering'));
+  boot.advanceTo(8100);
+  assert.equal(boot.classes.size + boot.timers.size + boot.events.size + boot.wheel.size, 0);
+});
+
+test('reduced motion skips the curtain entrance and releases a ready page at six seconds', async () => {
+  const boot = await loadingBoot('/', false);
+  boot.events.get('vnbooking:ready')!();
+  boot.advanceTo(6000);
+  assert.equal(boot.loader.hidden, true);
+  assert.ok(!boot.attributes.has('inert'));
   assert.equal(boot.classes.size + boot.timers.size + boot.events.size + boot.wheel.size, 0);
 });
 

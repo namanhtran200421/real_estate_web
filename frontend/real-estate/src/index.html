@@ -23,26 +23,9 @@
         var q = window.matchMedia, d = document.documentElement;
         if (!q('(prefers-reduced-motion: no-preference)').matches) return;
         d.classList.add('motion');
-        if (q('(prefers-reduced-motion: no-preference) and (hover: hover) and (pointer: fine) and (min-width: 1024px)').matches && !sessionStorage.getItem('opened')) {
-          d.classList.add('motion-opening');
-          sessionStorage.setItem('opened', '1');
-        }
       } catch (e) {}
     })();
   </script>
-  <!-- Opening: dawn mist lifts off the hero (CSS only, ≤ 900 ms). The hero image only transforms (LCP),
-       header, price and CTA are never hidden. -->
-  <style>
-    .hero-mist { opacity: 0; pointer-events: none; }
-    @media (prefers-reduced-motion: no-preference) and (hover: hover) and (pointer: fine) and (min-width: 1024px) {
-      html.motion-opening .hero-mist { animation: hero-mist 900ms cubic-bezier(0.22, 1, 0.36, 1) both; }
-      html.motion-opening .hero-line > span { animation: hero-line 600ms cubic-bezier(0.22, 1, 0.36, 1) both; animation-delay: calc(var(--line, 0) * 80ms + 100ms); }
-      html.motion-opening .hero-image img { animation: hero-image 900ms cubic-bezier(0.22, 1, 0.36, 1) both; }
-    }
-    @keyframes hero-mist { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-6%); } }
-    @keyframes hero-line { from { transform: translateY(105%); } to { transform: none; } }
-    @keyframes hero-image { from { transform: scale(1.04); } to { transform: none; } }
-  </style>
 </head>
 <body>
   <!-- Outside app-root so the startup screen never changes Angular's hydration tree.
@@ -78,6 +61,16 @@
         finished = true;
         clearTimeout(showcase);
         clearTimeout(guard);
+        // Only a ready page gets the curtain reveal; failures and reduced motion exit directly.
+        if (ready && window.matchMedia('(prefers-reduced-motion: no-preference)').matches) {
+          page.classList.add('site-entering');
+          setTimeout(function () {
+            page.classList.remove('site-entering');
+            loader.hidden = true;
+          }, 1600);
+        } else {
+          loader.hidden = true;
+        }
         page.classList.remove('site-loading');
         root.removeAttribute('inert');
         root.removeAttribute('aria-busy');
