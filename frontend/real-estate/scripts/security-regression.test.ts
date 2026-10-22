@@ -62,7 +62,7 @@ async function loadingBoot(pathname = '/', motion = true) {
   return { attributes, classes, events, wheel, timers, page, loader, html, script, advanceTo };
 }
 
-test('early readiness starts the entrance at six seconds and cleans it up after the reveal', async () => {
+test('early readiness starts the entrance at three seconds and cleans it up after the reveal', async () => {
   const boot = await loadingBoot('/en/');
   assert.equal(boot.page.lang, 'en');
   assert.equal(boot.loader.hidden, false);
@@ -71,33 +71,33 @@ test('early readiness starts the entrance at six seconds and cleans it up after 
   const ready = boot.events.get('vnbooking:ready')!;
   ready();
   ready();
-  boot.advanceTo(5999);
+  boot.advanceTo(2999);
   assert.ok(boot.attributes.has('inert') && boot.classes.has('site-loading'));
-  boot.advanceTo(6000);
+  boot.advanceTo(3000);
   assert.ok(!boot.attributes.has('inert') && !boot.attributes.has('aria-busy'));
   assert.equal(boot.attributes.get('loader:aria-hidden'), 'true');
   assert.ok(boot.classes.has('site-entering'));
   assert.equal(boot.events.size + boot.wheel.size, 0);
-  boot.advanceTo(7600);
+  boot.advanceTo(4600);
   assert.equal(boot.loader.hidden, true);
   assert.equal(boot.classes.size + boot.timers.size + boot.events.size + boot.wheel.size, 0);
 });
 
 test('startup waits for late page readiness between the minimum and the watchdog', async () => {
   const boot = await loadingBoot();
-  boot.advanceTo(6500);
+  boot.advanceTo(3500);
   assert.ok(boot.attributes.has('inert') && boot.classes.has('site-loading'));
   boot.events.get('vnbooking:ready')!();
   assert.ok(!boot.attributes.has('inert') && !boot.attributes.has('aria-busy'));
   assert.ok(boot.classes.has('site-entering'));
-  boot.advanceTo(8100);
+  boot.advanceTo(5100);
   assert.equal(boot.classes.size + boot.timers.size + boot.events.size + boot.wheel.size, 0);
 });
 
-test('reduced motion skips the curtain entrance and releases a ready page at six seconds', async () => {
+test('reduced motion skips the curtain entrance and releases a ready page at three seconds', async () => {
   const boot = await loadingBoot('/', false);
   boot.events.get('vnbooking:ready')!();
-  boot.advanceTo(6000);
+  boot.advanceTo(3000);
   assert.equal(boot.loader.hidden, true);
   assert.ok(!boot.attributes.has('inert'));
   assert.equal(boot.classes.size + boot.timers.size + boot.events.size + boot.wheel.size, 0);
@@ -106,9 +106,9 @@ test('reduced motion skips the curtain entrance and releases a ready page at six
 test('startup restores interaction when the application bundle never becomes ready', async () => {
   const boot = await loadingBoot();
   const lateReady = boot.events.get('vnbooking:ready')!;
-  boot.advanceTo(6999);
+  boot.advanceTo(3999);
   assert.ok(boot.attributes.has('inert'));
-  boot.advanceTo(7000);
+  boot.advanceTo(4000);
   lateReady();
   assert.ok(!boot.attributes.has('inert') && !boot.attributes.has('aria-busy'));
   assert.equal(boot.classes.size + boot.timers.size + boot.events.size + boot.wheel.size, 0);

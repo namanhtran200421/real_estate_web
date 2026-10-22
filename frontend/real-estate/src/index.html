@@ -78,13 +78,13 @@
         loader.removeEventListener('wheel', blockScroll);
         window.removeEventListener('vnbooking:ready', onReady);
       }
-      // The app and its page assets load underneath a six-second brand showcase.
+      // The app and its page assets load underneath a three-second brand showcase.
       var showcase = setTimeout(function () {
         minimumElapsed = true;
         if (ready) finish();
-      }, 6000);
+      }, 3000);
       // Independent recovery caps the overlay even if a bundle or image never settles.
-      var guard = setTimeout(finish, 7000);
+      var guard = setTimeout(finish, 4000);
       window.addEventListener('vnbooking:ready', onReady, { once: true });
       loader.addEventListener('wheel', blockScroll, { passive: false });
       loader.hidden = false;
