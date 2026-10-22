@@ -8,7 +8,7 @@ The storefront presents one real Da Lat apartment to guests who need to understa
 - Guest display: the self-hosted Fraunces face for property names and section headings. Body: the system sans-serif stack. Utility labels: the system monospace stack with restrained letter spacing. Owner administration retains its scoped typography overrides. These values reconcile this document's stale guest values with the canonical runtime; they introduce no token changes.
 - Layout: quiet editorial sections, thin dividers, real apartment photography and compact price summaries. Use the logo gold for actions and small emphasis, leaving photos to carry the page.
 - Motion: gentle image transitions and brief UI feedback. Respect reduced motion. Never move controls while data loads.
-- Guest startup: the existing logo mark, serif wordmark and one indeterminate gold hairline on ivory. This is initial-document feedback, not a timed introduction or a navigation overlay. It clears when the application settles, has a six-second independent escape if scripts fail, stays hidden without JavaScript and on owner routes, and uses a static indicator for reduced motion.
+- Guest startup: the existing logo mark, serif wordmark and one indeterminate gold hairline on ivory. On each initial guest document, a six-second brand showcase lets the page render and fetch its photos and fonts underneath. Dismissal waits for application and page-asset readiness after that minimum, with an independent seven-second escape if loading stalls. It stays hidden without JavaScript and on owner routes, never replays on client-side navigation, and uses a static indicator for reduced motion.
 
 ## Product behavior
 

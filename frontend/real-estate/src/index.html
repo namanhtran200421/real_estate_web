@@ -66,21 +66,33 @@
       var page = document.documentElement;
       page.lang = /^\/en(?:\/|$)/.test(location.pathname) ? 'en' : 'vi';
       var finished = false;
+      var minimumElapsed = false;
+      var ready = false;
       function blockScroll(event) { event.preventDefault(); }
+      function onReady() {
+        ready = true;
+        if (minimumElapsed) finish();
+      }
       function finish() {
         if (finished) return;
         finished = true;
+        clearTimeout(showcase);
         clearTimeout(guard);
         page.classList.remove('site-loading');
         root.removeAttribute('inert');
         root.removeAttribute('aria-busy');
         loader.setAttribute('aria-hidden', 'true');
         loader.removeEventListener('wheel', blockScroll);
-        window.removeEventListener('vnbooking:ready', finish);
+        window.removeEventListener('vnbooking:ready', onReady);
       }
-      // Recovery belongs to this tiny script, even if the application bundle never loads.
-      var guard = setTimeout(finish, 6000);
-      window.addEventListener('vnbooking:ready', finish, { once: true });
+      // The app and its page assets load underneath a six-second brand showcase.
+      var showcase = setTimeout(function () {
+        minimumElapsed = true;
+        if (ready) finish();
+      }, 6000);
+      // Independent recovery caps the overlay even if a bundle or image never settles.
+      var guard = setTimeout(finish, 7000);
+      window.addEventListener('vnbooking:ready', onReady, { once: true });
       loader.addEventListener('wheel', blockScroll, { passive: false });
       loader.hidden = false;
       root.setAttribute('inert', '');

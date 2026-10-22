@@ -32,8 +32,20 @@ export class App {
     const motion = inject(MotionService);
     const fade = inject(ScrollFade);
     afterNextRender(() => {
-      // Resource completion includes error states. No minimum display time or navigation replay.
-      void application.whenStable().then(() => window.dispatchEvent(new Event('vnbooking:ready')));
+      // Render and fetch this page underneath the showcase, including below-the-fold photos.
+      // Errors settle too; the independent boot watchdog handles stalled assets or bundles.
+      void application.whenStable().then(async () => {
+        if (!document.documentElement.classList.contains('site-loading')) return;
+        const images = Array.from(document.querySelectorAll<HTMLImageElement>('app-root img'));
+        await Promise.allSettled([
+          document.fonts.ready,
+          ...images.map((image) => {
+            image.loading = 'eager';
+            return image.decode();
+          }),
+        ]);
+        window.dispatchEvent(new Event('vnbooking:ready'));
+      });
       motion.start();
       fade.watch();
     });

@@ -94,7 +94,7 @@
 - Session expiry/re-authentication: existing admin interceptor behavior.
 - Stale-request cancellation/invalidation and pending-state ownership: resource instances own reads; page `busy` signals own writes.
 - Dialog/form preservation and retry after mutation failure: form state is retained after server failure.
-- Guest startup: a localized indeterminate status outside Angular's hydration tree temporarily makes `app-root` inert and busy. Application stability (including a settled request error) dismisses it immediately; an independent six-second watchdog restores interaction even if the application bundle fails. There is no minimum display duration, measured percentage or replay on client-side navigation. No JavaScript means no overlay or inert content. Owner routes bypass it. Motion and color derive from the guest theme, with a static reduced-motion indicator.
+- Guest startup: a localized indeterminate status outside Angular's hydration tree temporarily makes `app-root` inert and busy while rendering and requests continue underneath. The brand showcase lasts at least six seconds, then dismisses once the application settles and the current page's images and fonts settle (including errors). Below-the-fold page images load eagerly during the showcase. An independent seven-second watchdog restores interaction even if bundles or assets stall. It does not preload unrelated routes, show a measured percentage or replay on client-side navigation. No JavaScript means no overlay or inert content. Owner routes bypass it. Motion and color derive from the guest theme, with a static reduced-motion indicator.
 
 ## Validation
 

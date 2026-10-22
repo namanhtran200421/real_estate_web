@@ -18,7 +18,19 @@ async function loadingBoot(pathname = '/') {
   const classes = new Set<string>();
   const events = new Map<string, () => void>();
   const wheel = new Map<string, unknown>();
-  const timers = new Map<number, { callback: () => void; delay: number }>();
+  const timers = new Map<number, { callback: () => void; due: number }>();
+  let clock = 0;
+  let nextTimer = 0;
+  const advanceTo = (time: number) => {
+    while (true) {
+      const next = [...timers.entries()].sort((a, b) => a[1].due - b[1].due)[0];
+      if (!next || next[1].due > time) break;
+      timers.delete(next[0]);
+      clock = next[1].due;
+      next[1].callback();
+    }
+    clock = time;
+  };
   const root = {
     setAttribute: (name: string, value: string) => attributes.set(name, value),
     removeAttribute: (name: string) => attributes.delete(name),
@@ -39,13 +51,17 @@ async function loadingBoot(pathname = '/') {
       removeEventListener: (name: string) => events.delete(name),
     },
     location: { pathname },
-    setTimeout: (callback: () => void, delay: number) => { timers.set(1, { callback, delay }); return 1; },
+    setTimeout: (callback: () => void, delay: number) => {
+      const id = ++nextTimer;
+      timers.set(id, { callback, due: clock + delay });
+      return id;
+    },
     clearTimeout: (id: number) => timers.delete(id),
   });
-  return { attributes, classes, events, wheel, timers, page, loader, html, script };
+  return { attributes, classes, events, wheel, timers, page, loader, html, script, advanceTo };
 }
 
-test('startup readiness releases interaction immediately and clears the independent fallback', async () => {
+test('early startup readiness waits for the six-second showcase, then clears both timers', async () => {
   const boot = await loadingBoot('/en/');
   assert.equal(boot.page.lang, 'en');
   assert.equal(boot.loader.hidden, false);
@@ -54,18 +70,32 @@ test('startup readiness releases interaction immediately and clears the independ
   const ready = boot.events.get('vnbooking:ready')!;
   ready();
   ready();
+  boot.advanceTo(5999);
+  assert.ok(boot.attributes.has('inert') && boot.classes.has('site-loading'));
+  boot.advanceTo(6000);
   assert.ok(!boot.attributes.has('inert') && !boot.attributes.has('aria-busy'));
   assert.equal(boot.attributes.get('loader:aria-hidden'), 'true');
   assert.equal(boot.classes.size + boot.timers.size + boot.events.size + boot.wheel.size, 0);
 });
 
+test('startup waits for late page readiness between the minimum and the watchdog', async () => {
+  const boot = await loadingBoot();
+  boot.advanceTo(6500);
+  assert.ok(boot.attributes.has('inert') && boot.classes.has('site-loading'));
+  boot.events.get('vnbooking:ready')!();
+  assert.ok(!boot.attributes.has('inert') && !boot.attributes.has('aria-busy'));
+  assert.equal(boot.classes.size + boot.timers.size + boot.events.size + boot.wheel.size, 0);
+});
+
 test('startup restores interaction when the application bundle never becomes ready', async () => {
   const boot = await loadingBoot();
-  const fallback = [...boot.timers.values()][0];
-  assert.ok(fallback.delay > 0 && fallback.delay <= 6000);
-  fallback.callback();
+  const lateReady = boot.events.get('vnbooking:ready')!;
+  boot.advanceTo(6999);
+  assert.ok(boot.attributes.has('inert'));
+  boot.advanceTo(7000);
+  lateReady();
   assert.ok(!boot.attributes.has('inert') && !boot.attributes.has('aria-busy'));
-  assert.equal(boot.classes.size + boot.events.size + boot.wheel.size, 0);
+  assert.equal(boot.classes.size + boot.timers.size + boot.events.size + boot.wheel.size, 0);
 });
 
 test('owner routes bypass the startup overlay without matching unrelated guest paths', async () => {
