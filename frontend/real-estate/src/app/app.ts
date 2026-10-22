@@ -1,4 +1,4 @@
-import { Component, afterNextRender, inject } from '@angular/core';
+import { ApplicationRef, Component, afterNextRender, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { filter, map } from 'rxjs';
@@ -28,9 +28,12 @@ export class App {
   );
 
   constructor() {
+    const application = inject(ApplicationRef);
     const motion = inject(MotionService);
     const fade = inject(ScrollFade);
     afterNextRender(() => {
+      // Resource completion includes error states. No minimum display time or navigation replay.
+      void application.whenStable().then(() => window.dispatchEvent(new Event('vnbooking:ready')));
       motion.start();
       fade.watch();
     });

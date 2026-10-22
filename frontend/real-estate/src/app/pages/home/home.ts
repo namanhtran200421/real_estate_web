@@ -33,13 +33,14 @@ export class Home {
       .map((chapter) => ({ id: chapter.id, key: chapter.key, photo: chapter.photos[0] }));
   });
 
-  /** Hero carousel photos (05 leads and is the LCP). */
+  /** Hero carousel photos (05 leads and is the LCP), plus the living-room overview. */
   protected readonly hero = computed(() => {
     const apt = this.featured();
     if (!apt) return undefined;
     const slides = ['05', '14', '10', '16', '03'].map((file) => roomPhoto(apt, file)).filter((p): p is Photo => !!p);
     return {
       slides: slides.length === 5 ? slides : apt.photos.slice(0, 5),
+      detail: roomPhoto(apt, '02') ?? apt.photos[0],
     };
   });
 

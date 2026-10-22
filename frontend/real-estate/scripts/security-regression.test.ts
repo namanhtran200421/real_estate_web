@@ -3,10 +3,88 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { test } from 'node:test';
+import { runInNewContext } from 'node:vm';
 import { contentSecurityPolicy, inlineScriptHashes, protectInlineScripts } from '../src/csp.ts';
 
 const hash = (source: string) => `'sha256-${createHash('sha256').update(source).digest('base64')}'`;
 const source = (path: string) => readFile(new URL(path, import.meta.url), 'utf8');
+
+/** Run the real pre-bundle boot script with deterministic readiness and timeout signals. */
+async function loadingBoot(pathname = '/') {
+  const html = await source('../src/index.html');
+  const script = html.match(/<script id="site-loading-boot">([\s\S]*?)<\/script>/)?.[1];
+  assert.ok(script);
+  const attributes = new Map<string, string>();
+  const classes = new Set<string>();
+  const events = new Map<string, () => void>();
+  const wheel = new Map<string, unknown>();
+  const timers = new Map<number, { callback: () => void; delay: number }>();
+  const root = {
+    setAttribute: (name: string, value: string) => attributes.set(name, value),
+    removeAttribute: (name: string) => attributes.delete(name),
+  };
+  const loader = {
+    hidden: true,
+    setAttribute: (name: string, value: string) => attributes.set(`loader:${name}`, value),
+    addEventListener: (name: string, callback: unknown) => wheel.set(name, callback),
+    removeEventListener: (name: string) => wheel.delete(name),
+  };
+  const page = { lang: 'vi', classList: {
+    add: (name: string) => classes.add(name), remove: (name: string) => classes.delete(name),
+  } };
+  runInNewContext(script, {
+    document: { documentElement: page, querySelector: () => root, getElementById: () => loader },
+    window: {
+      addEventListener: (name: string, callback: () => void) => events.set(name, callback),
+      removeEventListener: (name: string) => events.delete(name),
+    },
+    location: { pathname },
+    setTimeout: (callback: () => void, delay: number) => { timers.set(1, { callback, delay }); return 1; },
+    clearTimeout: (id: number) => timers.delete(id),
+  });
+  return { attributes, classes, events, wheel, timers, page, loader, html, script };
+}
+
+test('startup readiness releases interaction immediately and clears the independent fallback', async () => {
+  const boot = await loadingBoot('/en/');
+  assert.equal(boot.page.lang, 'en');
+  assert.equal(boot.loader.hidden, false);
+  assert.equal(boot.attributes.get('aria-busy'), 'true');
+  assert.ok(boot.attributes.has('inert') && boot.classes.has('site-loading'));
+  const ready = boot.events.get('vnbooking:ready')!;
+  ready();
+  ready();
+  assert.ok(!boot.attributes.has('inert') && !boot.attributes.has('aria-busy'));
+  assert.equal(boot.attributes.get('loader:aria-hidden'), 'true');
+  assert.equal(boot.classes.size + boot.timers.size + boot.events.size + boot.wheel.size, 0);
+});
+
+test('startup restores interaction when the application bundle never becomes ready', async () => {
+  const boot = await loadingBoot();
+  const fallback = [...boot.timers.values()][0];
+  assert.ok(fallback.delay > 0 && fallback.delay <= 6000);
+  fallback.callback();
+  assert.ok(!boot.attributes.has('inert') && !boot.attributes.has('aria-busy'));
+  assert.equal(boot.classes.size + boot.events.size + boot.wheel.size, 0);
+});
+
+test('owner routes bypass the startup overlay without matching unrelated guest paths', async () => {
+  for (const path of ['/admin', '/admin/login', '/en/admin/login']) {
+    const boot = await loadingBoot(path);
+    assert.equal(boot.loader.hidden, true, path);
+    assert.equal(boot.attributes.size + boot.timers.size + boot.events.size, 0, path);
+  }
+  const guest = await loadingBoot('/administrator');
+  assert.equal(guest.loader.hidden, false);
+  assert.equal(guest.page.lang, 'vi');
+});
+
+test('startup remains hidden without JavaScript and its executable bytes receive CSP authorization', async () => {
+  const boot = await loadingBoot();
+  assert.match(boot.html, /id="site-loader"[^>]*\bhidden/);
+  assert.match(boot.html, /<app-root><\/app-root>/);
+  assert.ok(protectInlineScripts(boot.html).hashes.includes(hash(boot.script)));
+});
 
 test('cached SSR policy authorizes exact classic/module inline bytes without sharing script nonces', () => {
   const classic = 'window.synthetic = "café";\n';

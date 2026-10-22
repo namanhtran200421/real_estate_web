@@ -976,3 +976,43 @@ app-site-header > header {
   opacity: 1;
   transform: none;
 }
+
+/* Guest startup: fixed geometry, existing brand tokens, no simulated percentage. */
+:root { --z-startup: 90; }
+.site-loader[hidden] { display: none; }
+.site-loader {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-startup);
+  display: grid;
+  place-items: center;
+  padding: 2rem;
+  background: var(--color-background);
+  color: var(--color-foreground);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  touch-action: none;
+  transition: opacity var(--motion-base) var(--motion-ease), visibility 0s linear var(--motion-base);
+}
+html.site-loading .site-loader {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  /* Fast hydration can finish before this subtle entrance ever paints. */
+  transition: opacity 180ms ease 120ms, visibility 0s;
+}
+.site-loader__identity { width: 100%; text-align: center; transform: translateY(-3vh); }
+.site-loader__mark { display: block; width: 5.25rem; height: auto; margin: 0 auto 1.75rem; }
+.site-loader__place { margin: 0 0 1rem; font-family: var(--font-mono); font-size: 0.625rem; letter-spacing: 0.2em; color: var(--color-accent-deep); }
+.site-loader__name { margin: 0; font-family: var(--font-serif); font-size: clamp(2.1rem, 5.5vw, 3.75rem); font-weight: 300; line-height: 1.15; letter-spacing: -0.045em; }
+.site-loader__track { width: 9rem; height: 1px; margin: 2rem auto 1.125rem; overflow: hidden; background: var(--color-border); }
+.site-loader__track span { display: block; width: 42%; height: 100%; background: var(--color-accent-deep); animation: startup-travel 1.8s var(--motion-ease) infinite; }
+.site-loader__message { margin: 0; font-size: 0.75rem; line-height: 1.6; color: var(--color-muted-foreground); }
+html[lang='en'] .site-loader__message[lang='vi'],
+html:not([lang='en']) .site-loader__message[lang='en'] { display: none; }
+@keyframes startup-travel { from { transform: translateX(-110%); } to { transform: translateX(350%); } }
+@media (prefers-reduced-motion: reduce) {
+  .site-loader, html.site-loading .site-loader { transition: none; }
+  .site-loader__track span { animation: none; width: 100%; }
+}

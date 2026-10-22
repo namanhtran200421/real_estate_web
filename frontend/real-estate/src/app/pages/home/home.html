@@ -29,6 +29,40 @@
       </div>
     </section>
 
+    <!-- 3 · Daylight: a quick capacity overview, with the qualification on the label. -->
+    <section id="can-ho" class="bg-muted py-20 md:py-28" aria-labelledby="home-capacity-title">
+      <div class="container-editorial grid max-w-6xl items-center gap-10 md:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] md:gap-12">
+        @if (h.detail; as photo) {
+          <div class="arch aspect-[3/4] bg-background">
+            <img [ngSrc]="photo.src" [alt]="photo.alt" fill sizes="(min-width: 768px) 40vw, 90vw" class="object-cover object-[60%_70%]" />
+          </div>
+        }
+        <div>
+          <h2 id="home-capacity-title" class="display-section">{{ 'home.scenes.placeTitle' | transloco }}</h2>
+          <dl class="mt-10 grid grid-cols-2 gap-x-6 gap-y-6 md:gap-x-8">
+            <div class="border-t border-border pt-4">
+              <dt class="label-caps min-h-10 text-muted-foreground md:min-h-0">{{ 'home.scenes.guestCapacity' | transloco }}<sup class="ml-0.5" aria-hidden="true">*</sup></dt>
+              <dd class="mt-2 font-serif text-5xl font-light" aria-describedby="guest-capacity-note">{{ apt.guests }}+</dd>
+            </div>
+            @for (stat of [
+              { value: apt.bedrooms, label: 'apartment.stats.bedrooms' },
+              { value: apt.beds, label: 'apartment.stats.beds' },
+              { value: apt.bathrooms, label: 'apartment.stats.bathrooms' },
+            ]; track stat.label) {
+              <div class="border-t border-border pt-4">
+                <dt class="label-caps min-h-10 text-muted-foreground md:min-h-0">{{ stat.label | transloco }}</dt>
+                <dd class="mt-2 font-serif text-5xl font-light">{{ stat.value }}</dd>
+              </div>
+            }
+          </dl>
+          <p id="guest-capacity-note" class="mt-5 max-w-md text-sm leading-relaxed text-muted-foreground">
+            <a class="link-subtle block min-h-11 underline underline-offset-4" routerLink="/policy" fragment="item-3"><span aria-hidden="true">* </span>{{ 'home.scenes.guestCapacityNote' | transloco }}</a>
+          </p>
+          <p class="mt-7 max-w-md text-lg text-muted-foreground">{{ 'home.scenes.cool' | transloco }}</p>
+        </div>
+      </div>
+    </section>
+
     <!-- 4 · An invitation to the apartment page (where the full room tour lives): two rooms, straight
          on the grid, each opening that room; the button opens the whole apartment. -->
     <section class="section" aria-labelledby="rooms-preview-title">

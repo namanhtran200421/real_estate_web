@@ -43,6 +43,7 @@
 | Form | page component + Zod API schema | booking/admin controllers | create / edit | validation E2E |
 | Toast | inline live status | existing admin patterns | success / error | live-region test |
 | CRUD | Owner booking detail | admin booking API | stay on record | full-flow E2E |
+| Guest startup loading | `index.html` boot shell + `App` stability event | this contract; global `styles.css` brand tokens | initial guest document only; Vietnamese / English | ready, timeout, no-JS, owner bypass, narrow viewport |
 
 ## Component behavior
 
@@ -93,6 +94,7 @@
 - Session expiry/re-authentication: existing admin interceptor behavior.
 - Stale-request cancellation/invalidation and pending-state ownership: resource instances own reads; page `busy` signals own writes.
 - Dialog/form preservation and retry after mutation failure: form state is retained after server failure.
+- Guest startup: a localized indeterminate status outside Angular's hydration tree temporarily makes `app-root` inert and busy. Application stability (including a settled request error) dismisses it immediately; an independent six-second watchdog restores interaction even if the application bundle fails. There is no minimum display duration, measured percentage or replay on client-side navigation. No JavaScript means no overlay or inert content. Owner routes bypass it. Motion and color derive from the guest theme, with a static reduced-motion indicator.
 
 ## Validation
 

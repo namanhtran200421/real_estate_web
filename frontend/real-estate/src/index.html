@@ -16,7 +16,7 @@
   <link rel="apple-touch-icon" href="brand/apple-touch-icon.png">
   <!-- The display font, fetched with the page instead of after the CSS is parsed. -->
   <link rel="preload" href="fonts/fraunces-vietnamese-variable.woff2" as="font" type="font/woff2" crossorigin>
-  <!-- Motion boot: classes decided before first paint. The CSP nonce is stamped on this script by the server. -->
+  <!-- Motion boot: classes decided before first paint. The server hashes completed inline scripts for CSP. -->
   <script>
     (function () {
       try {
@@ -45,6 +45,48 @@
   </style>
 </head>
 <body>
+  <!-- Outside app-root so the startup screen never changes Angular's hydration tree.
+       Hidden unless the boot script runs; server-rendered content stays readable without JS. -->
+  <div id="site-loader" class="site-loader" role="status" aria-live="polite" aria-atomic="true" hidden>
+    <div class="site-loader__identity">
+      <img src="/brand/logo-mark.webp" width="359" height="239" alt="" class="site-loader__mark" aria-hidden="true">
+      <p class="site-loader__place" aria-hidden="true">SUN GARDEN · ĐÀ LẠT</p>
+      <p class="site-loader__name">VN Booking Hub</p>
+      <div class="site-loader__track" aria-hidden="true"><span></span></div>
+      <p class="site-loader__message" lang="vi">Đang mở một góc Đà Lạt…</p>
+      <p class="site-loader__message" lang="en">Opening a corner of Đà Lạt…</p>
+    </div>
+  </div>
   <app-root></app-root>
+  <script id="site-loading-boot">
+    (function () {
+      var root = document.querySelector('app-root');
+      var loader = document.getElementById('site-loader');
+      if (!root || !loader || /^\/(?:en\/)?admin(?:\/|$)/.test(location.pathname)) return;
+      var page = document.documentElement;
+      page.lang = /^\/en(?:\/|$)/.test(location.pathname) ? 'en' : 'vi';
+      var finished = false;
+      function blockScroll(event) { event.preventDefault(); }
+      function finish() {
+        if (finished) return;
+        finished = true;
+        clearTimeout(guard);
+        page.classList.remove('site-loading');
+        root.removeAttribute('inert');
+        root.removeAttribute('aria-busy');
+        loader.setAttribute('aria-hidden', 'true');
+        loader.removeEventListener('wheel', blockScroll);
+        window.removeEventListener('vnbooking:ready', finish);
+      }
+      // Recovery belongs to this tiny script, even if the application bundle never loads.
+      var guard = setTimeout(finish, 6000);
+      window.addEventListener('vnbooking:ready', finish, { once: true });
+      loader.addEventListener('wheel', blockScroll, { passive: false });
+      loader.hidden = false;
+      root.setAttribute('inert', '');
+      root.setAttribute('aria-busy', 'true');
+      page.classList.add('site-loading');
+    })();
+  </script>
 </body>
 </html>
