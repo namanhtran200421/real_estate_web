@@ -3,6 +3,8 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, firstValueFrom, map } from 'rxjs';
 import { InspectionResult } from './inspection-checklist';
 import { API_URL, ApiResponse, Page } from '../core/api';
+import { AdminAuthService } from './admin-auth.service';
+import { InFlightAdminRead } from './in-flight-admin-read';
 import {
   AdminApartment,
   AdminBookingDetail,
@@ -26,6 +28,8 @@ import {
 @Injectable({ providedIn: 'root' })
 export class AdminApiService {
   private readonly http = inject(HttpClient);
+  private readonly auth = inject(AdminAuthService);
+  private readonly summaryRead = new InFlightAdminRead<AdminSummary>();
   private readonly publicApi = `${inject(API_URL)}/api/v1`;
   private readonly api = `${this.publicApi}/admin`;
 
@@ -33,8 +37,10 @@ export class AdminApiService {
     return this.unwrap(this.http.get<ApiResponse<T>>(`${this.api}${path}`, { params }));
   }
 
-  private send<T>(method: 'POST' | 'PUT' | 'PATCH', path: string, body: unknown): Promise<T> {
-    return this.unwrap(this.http.request<ApiResponse<T>>(method, `${this.api}${path}`, { body }));
+  private async send<T>(method: 'POST' | 'PUT' | 'PATCH', path: string, body: unknown): Promise<T> {
+    const result = await this.unwrap(this.http.request<ApiResponse<T>>(method, `${this.api}${path}`, { body }));
+    this.summaryRead.invalidate();
+    return result;
   }
 
   private async sendNoContent(
@@ -43,6 +49,7 @@ export class AdminApiService {
     body?: unknown,
   ): Promise<void> {
     await firstValueFrom(this.http.request(method, `${this.api}${path}`, { body }));
+    this.summaryRead.invalidate();
   }
 
   private unwrap<T>(request: Observable<ApiResponse<T>>): Promise<T> {
@@ -60,7 +67,7 @@ export class AdminApiService {
   // Dashboard and bookings
 
   summary(): Promise<AdminSummary> {
-    return this.get('/summary');
+    return this.summaryRead.run(this.auth.token(), () => this.get('/summary'));
   }
 
   /** Calendar-period aggregates in the business timezone. */

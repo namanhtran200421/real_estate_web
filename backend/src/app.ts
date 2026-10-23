@@ -47,7 +47,9 @@ export function createApp(): express.Express {
   app.use(securityHeaders);
   app.use(compression({ threshold: 1024 }));
 
-  app.use('/health', healthRouter);
+  // The sign-in page can wake the API/database while the owner enters credentials.
+  // Keep probes outside rate limiting, with the same browser-origin policy as the API.
+  app.use('/health', corsPolicy, healthRouter);
 
   app.use(
     '/api',

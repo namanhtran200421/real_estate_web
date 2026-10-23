@@ -48,6 +48,10 @@
 
 ## Component behavior
 
+- Owner sign-in starts one best-effort readiness request while credentials and CAPTCHA are entered, and prepares only the layout/dashboard code. Preparation never gates sign-in or fetches protected data. Busy feedback remains active until navigation finishes; stalled sign-in requests are bounded and recoverable.
+- Concurrent owner summary reads share one request only within the same bearer session; no completed private result is cached. Successful writes invalidate pending reuse. Reporting query/fragment changes refresh reports without refetching operational sidebar counts.
+- Owner startup excludes guest navigation, brand-loader images and the guest display-font preload. Owner route metadata is registered immediately; protected page components remain lazy.
+
 | Component | Default | Hover | Focus | Active | Disabled | Busy | Error |
 |---|---|---|---|---|---|---|---|
 | Button | tokenized | existing token | visible ring | existing token | reduced contrast | label changes, disabled | adjacent alert |

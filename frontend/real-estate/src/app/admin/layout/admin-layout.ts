@@ -173,7 +173,7 @@ export class AdminLayout {
     },
   ];
 
-  /** Bumped on every page change, which refreshes the counts. */
+  /** Refresh on page changes, not reporting filters or fragment-only navigation. */
   private readonly page = signal(0);
   private readonly summary = resource({ params: () => this.page(), loader: () => this.api.summary() });
 
@@ -193,11 +193,14 @@ export class AdminLayout {
   });
 
   constructor() {
+    let previousPath: string | undefined;
     const subscription = inject(Router)
       .events.pipe(filter((event) => event instanceof NavigationEnd))
-      .subscribe(() => {
+      .subscribe((event) => {
         this.menuOpen.set(false);
-        this.page.update((n) => n + 1);
+        const path = event.urlAfterRedirects.split(/[?#]/)[0];
+        if (previousPath !== undefined && previousPath !== path) this.page.update((n) => n + 1);
+        previousPath = path;
       });
     inject(DestroyRef).onDestroy(() => subscription.unsubscribe());
   }

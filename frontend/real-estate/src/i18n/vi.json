@@ -689,7 +689,7 @@
     "lookupHint": "Tra cứu bằng mã đặt phòng và email hoặc số điện thoại."
   },
   "captcha": {
-    "failed": "Chưa tải được bước xác minh chống robot. Vui lòng kiểm tra kết nối, hệ thống sẽ tự thử lại."
+    "failed": "Chưa tải được bước xác minh chống robot. Vui lòng kiểm tra kết nối rồi thử lại."
   },
   "apiErrors": {
     "NETWORK": "Không kết nối được máy chủ. Vui lòng kiểm tra mạng và thử lại.",

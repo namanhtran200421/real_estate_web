@@ -1,4 +1,5 @@
 import { ApplicationRef, Component, afterNextRender, inject } from '@angular/core';
+import { PlatformLocation } from '@angular/common';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { filter, map } from 'rxjs';
@@ -24,7 +25,7 @@ export class App {
       filter((event) => event instanceof NavigationEnd),
       map(() => this.router.url.startsWith('/admin')),
     ),
-    { initialValue: false },
+    { initialValue: /^\/(?:en\/)?admin(?:\/|$)/.test(inject(PlatformLocation).pathname) },
   );
 
   constructor() {

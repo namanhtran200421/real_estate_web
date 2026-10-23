@@ -71,7 +71,8 @@ export function loadStoredAdminSession(): AdminSession | undefined {
 export class AdminAuthService {
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
-  private readonly api = `${inject(API_URL)}/api/v1/admin/auth`;
+  private readonly apiUrl = inject(API_URL);
+  private readonly api = `${this.apiUrl}/api/v1/admin/auth`;
   private readonly session = signal<AdminSession | undefined>(loadStoredAdminSession());
 
   readonly admin = computed(() => this.session()?.admin);
@@ -87,12 +88,21 @@ export class AdminAuthService {
     return session.token;
   }
 
+  /** One best-effort wake-up on sign-in entry, in parallel with typing and CAPTCHA. */
+  async prepareLogin(): Promise<void> {
+    try {
+      await firstValueFrom(this.http.get(`${this.apiUrl}/health/ready`, { timeout: 70_000 }));
+    } catch {
+      // Preparation must never block sign-in; the real request owns actionable errors.
+    }
+  }
+
   async login(email: string, password: string, captchaToken?: string): Promise<void> {
     const response = await firstValueFrom(
       this.http.post<ApiResponse<AdminSession>>(
         `${this.api}/login`,
         { email, password },
-        { headers: captchaHeaders(captchaToken) },
+        { headers: captchaHeaders(captchaToken), timeout: 75_000 },
       ),
     );
     this.session.set(response.data);

@@ -15,12 +15,15 @@
   <link rel="icon" type="image/png" href="brand/icon-192.png" sizes="192x192">
   <link rel="apple-touch-icon" href="brand/apple-touch-icon.png">
   <!-- The display font, fetched with the page instead of after the CSS is parsed. -->
-  <link rel="preload" href="fonts/fraunces-vietnamese-variable.woff2" as="font" type="font/woff2" crossorigin>
+  <link id="guest-display-font" rel="preload" href="fonts/fraunces-vietnamese-variable.woff2" as="font" type="font/woff2" crossorigin media="not all">
   <!-- Motion boot: classes decided before first paint. The server hashes completed inline scripts for CSP. -->
   <script>
     (function () {
       try {
         var q = window.matchMedia, d = document.documentElement;
+        if (!/^\/(?:en\/)?admin(?:\/|$)/.test(location.pathname)) {
+          document.getElementById('guest-display-font').media = 'all';
+        }
         if (!q('(prefers-reduced-motion: no-preference)').matches) return;
         d.classList.add('motion');
       } catch (e) {}
@@ -32,7 +35,7 @@
        Hidden unless the boot script runs; server-rendered content stays readable without JS. -->
   <div id="site-loader" class="site-loader" role="status" aria-live="polite" aria-atomic="true" hidden>
     <div class="site-loader__identity">
-      <img src="/brand/logo-mark.webp" width="359" height="239" alt="" class="site-loader__mark" aria-hidden="true">
+      <img src="/brand/logo-mark.webp" loading="lazy" width="359" height="239" alt="" class="site-loader__mark" aria-hidden="true">
       <p class="site-loader__place" aria-hidden="true">SUN GARDEN · ĐÀ LẠT</p>
       <p class="site-loader__name">VN Booking Hub</p>
       <div class="site-loader__track" aria-hidden="true"><span></span></div>

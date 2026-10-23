@@ -40,9 +40,23 @@ function loadTurnstile(document: Document): Promise<Turnstile> {
     const script = document.createElement('script');
     script.src = SCRIPT_URL;
     script.async = true;
-    script.onload = () =>
-      window.turnstile ? resolve(window.turnstile) : reject(new Error('Turnstile missing'));
-    script.onerror = () => reject(new Error('Turnstile failed to load'));
+    const timeout = window.setTimeout(() => {
+      script.remove();
+      reject(new Error('Turnstile load timed out'));
+    }, 15_000);
+    script.onload = () => {
+      window.clearTimeout(timeout);
+      if (window.turnstile) resolve(window.turnstile);
+      else {
+        script.remove();
+        reject(new Error('Turnstile missing'));
+      }
+    };
+    script.onerror = () => {
+      window.clearTimeout(timeout);
+      script.remove();
+      reject(new Error('Turnstile failed to load'));
+    };
     document.head.appendChild(script);
   }).catch((error: unknown) => {
     loading = undefined;
@@ -68,6 +82,9 @@ function loadTurnstile(document: Document): Promise<Turnstile> {
       ></div>
       @if (failed()) {
         <p class="mt-2 text-sm text-accent-deep" role="alert">{{ 'captcha.failed' | transloco }}</p>
+        <button type="button" class="btn btn-outline mt-2" [disabled]="retrying()" [attr.aria-busy]="retrying()" (click)="retry()">
+          {{ 'common.retry' | transloco }}
+        </button>
       }
     }
   `,
@@ -83,6 +100,7 @@ export class Captcha implements OnDestroy {
 
   protected readonly enabled = CAPTCHA_ENABLED;
   protected readonly failed = signal(false);
+  protected readonly retrying = signal(false);
 
   private turnstile: Turnstile | undefined;
   private widgetId: string | undefined;
@@ -101,6 +119,21 @@ export class Captcha implements OnDestroy {
   reset(): void {
     this.token.emit('');
     if (this.turnstile && this.widgetId !== undefined) this.turnstile.reset(this.widgetId);
+  }
+
+  hasFailed(): boolean {
+    return this.failed();
+  }
+
+  protected async retry(): Promise<void> {
+    if (this.retrying()) return;
+    this.retrying.set(true);
+    try {
+      if (this.turnstile && this.widgetId !== undefined) this.reset();
+      else await this.render();
+    } finally {
+      this.retrying.set(false);
+    }
   }
 
   ngOnDestroy(): void {

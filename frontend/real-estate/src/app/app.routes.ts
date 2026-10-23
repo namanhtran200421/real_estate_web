@@ -1,5 +1,6 @@
 import { inject } from '@angular/core';
 import { Router, Routes } from '@angular/router';
+import { adminRoutes } from './admin/admin.routes';
 
 import { STORY } from './motion/motion-routes';
 
@@ -88,8 +89,9 @@ export const routes: Routes = [
   },
   {
     path: 'admin',
-    loadChildren: () => import('./admin/admin.routes').then((m) => m.adminRoutes),
-    // Owner only: never preloaded for guests (see core/preloading.ts).
+    // Register the small route map immediately, avoiding another network discovery step.
+    // Owner page components remain lazy and are never preloaded for guests.
+    children: adminRoutes,
     data: { ...NOINDEX, preload: false },
   },
   { path: '**', redirectTo: '' },

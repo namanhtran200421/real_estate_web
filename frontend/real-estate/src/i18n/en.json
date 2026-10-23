@@ -689,7 +689,7 @@
     "lookupHint": "Look it up with your booking reference and email or phone number."
   },
   "captcha": {
-    "failed": "The robot check couldn’t load. Check your connection. It will retry by itself."
+    "failed": "The robot check couldn’t load. Check your connection and try again."
   },
   "apiErrors": {
     "NETWORK": "Couldn’t reach the server. Please check your connection and try again.",
