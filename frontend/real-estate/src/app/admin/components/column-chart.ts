@@ -1,4 +1,14 @@
-import { Component, DestroyRef, ElementRef, afterNextRender, computed, inject, input, signal, viewChild } from '@angular/core';
+import {
+  Component,
+  DestroyRef,
+  ElementRef,
+  afterNextRender,
+  computed,
+  inject,
+  input,
+  signal,
+  viewChild,
+} from '@angular/core';
 
 /** One column: `label` sits under the axis, `detail` and `display` show in the tooltip and table. */
 export interface ChartPoint {
@@ -41,17 +51,40 @@ function niceStep(max: number): number {
   template: `
     <!-- The SVG is taken out of the flow so it follows the frame's width instead of setting it. -->
     <div #frame class="relative w-full" [style.height.px]="height">
-      <svg [attr.width]="width()" [attr.height]="height" role="img" [attr.aria-label]="label()" class="absolute inset-0 overflow-visible">
+      <svg
+        [attr.width]="width()"
+        [attr.height]="height"
+        role="img"
+        [attr.aria-label]="label()"
+        class="absolute inset-0 overflow-visible"
+      >
         @for (tick of layout().ticks; track tick.value) {
-          <line [attr.x1]="margin.left" [attr.x2]="width() - margin.right" [attr.y1]="tick.y" [attr.y2]="tick.y" stroke="#e8e4df" stroke-width="1" />
-          <text [attr.x]="margin.left - 8" [attr.y]="tick.y" dy="0.32em" text-anchor="end" class="fill-muted-foreground text-[11px] tabular-nums">
+          <line
+            [attr.x1]="margin.left"
+            [attr.x2]="width() - margin.right"
+            [attr.y1]="tick.y"
+            [attr.y2]="tick.y"
+            stroke="#e8e4df"
+            stroke-width="1"
+          />
+          <text
+            [attr.x]="margin.left - 8"
+            [attr.y]="tick.y"
+            dy="0.32em"
+            text-anchor="end"
+            class="fill-muted-foreground text-[11px] tabular-nums"
+          >
             {{ tick.text }}
           </text>
         }
 
         @for (bar of layout().bars; track bar.point.key; let i = $index) {
           @if (bar.path) {
-            <path [attr.d]="bar.path" [attr.fill]="bar.highlight ? emphasis : context" [attr.opacity]="active() === i ? 0.75 : 1" />
+            <path
+              [attr.d]="bar.path"
+              [attr.fill]="bar.highlight ? emphasis : context"
+              [attr.opacity]="active() === i ? 0.75 : 1"
+            />
           }
           @if (bar.showLabel) {
             <text
@@ -68,7 +101,12 @@ function niceStep(max: number): number {
           }
           @if (bar.highlight && !empty()) {
             <!-- Compact value on the cap (full value in the tooltip and table), kept inside the plot -->
-            <text [attr.x]="bar.capX" [attr.y]="bar.top - 8" [attr.text-anchor]="bar.capAnchor" class="fill-foreground text-[12px] font-semibold">
+            <text
+              [attr.x]="bar.capX"
+              [attr.y]="bar.capY"
+              [attr.text-anchor]="bar.capAnchor"
+              class="fill-foreground text-[12px] font-semibold"
+            >
               {{ tickFormat()(bar.point.value) }}
             </text>
           }
@@ -91,20 +129,22 @@ function niceStep(max: number): number {
         <line
           [attr.x1]="margin.left"
           [attr.x2]="width() - margin.right"
-          [attr.y1]="height - margin.bottom"
-          [attr.y2]="height - margin.bottom"
+          [attr.y1]="layout().zero"
+          [attr.y2]="layout().zero"
           stroke="#d6d0c8"
           stroke-width="1"
         />
       </svg>
 
       @if (empty()) {
-        <p class="absolute inset-x-0 top-1/3 text-center text-sm text-muted-foreground">Chưa có số liệu</p>
+        <p class="absolute inset-x-0 top-1/3 text-center text-sm text-muted-foreground">
+          Chưa có số liệu
+        </p>
       }
 
       @if (tooltip(); as tip) {
         <div
-          class="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full whitespace-nowrap rounded-md border border-border bg-card px-3 py-2 shadow-md"
+          class="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full w-max max-w-[min(18rem,calc(100vw-4rem))] whitespace-normal rounded-md border border-border bg-card px-3 py-2 shadow-md"
           [style.left.px]="tip.x"
           [style.top.px]="tip.y"
           role="status"
@@ -116,13 +156,21 @@ function niceStep(max: number): number {
     </div>
 
     <details class="mt-4 text-sm">
-      <summary class="cursor-pointer text-muted-foreground hover:text-foreground">Xem bảng số liệu</summary>
+      <summary class="cursor-pointer text-muted-foreground hover:text-foreground">
+        Xem bảng số liệu
+      </summary>
       <table class="mt-3 w-full">
-        <caption class="sr-only">{{ label() }}</caption>
+        <caption class="sr-only">
+          {{
+            label()
+          }}
+        </caption>
         <tbody class="divide-y divide-border">
           @for (point of points(); track point.key) {
             <tr>
-              <th scope="row" class="py-1.5 text-left font-normal text-muted-foreground">{{ point.detail }}</th>
+              <th scope="row" class="py-1.5 text-left font-normal text-muted-foreground">
+                {{ point.detail }}
+              </th>
               <td class="py-1.5 text-right tabular-nums">{{ point.display }}</td>
             </tr>
           }
@@ -139,6 +187,8 @@ export class ColumnChart {
   readonly label = input.required<string>();
   /** Fixed top of the scale (100 for percentages); otherwise rounded up from the data. */
   readonly max = input<number>();
+  /** Smallest meaningful axis interval (1 for whole VND). */
+  readonly minStep = input(0);
   /** Gridline label, e.g. 1500000 → "1,5 tr". */
   readonly tickFormat = input<(value: number) => string>((value) => String(value));
 
@@ -151,7 +201,7 @@ export class ColumnChart {
   protected readonly width = signal(640);
   protected readonly active = signal<number | undefined>(undefined);
 
-  protected readonly empty = computed(() => this.points().every((point) => point.value <= 0));
+  protected readonly empty = computed(() => this.points().every((point) => point.value === 0));
 
   protected readonly layout = computed(() => {
     const points = this.points();
@@ -161,31 +211,38 @@ export class ColumnChart {
     const plotHeight = plotBottom - MARGIN.top;
 
     const dataMax = Math.max(0, ...points.map((point) => point.value));
-    const step = niceStep(this.max() ?? (dataMax || 1));
-    const top = this.max() ?? Math.max(step, Math.ceil(dataMax / step) * step);
-    const y = (value: number) => plotBottom - (Math.min(value, top) / top) * plotHeight;
+    const dataMin =
+      this.max() === undefined ? Math.min(0, ...points.map((point) => point.value)) : 0;
+    const step = Math.max(this.minStep(), niceStep(this.max() ?? (dataMax - dataMin || 1)));
+    const bottom = Math.floor(dataMin / step) * step;
+    const top = this.max() ?? Math.max(bottom + step, Math.ceil(dataMax / step) * step);
+    const y = (value: number) =>
+      plotBottom -
+      ((Math.max(bottom, Math.min(value, top)) - bottom) / (top - bottom)) * plotHeight;
+    const zero = y(0);
 
     const ticks = [];
-    for (let value = 0; value <= top + step / 2; value += step) {
+    for (let value = bottom; value <= top + step / 2; value += step) {
       ticks.push({ value, y: Math.round(y(value)) + 0.5, text: this.tickFormat()(value) });
     }
 
     const band = plotWidth / Math.max(points.length, 1);
     const barWidth = Math.min(BAR_MAX, band * 0.6);
-    const labelEvery = band < MIN_LABEL_BAND ? 2 : 1;
+    const labelEvery = Math.max(1, Math.ceil(MIN_LABEL_BAND / band));
     const bars = points.map((point, index) => {
       const cx = MARGIN.left + band * (index + 0.5);
       const barTop = y(point.value);
-      const barHeight = plotBottom - barTop;
+      const barHeight = Math.abs(zero - barTop);
       const highlight = point.key === this.highlight();
       let path = '';
       if (barHeight > 0.5) {
         const x = cx - barWidth / 2;
         const r = Math.min(RADIUS, barHeight, barWidth / 2);
-        // Rounded data end, square at the baseline.
+        // Rounded value end, square at zero, including refund-only periods below the axis.
         path =
-          `M${x},${plotBottom} V${barTop + r} Q${x},${barTop} ${x + r},${barTop} ` +
-          `H${x + barWidth - r} Q${x + barWidth},${barTop} ${x + barWidth},${barTop + r} V${plotBottom} Z`;
+          point.value >= 0
+            ? `M${x},${zero} V${barTop + r} Q${x},${barTop} ${x + r},${barTop} H${x + barWidth - r} Q${x + barWidth},${barTop} ${x + barWidth},${barTop + r} V${zero} Z`
+            : `M${x},${zero} V${barTop - r} Q${x},${barTop} ${x + r},${barTop} H${x + barWidth - r} Q${x + barWidth},${barTop} ${x + barWidth},${barTop - r} V${zero} Z`;
       }
       const showLabel = highlight || (points.length - 1 - index) % labelEvery === 0;
       // Near either edge the cap label lines up with the bar's outer side instead of its middle.
@@ -198,10 +255,23 @@ export class ColumnChart {
         capAnchor = 'start';
         capX = cx - barWidth / 2;
       }
-      return { point, cx, top: barTop, path, highlight, showLabel, capAnchor, capX };
+      return {
+        point,
+        cx,
+        top: barTop,
+        capY: Math.max(
+          14,
+          Math.min(HEIGHT - MARGIN.bottom - 4, barTop + (point.value < 0 ? 16 : -8)),
+        ),
+        path,
+        highlight,
+        showLabel,
+        capAnchor,
+        capX,
+      };
     });
 
-    return { ticks, bars, band };
+    return { ticks, bars, band, zero };
   });
 
   protected readonly tooltip = computed(() => {
@@ -209,7 +279,14 @@ export class ColumnChart {
     if (index === undefined) return undefined;
     const bar = this.layout().bars[index];
     if (!bar) return undefined;
-    return { point: bar.point, x: bar.cx, y: Math.min(bar.top, HEIGHT - MARGIN.bottom) - 12 };
+    return {
+      point: bar.point,
+      x: Math.max(
+        Math.min(this.width() / 2, 144),
+        Math.min(this.width() - Math.min(this.width() / 2, 144), bar.cx),
+      ),
+      y: Math.min(bar.top, HEIGHT - MARGIN.bottom) - 12,
+    };
   });
 
   constructor() {

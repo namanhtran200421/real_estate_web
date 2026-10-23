@@ -4,6 +4,7 @@ import { API_URL, ApiResponse } from '../core/api';
 import { Apartment } from '../models/apartment';
 import { LANG } from '../i18n/i18n';
 import { localizeSunGarden } from '../data/sun-garden-en';
+import { photoUrl } from '../shared/photo-url';
 
 /** The Wi-Fi tag is not shown on apartment cards or the overview (it stays in the amenity list). */
 const HIDDEN_TAGS = new Set(['Wi-Fi miễn phí', 'Free Wi-Fi']);
@@ -25,7 +26,10 @@ export class ApartmentService {
 
   readonly all = computed<Apartment[]>(() => {
     if (!this.list.hasValue()) return [];
-    const apartments = this.list.value().data.map(withoutWifiTag);
+    const apartments = this.list.value().data.map(withoutWifiTag).map((apartment) => ({
+      ...apartment,
+      photos: apartment.photos.map((photo) => ({ ...photo, src: photoUrl(photo.src, this.apiUrl) })),
+    }));
     return this.lang === 'en' ? apartments.map(localizeSunGarden) : apartments;
   });
 

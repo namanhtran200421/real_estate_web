@@ -1,6 +1,6 @@
 <div class="panel p-4 sm:p-6">
   <!-- What to do next / what is selected -->
-  <div class="flex min-h-12 flex-wrap items-center justify-between gap-3 border-b border-border pb-4" aria-live="polite">
+  <div class="mobile-stack flex min-h-12 flex-wrap items-center justify-between gap-3 border-b border-border pb-4" aria-live="polite">
     @if (nights()) {
       <p>
         <span class="font-serif text-xl">{{ 'common.nights' | transloco: { count: nights() } }}</span>

@@ -1,4 +1,15 @@
-import { Component, DOCUMENT, ElementRef, OnDestroy, afterNextRender, inject, input, output, signal, viewChild } from '@angular/core';
+import {
+  Component,
+  DOCUMENT,
+  ElementRef,
+  OnDestroy,
+  afterNextRender,
+  inject,
+  input,
+  output,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { environment } from '../../../environments/environment';
 import { LANG } from '../../i18n/i18n';
@@ -29,7 +40,8 @@ function loadTurnstile(document: Document): Promise<Turnstile> {
     const script = document.createElement('script');
     script.src = SCRIPT_URL;
     script.async = true;
-    script.onload = () => (window.turnstile ? resolve(window.turnstile) : reject(new Error('Turnstile missing')));
+    script.onload = () =>
+      window.turnstile ? resolve(window.turnstile) : reject(new Error('Turnstile missing'));
     script.onerror = () => reject(new Error('Turnstile failed to load'));
     document.head.appendChild(script);
   }).catch((error: unknown) => {
@@ -49,7 +61,11 @@ function loadTurnstile(document: Document): Promise<Turnstile> {
   imports: [TranslocoPipe],
   template: `
     @if (enabled) {
-      <div #container class="min-h-[65px]"></div>
+      <div
+        #container
+        class="flex justify-center"
+        [style.min-height.px]="compact() ? 150 : 65"
+      ></div>
       @if (failed()) {
         <p class="mt-2 text-sm text-accent-deep" role="alert">{{ 'captcha.failed' | transloco }}</p>
       }
@@ -71,6 +87,9 @@ export class Captcha implements OnDestroy {
   private turnstile: Turnstile | undefined;
   private widgetId: string | undefined;
   private destroyed = false;
+  private resizeObserver?: ResizeObserver;
+  private widgetSize?: 'compact' | 'flexible';
+  protected readonly compact = signal(false);
 
   constructor() {
     afterNextRender(() => {
@@ -86,12 +105,14 @@ export class Captcha implements OnDestroy {
 
   ngOnDestroy(): void {
     this.destroyed = true;
+    this.resizeObserver?.disconnect();
     if (this.turnstile && this.widgetId !== undefined) this.turnstile.remove(this.widgetId);
   }
 
   private async render(): Promise<void> {
     const container = this.container()?.nativeElement;
     if (!container) return;
+    this.compact.set(container.clientWidth < 300);
     try {
       this.turnstile = await loadTurnstile(this.document);
     } catch {
@@ -99,12 +120,27 @@ export class Captcha implements OnDestroy {
       return;
     }
     if (this.destroyed) return;
+    this.mountWidget(container);
+    this.resizeObserver = new ResizeObserver(() => this.mountWidget(container));
+    this.resizeObserver.observe(container);
+  }
+
+  private mountWidget(container: HTMLElement): void {
+    if (this.destroyed || !this.turnstile) return;
+    const size = container.clientWidth < 300 ? 'compact' : 'flexible';
+    if (size === this.widgetSize) return;
+    this.compact.set(size === 'compact');
+    if (this.widgetId !== undefined) {
+      this.turnstile.remove(this.widgetId);
+      this.token.emit('');
+    }
+    this.widgetSize = size;
     this.widgetId = this.turnstile.render(container, {
       sitekey: environment.turnstileSiteKey,
       action: this.action(),
       language: this.lang,
       theme: 'light',
-      size: 'flexible',
+      size,
       'response-field': false,
       'refresh-expired': 'auto',
       callback: (token: string) => {

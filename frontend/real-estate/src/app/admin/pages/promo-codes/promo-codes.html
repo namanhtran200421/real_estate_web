@@ -63,7 +63,7 @@
   @if (codes.value().length) {
     <ul class="mt-10 max-w-4xl divide-y divide-border rounded-lg border border-border bg-card">
       @for (p of codes.value(); track p.id) {
-        <li class="flex flex-wrap items-center gap-x-6 gap-y-2 px-5 py-4">
+        <li class="flex flex-wrap items-center gap-x-6 gap-y-2 px-5 py-4 mobile-stack">
           <span class="w-40 font-mono">{{ p.code }}</span>
           <span class="min-w-0 flex-1 text-sm">
             @if (p.discountPercent) {

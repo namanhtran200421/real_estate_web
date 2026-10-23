@@ -7,7 +7,8 @@ import {
   AdminApartment,
   AdminBookingDetail,
   AdminBookingListItem,
-  AdminStats,
+  DashboardStats,
+  StatsPeriod,
   AdminSummary,
   AssetIncidentStatus,
   ApartmentInput,
@@ -36,7 +37,11 @@ export class AdminApiService {
     return this.unwrap(this.http.request<ApiResponse<T>>(method, `${this.api}${path}`, { body }));
   }
 
-  private async sendNoContent(method: 'POST' | 'PUT' | 'DELETE', path: string, body?: unknown): Promise<void> {
+  private async sendNoContent(
+    method: 'POST' | 'PUT' | 'DELETE',
+    path: string,
+    body?: unknown,
+  ): Promise<void> {
     await firstValueFrom(this.http.request(method, `${this.api}${path}`, { body }));
   }
 
@@ -58,9 +63,9 @@ export class AdminApiService {
     return this.get('/summary');
   }
 
-  /** Revenue, bookings and occupancy by month, for the dashboard charts. */
-  stats(): Promise<AdminStats> {
-    return this.get('/stats');
+  /** Calendar-period aggregates in the business timezone. */
+  stats(period: StatsPeriod, date: string): Promise<DashboardStats> {
+    return this.get('/stats', this.params({ period, date }));
   }
 
   bookings(filters: BookingFilters): Promise<Page<AdminBookingListItem>> {
@@ -91,8 +96,16 @@ export class AdminApiService {
     return this.send('POST', `/bookings/${encodeURIComponent(reference)}/incidents`, input);
   }
 
-  resolveIncident(reference: string, incidentId: string, status: Exclude<AssetIncidentStatus, 'open'>): Promise<AdminBookingDetail> {
-    return this.send('PATCH', `/bookings/${encodeURIComponent(reference)}/incidents/${incidentId}`, { status });
+  resolveIncident(
+    reference: string,
+    incidentId: string,
+    status: Exclude<AssetIncidentStatus, 'open'>,
+  ): Promise<AdminBookingDetail> {
+    return this.send(
+      'PATCH',
+      `/bookings/${encodeURIComponent(reference)}/incidents/${incidentId}`,
+      { status },
+    );
   }
 
   /** Saves the check-out inspection (replaces the previous one). */
@@ -107,7 +120,12 @@ export class AdminApiService {
 
   recordPayment(
     reference: string,
-    payment: { method: 'cash' | 'bank_transfer'; purpose?: PaymentPurpose; amount: number; note?: string },
+    payment: {
+      method: 'cash' | 'bank_transfer';
+      purpose?: PaymentPurpose;
+      amount: number;
+      note?: string;
+    },
   ): Promise<AdminBookingDetail> {
     return this.send('POST', `/bookings/${encodeURIComponent(reference)}/payments`, payment);
   }
@@ -119,7 +137,9 @@ export class AdminApiService {
 
   /** The guest's screenshot of a reported transfer. */
   transferScreenshot(paymentId: string): Promise<Blob> {
-    return firstValueFrom(this.http.get(`${this.api}/payments/${paymentId}/screenshot`, { responseType: 'blob' }));
+    return firstValueFrom(
+      this.http.get(`${this.api}/payments/${paymentId}/screenshot`, { responseType: 'blob' }),
+    );
   }
 
   /** The reported transfer never arrived. */
@@ -146,6 +166,15 @@ export class AdminApiService {
     return this.send('POST', '/apartments', input);
   }
 
+  uploadApartmentPhoto(file: File): Promise<{ src: string }> {
+    return this.unwrap(
+      this.http.post<ApiResponse<{ src: string }>>(`${this.api}/apartments/photos`, file, {
+        headers: { 'Content-Type': file.type || 'application/octet-stream' },
+        timeout: 30_000,
+      }),
+    );
+  }
+
   updateApartment(slug: string, input: ApartmentInput): Promise<AdminApartment> {
     return this.send('PUT', `/apartments/${encodeURIComponent(slug)}`, input);
   }
@@ -153,21 +182,31 @@ export class AdminApiService {
   /** Dates guests cannot book (bookings + blocks), fresh from the public endpoint. */
   async unavailableDates(slug: string): Promise<string[]> {
     const response = await firstValueFrom(
-      this.http.get<ApiResponse<{ unavailableDates: string[] }>>(`${this.publicApi}/apartments/${encodeURIComponent(slug)}`),
+      this.http.get<ApiResponse<{ unavailableDates: string[] }>>(
+        `${this.publicApi}/apartments/${encodeURIComponent(slug)}`,
+      ),
     );
     return response.data.unavailableDates;
   }
 
   blockedDates(slug: string, from: string, to: string): Promise<BlockedDate[]> {
-    return this.get(`/apartments/${encodeURIComponent(slug)}/blocked-dates`, this.params({ from, to }));
+    return this.get(
+      `/apartments/${encodeURIComponent(slug)}/blocked-dates`,
+      this.params({ from, to }),
+    );
   }
 
   blockDates(slug: string, dates: string[], reason?: string): Promise<void> {
-    return this.sendNoContent('POST', `/apartments/${encodeURIComponent(slug)}/blocked-dates`, { dates, reason });
+    return this.sendNoContent('POST', `/apartments/${encodeURIComponent(slug)}/blocked-dates`, {
+      dates,
+      reason,
+    });
   }
 
   unblockDates(slug: string, dates: string[]): Promise<void> {
-    return this.sendNoContent('DELETE', `/apartments/${encodeURIComponent(slug)}/blocked-dates`, { dates });
+    return this.sendNoContent('DELETE', `/apartments/${encodeURIComponent(slug)}/blocked-dates`, {
+      dates,
+    });
   }
 
   // Holidays, promo codes, messages
@@ -197,7 +236,10 @@ export class AdminApiService {
   }
 
   messages(unhandledOnly: boolean, page: number): Promise<Page<ContactMessage>> {
-    return this.get('/contact-messages', this.params({ unhandled: String(unhandledOnly), page, pageSize: 20 }));
+    return this.get(
+      '/contact-messages',
+      this.params({ unhandled: String(unhandledOnly), page, pageSize: 20 }),
+    );
   }
 
   setMessageHandled(id: string, handled: boolean): Promise<void> {

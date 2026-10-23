@@ -72,8 +72,10 @@ export type AdminGuestIdentity =
   | { guestIndex: number; unreadable: true };
 
 /** The admin API: the fields an older guest API may leave out are always present here. */
-export interface AdminBookingDetail
-  extends Omit<Booking, 'payments' | 'incidents' | 'financials' | 'depositFirst' | 'rentDueFrom'> {
+export interface AdminBookingDetail extends Omit<
+  Booking,
+  'payments' | 'incidents' | 'financials' | 'depositFirst' | 'rentDueFrom'
+> {
   financials: BookingFinancials;
   depositFirst: boolean;
   rentDueFrom: string | null;
@@ -100,7 +102,11 @@ export interface AdminBookingDetail
   payments: AdminPayment[];
   events: BookingEvent[];
   /** The saved check-out inspection, or null before the owner has done it. */
-  inspection: { results: InspectionResult[]; inspectedBy: string | null; inspectedAt: string } | null;
+  inspection: {
+    results: InspectionResult[];
+    inspectedBy: string | null;
+    inspectedAt: string;
+  } | null;
   /** What to inspect: the apartment's checklist, or the default. */
   checklist: InspectionChecklist;
   /** The security deposit that can still be refunded. */
@@ -143,6 +149,29 @@ export interface MonthStats {
   bookings: number;
   nightsBooked: number;
   nightsAvailable: number;
+}
+
+/** Calendar reporting units; weeks start on Monday in the business timezone. */
+export type StatsPeriod = 'day' | 'week' | 'month' | 'year';
+
+export interface PeriodStats {
+  start: string;
+  /** Exclusive end, yyyy-mm-dd. */
+  end: string;
+  revenue: number;
+  bookings: number;
+  nightsBooked: number;
+  nightsAvailable: number;
+}
+
+export interface DashboardStats {
+  period: StatsPeriod;
+  date: string;
+  today: string;
+  timezone: string;
+  selected: PeriodStats;
+  previous: PeriodStats;
+  periods: PeriodStats[];
 }
 
 export interface AdminStats {

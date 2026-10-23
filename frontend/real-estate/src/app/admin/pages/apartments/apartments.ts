@@ -7,7 +7,7 @@ import { AdminApiService } from '../../admin-api.service';
   selector: 'app-admin-apartments',
   imports: [DecimalPipe, RouterLink],
   template: `
-    <div class="flex flex-wrap items-center justify-between gap-4">
+    <div class="flex flex-wrap items-center justify-between gap-4 mobile-stack">
       <h1 class="text-4xl">Căn hộ</h1>
       <a routerLink="/admin/apartments/new" class="btn btn-primary">Thêm căn hộ</a>
     </div>
@@ -16,7 +16,7 @@ import { AdminApiService } from '../../admin-api.service';
       <ul class="mt-8 divide-y divide-border rounded-lg border border-border bg-card">
         @for (a of apartments.value(); track a.id) {
           <li>
-            <a [routerLink]="['/admin/apartments', a.slug]" class="flex flex-wrap items-center gap-x-6 gap-y-2 px-5 py-4 hover:bg-muted/50">
+            <a [routerLink]="['/admin/apartments', a.slug]" class="flex flex-wrap items-center gap-x-6 gap-y-2 px-5 py-4 hover:bg-muted/50 mobile-stack">
               <span class="min-w-0 flex-1">
                 <span class="block font-medium">{{ a.name }}</span>
                 <span class="block text-sm text-muted-foreground">{{ a.area }} · tối đa {{ a.guests }} khách · /{{ a.slug }}</span>

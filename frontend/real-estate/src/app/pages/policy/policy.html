@@ -16,7 +16,7 @@
             <a
               routerLink="/policy"
               [fragment]="'item-' + ($index + 1)"
-              class="link-subtle flex min-h-11 items-center gap-2 lg:min-h-9"
+              class="mobile-center link-subtle flex min-h-11 items-center gap-2 lg:min-h-9"
             >
               <span class="w-6 shrink-0 text-muted-foreground">{{ $index + 1 }}.</span>
               <span>{{ item.title }}</span>
@@ -37,7 +37,7 @@
               }
             }
             @if (item.steps) {
-              <ol class="list-decimal space-y-1.5 pl-6">
+              <ol class="mobile-marker-list list-decimal space-y-1.5 pl-6">
                 @for (step of item.steps; track $index) {
                   <li>{{ step }}</li>
                 }

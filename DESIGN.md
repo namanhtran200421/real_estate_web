@@ -19,3 +19,9 @@ The storefront presents one real Da Lat apartment to guests who need to understa
 - Each full section lives on one page only. Home also gives a brief capacity overview beside an arched living-room photo: the guest label carries the asterisk, the value shows the listing's standard guest count with `+`, and a small note links to the published additional-guest rule. The full room tour and amenities remain on their own pages. Other pages lead to them through navigation or a link (Home's room photos open Gallery at that room). Booking is offered by the header's button and the apartment page's booking card, not by a closing band on every page.
 - Home invites to the apartment with two room photos at most, set straight on the grid, each opening that room in Gallery, beside the heading, one line and a button to the apartment page. No tilted prints, mats, label above the heading, circle arrow button or decorative ridge shapes.
 - New accommodation facts belong in the owner listing or its content migration; location lists should use a consistent journey-time order.
+
+## Mobile application layout
+
+- Below 768px, guest pages, owner administration and sign-in share centered headings, body text, labels, field values and feedback. `frontend/real-estate/src/mobile.css` owns this responsive contract; desktop typography, alignment and palettes continue to use their existing owners.
+- Content rows opt into `mobile-stack`; action/chip groups use `mobile-center`. Stack label/value pairs with a compact internal gap. Keep calendars, carousel tracks, progress connectors and pagination in their working layouts. Center scrollable tabs safely so the first item stays reachable.
+- The apartment editor uses the admin neutral/gold theme, clear bordered sections and a persistent save bar. Identity and photos precede prices and operational settings. Photo selection shows real previews, editable descriptions, cover choice and keyboard-accessible ordering controls.

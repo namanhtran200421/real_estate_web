@@ -100,7 +100,7 @@ function deviceName(userAgent: string | null): string {
 
         <ul id="password-rules" class="space-y-1.5 text-sm" aria-label="Yêu cầu mật khẩu">
           @for (rule of rules(); track rule.label) {
-            <li class="flex items-center gap-2" [class.text-muted-foreground]="!rule.ok">
+            <li class="flex items-center gap-2 mobile-center" [class.text-muted-foreground]="!rule.ok">
               <span
                 class="grid h-4 w-4 place-items-center rounded-full text-[10px]"
                 [class.bg-accent-deep]="rule.ok"
@@ -145,7 +145,7 @@ function deviceName(userAgent: string | null): string {
         @if (sessions.hasValue()) {
           <ul class="mt-6 divide-y divide-border border-y border-border">
             @for (session of sessions.value(); track session.id) {
-              <li class="flex flex-wrap items-center gap-x-4 gap-y-2 py-4">
+              <li class="flex flex-wrap items-center gap-x-4 gap-y-2 py-4 mobile-stack">
                 <div class="min-w-0 flex-1">
                   <p class="font-medium">
                     {{ device(session.userAgent) }}

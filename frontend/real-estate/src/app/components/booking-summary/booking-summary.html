@@ -1,7 +1,7 @@
 @let apt = apartment();
 
 <div class="panel p-6">
-  <div class="flex gap-4">
+  <div class="flex gap-4 mobile-stack">
     <img
       [ngSrc]="apt.photos[0].src"
       [alt]="apt.photos[0].alt"
@@ -23,19 +23,19 @@
 
   @if (stay(); as b) {
     <dl class="space-y-3 text-sm">
-      <div class="flex justify-between gap-4">
+      <div class="flex justify-between gap-4 mobile-stack mobile-pair">
         <dt class="text-muted-foreground">{{ 'common.checkIn' | transloco }}</dt>
         <dd>{{ b.checkIn | date: 'dd/MM/yyyy' }} · {{ apt.checkIn }}</dd>
       </div>
-      <div class="flex justify-between gap-4">
+      <div class="flex justify-between gap-4 mobile-stack mobile-pair">
         <dt class="text-muted-foreground">{{ 'common.checkOut' | transloco }}</dt>
         <dd>{{ b.checkOut | date: 'dd/MM/yyyy' }} · {{ apt.checkOut }}</dd>
       </div>
-      <div class="flex justify-between gap-4">
+      <div class="flex justify-between gap-4 mobile-stack mobile-pair">
         <dt class="text-muted-foreground">{{ 'common.nightCount' | transloco }}</dt>
         <dd>{{ 'common.nights' | transloco: { count: b.nights } }}</dd>
       </div>
-      <div class="flex justify-between gap-4">
+      <div class="flex justify-between gap-4 mobile-stack mobile-pair">
         <dt class="text-muted-foreground">{{ 'common.guestCount' | transloco }}</dt>
         <dd>{{ 'common.guests' | transloco: { count: b.guests } }}</dd>
       </div>
@@ -50,7 +50,7 @@
 
   @if (total() !== undefined) {
     <hr class="my-5" />
-    <div class="flex items-baseline justify-between gap-4">
+    <div class="flex items-baseline justify-between gap-4 mobile-stack mobile-pair">
       <span class="label-caps text-muted-foreground">{{ 'common.total' | transloco }}</span>
       <span class="font-serif text-2xl">{{ total() | number }} ₫</span>
     </div>

@@ -1,198 +1,441 @@
-<a routerLink="/admin/apartments" class="link text-sm">← Danh sách căn hộ</a>
-
 @let f = form();
-<h1 class="mt-6 text-4xl">
-  @if (slug()) {
-    {{ f.name || 'Sửa căn hộ' }}
-  } @else {
-    Thêm căn hộ
-  }
-</h1>
+<div class="apartment-editor">
+  <a routerLink="/admin/apartments" class="editor-back link">
+    <span aria-hidden="true">←</span> Danh sách căn hộ
+  </a>
 
-@if (loading()) {
-  <p class="mt-8 text-muted-foreground" role="status">Đang tải…</p>
-} @else {
-  <form class="mt-8 max-w-4xl space-y-10" novalidate (submit)="$event.preventDefault(); save()">
-    <fieldset class="card space-y-6">
-      <legend class="font-serif text-2xl">Hiển thị</legend>
-      <label class="flex items-center gap-3">
-        <input type="checkbox" class="h-4 w-4 accent-accent-deep" [checked]="f.isActive" (change)="toggleActive($event)" />
-        <span>Hiển thị trên website (khách xem và đặt được)</span>
-      </label>
-      <div class="grid gap-6 sm:grid-cols-2">
-        <div>
-          <label class="label" for="apt-slug">Đường dẫn (slug)</label>
-          <input id="apt-slug" class="input font-mono" [value]="f.slug" (input)="text('slug', $event)" placeholder="can-ho-sen" />
-          <p class="mt-2 text-sm text-muted-foreground">Chữ thường, số, dấu gạch ngang. Dùng trong địa chỉ ?apt=</p>
-        </div>
-        <div>
-          <label class="label" for="apt-order">Thứ tự hiển thị</label>
-          <input id="apt-order" class="input" type="number" min="0" [value]="f.sortOrder" (input)="number('sortOrder', $event)" />
-          <p class="mt-2 text-sm text-muted-foreground">Số nhỏ nhất là căn hộ nổi bật trên trang chủ.</p>
-        </div>
-      </div>
-    </fieldset>
-
-    <fieldset class="card space-y-6">
-      <legend class="font-serif text-2xl">Thông tin</legend>
-      <div class="grid gap-6 sm:grid-cols-2">
-        <div>
-          <label class="label" for="apt-name">Tên</label>
-          <input id="apt-name" class="input" [value]="f.name" (input)="text('name', $event)" />
-        </div>
-        <div>
-          <label class="label" for="apt-area">Khu vực</label>
-          <input id="apt-area" class="input" [value]="f.area" (input)="text('area', $event)" placeholder="Nam Hồ · Đà Lạt" />
-        </div>
-        <div>
-          <label class="label" for="apt-address">Địa chỉ</label>
-          <input id="apt-address" class="input" [value]="f.address" (input)="text('address', $event)" />
-        </div>
-        <div>
-          <label class="label" for="apt-map">Tìm trên bản đồ</label>
-          <input id="apt-map" class="input" [value]="f.mapQuery" (input)="text('mapQuery', $event)" placeholder="Nguyen Hue Walking Street, Ho Chi Minh City" />
-        </div>
-      </div>
-      <div>
-        <label class="label" for="apt-tagline">Giới thiệu ngắn (hiện trên thẻ căn hộ)</label>
-        <input id="apt-tagline" class="input" [value]="f.tagline" (input)="text('tagline', $event)" />
-      </div>
-      <div>
-        <label class="label" for="apt-description">Mô tả (các đoạn cách nhau một dòng trống)</label>
-        <textarea id="apt-description" class="input min-h-40 resize-none" [value]="f.description" (input)="text('description', $event)"></textarea>
-      </div>
-      <div class="grid gap-6 sm:grid-cols-4">
-        <div>
-          <label class="label" for="apt-guests">Khách tối đa</label>
-          <input id="apt-guests" class="input" type="number" min="1" [value]="f.guests" (input)="number('guests', $event)" />
-        </div>
-        <div>
-          <label class="label" for="apt-bedrooms">Phòng ngủ</label>
-          <input id="apt-bedrooms" class="input" type="number" min="0" [value]="f.bedrooms" (input)="number('bedrooms', $event)" />
-        </div>
-        <div>
-          <label class="label" for="apt-beds">Giường</label>
-          <input id="apt-beds" class="input" type="number" min="0" [value]="f.beds" (input)="number('beds', $event)" />
-        </div>
-        <div>
-          <label class="label" for="apt-bathrooms">Phòng tắm</label>
-          <input id="apt-bathrooms" class="input" type="number" min="0" [value]="f.bathrooms" (input)="number('bathrooms', $event)" />
-        </div>
-        <div>
-          <label class="label" for="apt-check-in">Nhận phòng từ</label>
-          <input id="apt-check-in" class="input" type="time" [value]="f.checkIn" (input)="text('checkIn', $event)" />
-        </div>
-        <div>
-          <label class="label" for="apt-check-out">Trả phòng trước</label>
-          <input id="apt-check-out" class="input" type="time" [value]="f.checkOut" (input)="text('checkOut', $event)" />
-        </div>
-      </div>
-    </fieldset>
-
-    <fieldset class="card space-y-6">
-      <legend class="font-serif text-2xl">Giá (₫)</legend>
-      <div class="grid gap-6 sm:grid-cols-3">
-        <div>
-          <label class="label" for="apt-weekday">Thứ Hai – Thứ Năm / đêm</label>
-          <input id="apt-weekday" class="input" type="number" min="0" step="1000" [value]="f.weekday" (input)="number('weekday', $event)" />
-        </div>
-        <div>
-          <label class="label" for="apt-weekend">Thứ Sáu – Chủ Nhật / đêm</label>
-          <input id="apt-weekend" class="input" type="number" min="0" step="1000" [value]="f.weekend" (input)="number('weekend', $event)" />
-        </div>
-        <div>
-          <label class="label" for="apt-holiday">Ngày lễ / đêm</label>
-          <input id="apt-holiday" class="input" type="number" min="0" step="1000" [value]="f.holiday" (input)="number('holiday', $event)" />
-        </div>
-        <div>
-          <label class="label" for="apt-weekly">Theo tuần (7 đêm, 0 = không áp dụng)</label>
-          <input id="apt-weekly" class="input" type="number" min="0" step="1000" [value]="f.weekly" (input)="number('weekly', $event)" />
-          <p class="mt-2 text-sm text-muted-foreground">Đêm lễ trong gói cộng phần chênh giữa giá lễ và giá thường/cuối tuần.</p>
-        </div>
-        <div>
-          <label class="label" for="apt-monthly">Theo tháng (30 đêm, 0 = không áp dụng)</label>
-          <input id="apt-monthly" class="input" type="number" min="0" step="1000" [value]="f.monthly" (input)="number('monthly', $event)" />
-        </div>
-        <div>
-          <label class="label" for="apt-deposit">Đặt cọc (%)</label>
-          <input id="apt-deposit" class="input" type="number" min="0" max="100" [value]="f.depositPercent" (input)="number('depositPercent', $event)" />
-        </div>
-      </div>
-      <div>
-        <label class="label" for="apt-discounts">Giảm giá ở dài ngày: mỗi dòng "số đêm | % giảm"</label>
-        <textarea id="apt-discounts" class="input resize-none font-mono" placeholder="3 | 5&#10;7 | 15" [value]="f.longStayDiscounts" (input)="text('longStayDiscounts', $event)"></textarea>
-        <p class="mt-2 text-sm text-muted-foreground">Khách được mức cao nhất đủ điều kiện, không áp dụng cho đêm ngày lễ.</p>
-      </div>
-    </fieldset>
-
-    <fieldset class="card space-y-6">
-      <legend class="font-serif text-2xl">Kiểm tra trả phòng</legend>
-      <div>
-        <label class="label" for="apt-checklist">Danh sách kiểm tra trả phòng</label>
-        <textarea
-          id="apt-checklist"
-          class="input min-h-48 resize-none font-mono text-sm"
-          [value]="f.inspectionChecklist"
-          (input)="text('inspectionChecklist', $event)"
-        ></textarea>
-        <p class="mt-2 text-sm text-muted-foreground">Mỗi phòng một dòng, các vật dụng bắt đầu bằng dấu -</p>
-      </div>
-    </fieldset>
-
-    <fieldset class="card space-y-6">
-      <legend class="font-serif text-2xl">Ảnh</legend>
-      <div>
-        <label class="label" for="apt-photos">Mỗi dòng "đường dẫn ảnh | mô tả ảnh"; ảnh đầu tiên là ảnh bìa</label>
-        <textarea id="apt-photos" class="input min-h-40 resize-none font-mono text-sm" [value]="f.photos" (input)="text('photos', $event)"></textarea>
-      </div>
-    </fieldset>
-
-    <fieldset class="card space-y-6">
-      <legend class="font-serif text-2xl">Tiện nghi, nội quy, lân cận</legend>
-      <div class="grid gap-6 sm:grid-cols-2">
-        <div>
-          <label class="label" for="apt-key">Tiện nghi nổi bật (mỗi dòng một mục)</label>
-          <textarea id="apt-key" class="input min-h-32 resize-none" [value]="f.keyFacilities" (input)="text('keyFacilities', $event)"></textarea>
-        </div>
-        <div>
-          <label class="label" for="apt-facilities">Tất cả tiện nghi (mỗi dòng một mục)</label>
-          <textarea id="apt-facilities" class="input min-h-32 resize-none" [value]="f.facilities" (input)="text('facilities', $event)"></textarea>
-        </div>
-        <div>
-          <label class="label" for="apt-rules">Nội quy (mỗi dòng một mục)</label>
-          <textarea id="apt-rules" class="input min-h-32 resize-none" [value]="f.rules" (input)="text('rules', $event)"></textarea>
-        </div>
-        <div>
-          <label class="label" for="apt-nearby">Lân cận: mỗi dòng "địa điểm | khoảng cách"</label>
-          <textarea id="apt-nearby" class="input min-h-32 resize-none" [value]="f.nearby" (input)="text('nearby', $event)"></textarea>
-        </div>
-      </div>
-    </fieldset>
-
-    @if (error(); as err) {
-      <div class="rounded-md border border-accent bg-accent-muted p-4 text-sm text-accent-deep" role="alert">
-        <p>{{ err.message }}</p>
-        @if (err.details?.length) {
-          <ul class="mt-2 list-disc pl-5">
-            @for (detail of err.details; track detail.path) {
-              <li><span class="font-mono">{{ detail.path }}</span>: {{ detail.message }}</li>
-            }
-          </ul>
-        }
-      </div>
-    }
-
-    <div class="flex items-center gap-4">
-      <button type="submit" class="btn btn-primary" [disabled]="saving()">
-        @if (saving()) {
-          Đang lưu…
-        } @else {
-          Lưu
-        }
-      </button>
-      @if (saved()) {
-        <span class="text-sm text-accent-deep" role="status">Đã lưu</span>
-      }
+  <header class="editor-header">
+    <div>
+      <p class="editor-eyebrow">Quản lý căn hộ</p>
+      <h1>{{ slug() ? f.name || 'Sửa căn hộ' : 'Thêm căn hộ' }}</h1>
+      <p class="editor-intro">Thông tin rõ ràng, hình ảnh đẹp để khách dễ chọn nơi lưu trú.</p>
     </div>
-  </form>
-}
+    <span class="publication-badge">{{
+      f.isActive ? 'Hiển thị sau khi lưu' : 'Ẩn trên website'
+    }}</span>
+  </header>
+
+  @if (leavePrompt()) {
+    <div class="editor-alert" role="region" aria-labelledby="leave-heading">
+      <h2 id="leave-heading" tabindex="-1">Bạn có thay đổi chưa lưu</h2>
+      <p>Rời trang sẽ mất thông tin chưa lưu và các ảnh đang chờ tải lên.</p>
+      <div class="save-actions">
+        <button type="button" class="btn btn-outline" (click)="answerLeave(false)">
+          Tiếp tục chỉnh sửa
+        </button>
+        <button type="button" class="btn btn-primary" (click)="answerLeave(true)">Rời trang</button>
+      </div>
+    </div>
+  }
+
+  @if (loading()) {
+    <div class="editor-loading" role="status">Đang tải thông tin căn hộ…</div>
+  } @else if (loadFailed()) {
+    <div class="editor-alert" role="alert">
+      <p>{{ error()?.message }}</p>
+      <button type="button" class="btn btn-outline" (click)="retryLoad()">Thử tải lại</button>
+    </div>
+  } @else {
+    <nav class="editor-nav" aria-label="Các phần của căn hộ">
+      @for (section of sections; track section.id) {
+        <a [routerLink]="[]" [fragment]="'apt-section-' + section.id">{{ section.label }}</a>
+      }
+    </nav>
+
+    <form
+      id="apartment-form"
+      novalidate
+      (submit)="$event.preventDefault(); save()"
+      [attr.aria-busy]="saving()"
+    >
+      <fieldset class="editor-fields" [disabled]="saving()">
+        <legend class="sr-only">Thông tin căn hộ</legend>
+
+        <section
+          class="editor-section"
+          id="apt-section-information"
+          aria-labelledby="information-heading"
+        >
+          <div class="section-heading">
+            <h2 id="information-heading">Thông tin căn hộ</h2>
+            <p>
+              Bắt đầu với tên, địa chỉ và điểm nổi bật.
+              <span class="required-note">* Bắt buộc</span>
+            </p>
+          </div>
+          <div class="field-grid">
+            @for (field of information; track field.key) {
+              <ng-container
+                [ngTemplateOutlet]="editorField"
+                [ngTemplateOutletContext]="{ $implicit: field }"
+              />
+            }
+          </div>
+          <div class="capacity-group">
+            <h3>Không gian &amp; sức chứa</h3>
+            <div class="capacity-grid">
+              @for (field of capacity; track field.key) {
+                <ng-container
+                  [ngTemplateOutlet]="editorField"
+                  [ngTemplateOutletContext]="{ $implicit: field }"
+                />
+              }
+            </div>
+          </div>
+        </section>
+
+        <section class="editor-section" id="apt-section-photos" aria-labelledby="photos-heading">
+          <div class="section-heading section-heading-with-count">
+            <div>
+              <h2 id="photos-heading">
+                Hình ảnh căn hộ <span class="required-mark" aria-hidden="true">*</span>
+              </h2>
+              <p>Cho khách xem không gian thực tế. Ảnh đầu tiên sẽ là ảnh bìa.</p>
+            </div>
+            <span class="photo-count">{{ f.photos.length }} / 60 ảnh</span>
+          </div>
+          <div
+            class="photo-dropzone"
+            [class.is-dragging]="dragOver()"
+            (dragover)="$event.preventDefault(); dragOver.set(true)"
+            (dragleave)="dragOver.set(false)"
+            (drop)="dropPhotos($event)"
+          >
+            <svg
+              class="upload-icon"
+              width="32"
+              height="32"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              aria-hidden="true"
+            >
+              <path
+                d="M20 15v5H4v-5M12 16V3m-5 5 5-5 5 5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            <h3>
+              {{
+                f.photos.length ? 'Thêm góc nhìn mới cho căn hộ' : 'Thêm những hình ảnh đầu tiên'
+              }}
+            </h3>
+            <p>Kéo thả ảnh vào đây hoặc chọn từ thiết bị của bạn.</p>
+            <button
+              id="apt-photos"
+              type="button"
+              class="btn btn-outline"
+              [disabled]="uploading() || f.photos.length + uploads().length >= 60"
+              [attr.aria-invalid]="!!errorFor('photos')"
+              aria-describedby="photo-upload-hint photo-validation"
+              (click)="photoPicker.click()"
+            >
+              {{ uploading() ? 'Đang tải ảnh…' : 'Chọn ảnh từ thiết bị' }}
+            </button>
+            <input
+              #photoPicker
+              class="sr-only"
+              type="file"
+              tabindex="-1"
+              aria-label="Chọn ảnh căn hộ"
+              accept="image/jpeg,image/png,image/webp"
+              multiple
+              [disabled]="uploading()"
+              (change)="selectPhotos($event)"
+            />
+            <p id="photo-upload-hint" class="upload-hint">
+              JPG, PNG hoặc WebP · Tối đa 5 MB / ảnh · Tối đa 60 ảnh
+            </p>
+          </div>
+          <p id="photo-validation" class="field-error">{{ errorFor('photos') }}</p>
+          <p class="photo-notice" role="status">
+            {{
+              uploading() ? 'Đang tải ảnh lên. Vui lòng chờ trước khi lưu căn hộ.' : photoNotice()
+            }}
+          </p>
+          <div class="photo-grid">
+            @for (photo of f.photos; track $index; let index = $index) {
+              <article class="photo-card">
+                <div class="photo-preview">
+                  <img
+                    [src]="imageUrl(photo.src)"
+                    [alt]="photo.alt || 'Ảnh căn hộ'"
+                    loading="lazy"
+                    width="480"
+                    height="320"
+                  />
+                  <span class="photo-position">{{
+                    index === 0 ? 'Ảnh bìa' : 'Ảnh ' + (index + 1)
+                  }}</span>
+                </div>
+                <div class="photo-card-body">
+                  <label class="label" [for]="'photo-alt-' + index"
+                    >Mô tả ảnh {{ index + 1 }}</label
+                  >
+                  <input
+                    class="input"
+                    [id]="'photo-alt-' + index"
+                    [value]="photo.alt"
+                    maxlength="250"
+                    required
+                    placeholder="Ví dụ: Phòng khách nhìn ra ban công"
+                    [attr.aria-invalid]="!!errorFor('photos.' + index + '.alt')"
+                    [attr.aria-describedby]="
+                      errorFor('photos.' + index + '.alt') ? 'photo-error-' + index : null
+                    "
+                    (input)="photoAlt(index, $event)"
+                  />
+                  @if (errorFor('photos.' + index + '.alt'); as message) {
+                    <p class="field-error" [id]="'photo-error-' + index">{{ message }}</p>
+                  }
+                  <div class="photo-actions">
+                    <button
+                      type="button"
+                      class="photo-action"
+                      [disabled]="index === 0"
+                      [attr.aria-label]="'Đặt ảnh ' + (index + 1) + ' làm ảnh bìa'"
+                      (click)="movePhoto(index, 0)"
+                    >
+                      {{ index === 0 ? 'Đang làm ảnh bìa' : 'Đặt làm ảnh bìa' }}
+                    </button>
+                    <button
+                      type="button"
+                      class="photo-action"
+                      [attr.aria-label]="'Gỡ ảnh ' + (index + 1)"
+                      (click)="removePhoto(index)"
+                    >
+                      Gỡ ảnh
+                    </button>
+                  </div>
+                  @if (f.photos.length > 1) {
+                    <div class="photo-actions photo-order">
+                      <button
+                        type="button"
+                        class="photo-action"
+                        [disabled]="index === 0"
+                        [attr.aria-label]="'Chuyển ảnh ' + (index + 1) + ' lên trước'"
+                        (click)="movePhoto(index, index - 1)"
+                      >
+                        ← Lên trước
+                      </button>
+                      <button
+                        type="button"
+                        class="photo-action"
+                        [disabled]="index === f.photos.length - 1"
+                        [attr.aria-label]="'Chuyển ảnh ' + (index + 1) + ' ra sau'"
+                        (click)="movePhoto(index, index + 1)"
+                      >
+                        Ra sau →
+                      </button>
+                    </div>
+                  }
+                </div>
+              </article>
+            }
+            @for (upload of uploads(); track upload.id) {
+              <article
+                class="photo-card pending-photo"
+                [attr.aria-busy]="upload.status === 'uploading'"
+              >
+                @if (
+                  upload.file.type === 'image/jpeg' ||
+                  upload.file.type === 'image/png' ||
+                  upload.file.type === 'image/webp'
+                ) {
+                  <div class="photo-preview">
+                    <img
+                      [src]="upload.preview"
+                      alt="Ảnh đang chờ tải lên"
+                      width="480"
+                      height="320"
+                    />
+                  </div>
+                }
+                <div class="photo-card-body">
+                  <p class="upload-filename">{{ upload.file.name }}</p>
+                  <p class="field-hint">{{ (upload.file.size / 1024 / 1024).toFixed(1) }} MB</p>
+                  @if (upload.status === 'uploading') {
+                    <p role="status">Đang tải ảnh…</p>
+                  } @else {
+                    <p class="field-error" role="alert">
+                      {{ upload.error }} Ảnh này chưa được thêm vào căn hộ.
+                    </p>
+                    <div class="photo-actions">
+                      <button
+                        type="button"
+                        class="photo-action"
+                        [disabled]="uploading()"
+                        (click)="retryPhoto(upload)"
+                      >
+                        Thử lại
+                      </button>
+                      <button type="button" class="photo-action" (click)="dismissUpload(upload.id)">
+                        Gỡ tệp
+                      </button>
+                    </div>
+                  }
+                </div>
+              </article>
+            }
+          </div>
+        </section>
+
+        <section class="editor-section" id="apt-section-pricing" aria-labelledby="pricing-heading">
+          <div class="section-heading">
+            <h2 id="pricing-heading">Giá phòng</h2>
+            <p>Nhập giá bằng đồng Việt Nam (₫), cho mỗi đêm lưu trú.</p>
+          </div>
+          <div class="price-grid">
+            @for (field of prices; track field.key) {
+              <ng-container
+                [ngTemplateOutlet]="editorField"
+                [ngTemplateOutletContext]="{ $implicit: field }"
+              />
+            }
+          </div>
+          <details class="editor-details">
+            <summary>Gói tuần, tháng &amp; giảm giá dài ngày</summary>
+            <div class="field-grid">
+              @for (field of extendedPrices; track field.key) {
+                <ng-container
+                  [ngTemplateOutlet]="editorField"
+                  [ngTemplateOutletContext]="{ $implicit: field }"
+                />
+              }
+            </div>
+          </details>
+        </section>
+
+        <section class="editor-section" id="apt-section-details" aria-labelledby="details-heading">
+          <div class="section-heading">
+            <h2 id="details-heading">Tiện nghi &amp; trải nghiệm</h2>
+            <p>Giúp khách biết căn hộ có gì và khám phá khu vực xung quanh.</p>
+          </div>
+          <div class="field-grid">
+            @for (field of amenities; track field.key) {
+              <ng-container
+                [ngTemplateOutlet]="editorField"
+                [ngTemplateOutletContext]="{ $implicit: field }"
+              />
+            }
+          </div>
+        </section>
+
+        <section
+          class="editor-section"
+          id="apt-section-settings"
+          aria-labelledby="settings-heading"
+        >
+          <div class="section-heading">
+            <h2 id="settings-heading">Lưu trú &amp; hiển thị</h2>
+            <p>Thiết lập thời gian, tiền đặt cọc và cách căn hộ xuất hiện trên website.</p>
+          </div>
+          <div class="field-grid">
+            @for (field of stay; track field.key) {
+              <ng-container
+                [ngTemplateOutlet]="editorField"
+                [ngTemplateOutletContext]="{ $implicit: field }"
+              />
+            }
+          </div>
+          <label class="publish-control" for="apt-active">
+            <input
+              id="apt-active"
+              type="checkbox"
+              [checked]="f.isActive"
+              (change)="toggleActive($event)"
+            />
+            <span
+              ><strong>Hiển thị trên website</strong
+              ><span
+                >Khách có thể xem và đặt căn hộ sau khi bạn lưu. Bỏ chọn để giữ căn hộ ẩn.</span
+              ></span
+            >
+          </label>
+        </section>
+      </fieldset>
+
+      @if (error(); as err) {
+        <div id="editor-error" class="editor-alert" role="alert" tabindex="-1">
+          <p>{{ err.message }}</p>
+          @if (err.details?.length) {
+            <ul>
+              @for (detail of err.details; track $index) {
+                <li>{{ detail.message }}</li>
+              }
+            </ul>
+          }
+        </div>
+      }
+
+      <footer class="editor-savebar">
+        <div class="save-status" role="status">
+          @if (saved()) {
+            <strong>Đã lưu căn hộ</strong><span>Thông tin đã được cập nhật.</span>
+          } @else {
+            <strong>{{ uploading() ? 'Đang tải ảnh lên…' : 'Lưu thông tin căn hộ' }}</strong>
+            <span>{{
+              f.isActive
+                ? 'Căn hộ sẽ hiển thị trên website sau khi lưu.'
+                : 'Căn hộ đang ẩn. Bạn có thể hiển thị sau.'
+            }}</span>
+          }
+        </div>
+        <div class="save-actions">
+          <a routerLink="/admin/apartments" class="btn btn-outline">Danh sách căn hộ</a>
+          <button type="submit" class="btn btn-primary" [disabled]="saving() || uploading()">
+            {{ saving() ? 'Đang lưu…' : 'Lưu căn hộ' }}
+          </button>
+        </div>
+      </footer>
+    </form>
+
+    <ng-template #editorField let-field>
+      <div class="editor-field" [class.field-wide]="field.wide">
+        <label class="label" [for]="'apt-' + field.key"
+          >{{ field.label }}
+          @if (field.required) {
+            <span class="required-mark" aria-hidden="true">*</span>
+          }
+        </label>
+        @if (field.type === 'textarea') {
+          <textarea
+            class="input resize-none"
+            [id]="'apt-' + field.key"
+            [rows]="field.rows || 4"
+            [value]="valueFor(field)"
+            [placeholder]="field.placeholder || ''"
+            [attr.maxlength]="field.maxLength || null"
+            [required]="!!field.required"
+            [disabled]="saving()"
+            [attr.aria-invalid]="!!errorFor(field.key)"
+            [attr.aria-describedby]="'hint-' + field.key"
+            (input)="text(field.key, $event)"
+          ></textarea>
+        } @else {
+          <input
+            class="input"
+            [id]="'apt-' + field.key"
+            [type]="field.type || 'text'"
+            [value]="valueFor(field)"
+            [placeholder]="field.placeholder || ''"
+            [attr.min]="field.min ?? null"
+            [attr.max]="field.max ?? null"
+            [attr.maxlength]="field.maxLength || null"
+            [attr.step]="field.type === 'number' ? 1 : null"
+            [required]="!!field.required"
+            [disabled]="saving()"
+            [attr.aria-invalid]="!!errorFor(field.key)"
+            [attr.aria-describedby]="'hint-' + field.key"
+            (input)="field.type === 'number' ? number(field.key, $event) : text(field.key, $event)"
+          />
+        }
+        <p [id]="'hint-' + field.key" [class]="errorFor(field.key) ? 'field-error' : 'field-hint'">
+          {{ errorFor(field.key) || field.hint }}
+        </p>
+      </div>
+    </ng-template>
+  }
+</div>

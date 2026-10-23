@@ -9,7 +9,7 @@
   <section class="film mt-12 pb-16 pt-10 md:mt-16 md:pb-20 md:pt-14" [attr.aria-label]="'apartment.tabs.gallery' | transloco">
     @let current = roomOf(carousel.index());
     <nav class="container-editorial max-w-6xl" [attr.aria-label]="'gallery.chapters' | transloco">
-      <ul class="flex gap-x-7 overflow-x-auto [scrollbar-width:none] md:flex-wrap md:gap-y-1 [&::-webkit-scrollbar]:hidden">
+      <ul class="mobile-tabs flex gap-x-7 overflow-x-auto [scrollbar-width:none] md:flex-wrap md:gap-y-1 [&::-webkit-scrollbar]:hidden">
         @for (chapter of chapters(); track chapter.id; let c = $index) {
           <li class="shrink-0">
             <button
@@ -46,14 +46,14 @@
           <p class="film-line mt-3">{{ 'rooms.' + room.key + '.line' | transloco }}</p>
         </div>
       }
-      <div class="flex items-center gap-5">
+      <div class="flex items-center gap-5 mobile-center">
         <p class="text-sm tracking-widest tabular-nums">
           {{ two(carousel.index() + 1) }} <span class="opacity-50">/ {{ two(ordered().length) }}</span>
         </p>
         <div class="relative h-px w-24 bg-current/20 md:w-40" aria-hidden="true">
           <div class="absolute inset-y-0 left-0 bg-accent transition-[width] duration-500 ease-out" [style.width.%]="((carousel.index() + 1) / ordered().length) * 100"></div>
         </div>
-        <div class="flex gap-2">
+        <div class="flex gap-2 mobile-center">
           <button type="button" class="film-arrow" (click)="carousel.previous()" [disabled]="carousel.index() === 0" [attr.aria-label]="'apartment.previousPhoto' | transloco">←</button>
           <button type="button" class="film-arrow" (click)="carousel.next()" [disabled]="carousel.index() === ordered().length - 1" [attr.aria-label]="'apartment.nextPhoto' | transloco">→</button>
         </div>

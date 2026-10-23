@@ -8,7 +8,7 @@ import { AdminApiService } from '../../admin-api.service';
   selector: 'app-admin-messages',
   imports: [DatePipe],
   template: `
-    <div class="flex flex-wrap items-center justify-between gap-4">
+    <div class="flex flex-wrap items-center justify-between gap-4 mobile-stack">
       <h1 class="text-4xl">Tin nhắn</h1>
       <label class="flex items-center gap-3 text-sm">
         <input type="checkbox" class="h-4 w-4 accent-accent-deep" [checked]="unhandledOnly()" (change)="toggleFilter()" />
@@ -25,7 +25,7 @@ import { AdminApiService } from '../../admin-api.service';
         <ul class="mt-8 space-y-4">
           @for (m of messages.value().items; track m.id) {
             <li class="card" [class.opacity-60]="m.handledAt">
-              <div class="flex flex-wrap items-baseline justify-between gap-4">
+              <div class="flex flex-wrap items-baseline justify-between gap-4 mobile-stack">
                 <p>
                   <span class="font-medium">{{ m.name }}</span>
                   · <a class="link" [href]="'tel:' + m.phone">{{ m.phone }}</a>

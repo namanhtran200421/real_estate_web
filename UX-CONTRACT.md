@@ -40,6 +40,7 @@
 |---|---|---|---|---|
 | Select/Listbox | `app-select` | `components/select` | authored | keyboard + open popup |
 | Date | browser platform | identity forms | native date input | locale + keyboard + E2E |
+| Listing photo upload | apartment editor + `AdminApiService` + apartment photo API | migration 017; shared raster container validation | JPG / PNG / WebP, 5 MB each, at most 60 per listing | authenticated upload, preview, order, save/reopen, public fetch |
 | Form | page component + Zod API schema | booking/admin controllers | create / edit | validation E2E |
 | Toast | inline live status | existing admin patterns | success / error | live-region test |
 | CRUD | Owner booking detail | admin booking API | stay on record | full-flow E2E |
@@ -59,6 +60,7 @@
 
 | Operation | Trigger | Pending | Success destination | Success feedback | Failure recovery | Focus outcome | Source ref |
 |---|---|---|---|---|---|---|---|
+| Create/edit apartment | Save apartment | fields disabled; upload must finish | stay on saved record | persistent inline success | preserve fields/photos, focus invalid field and retry | first invalid field / saved record heading | apartment API schema + editor |
 | Create booking | Review submit | button disabled, stable label | payment | route transition | inline API error, CAPTCHA reset | page heading | booking service |
 | Record payment | Owner confirmation | controls disabled | stay on record | refreshed financial summary | preserved form + inline error | action region | ADR 0001 |
 | Add incident | Owner submit | form disabled | stay on record | incident list refresh | preserved values + inline error | incident heading | migration 014 |
@@ -70,6 +72,7 @@
 - Route document title policy: existing route title configuration remains canonical.
 - Route error / 403 page behavior: existing admin authentication and guest lookup flows.
 - Breadcrumb/tab/route-state policy: booking steps remain route based; Owner detail returns to the booking list.
+- Mobile alignment: below 768px all guest and owner screens center text, form values and feedback. Content rows explicitly stack; calendar grids, carousel tracks, pagination and progress connectors keep their geometry. Authored select values/options center independently of their indicator.
 - Responsive table strategy: financial and identity information uses stacked definition lists below desktop width.
 - Truncation/full-value access: identity values are never placed in URLs, storage, clipboard toasts, or truncated owner data.
 - Focus restoration and sticky-obstruction policy: native route focus behavior; sticky side summaries never cover focused controls.
@@ -80,6 +83,7 @@
 - Destructive confirmation levels: cancellation/refund/waive actions state amount, target and consequence before submission.
 - Toast placement/duration/deduplication: existing inline live status only.
 - Alert/banner scope and persistence: late checkout and same-day arrival warnings stay visible while unresolved.
+- Apartment editor changes: in-app navigation uses an inline leave/stay confirmation; browser unload uses the platform unsaved-changes warning. Saving blocks navigation and duplicate submits. Failed uploads remain visible and are excluded from saved listing photos; other photos and typed fields survive retry.
 - Unsaved-changes behavior: identity details intentionally live in memory only and a privacy note explains that refresh requires re-entry.
 - Layer/z-index contract: existing select popover contract.
 
@@ -122,3 +126,11 @@
 - Project audit command/result: recorded in implementation handoff.
 - CRUD full-flow evidence: create booking → pay accommodation/security → record incident → check out.
 - Failure-path evidence: invalid identity fields, duplicate submits, rejected transfer and mutation API error.
+
+## Dashboard reporting
+
+- Reporting filters use `period=day|week|month|year` and `date=YYYY-MM-DD` in the URL. Month is the default. Switching units keeps the selected date; arrows move to the adjacent complete calendar period; the current-period action uses Vietnam's calendar date. Weeks run Monday–Sunday. Date selection is bounded to 2000–2100 and invalid/cleared values restore the selected date.
+- Revenue, confirmed booking counts and occupancy cards/charts load together from `/admin/stats?period=…&date=…`. Reporting loading/errors replace figures so a prior range is never shown under a new label; retries preserve the selected filters. Query-less `/admin/stats` retains the legacy monthly response for older clients.
+- Data definitions remain sourced from `booking.repository.ts`: net revenue is succeeded non-security payments by paid_at minus succeeded non-security refunds by completed_at; bookings use confirmed_at and confirmed/completed status; occupancy counts end-exclusive stay nights and capacity for the same currently active apartment inventory. Historical capacity uses current published inventory, because the existing model has no inventory-history snapshots.
+- Comparisons use the entire previous period, with explicit wording when the selected period has not ended. Zero/negative prior revenue displays the prior value rather than an undefined growth percentage. Charts show refund-only negative revenue and whole-VND ticks.
+- Operational queues, in-house counts and upcoming arrivals remain current regardless of report filters. This distinction is visible in the dashboard labels.

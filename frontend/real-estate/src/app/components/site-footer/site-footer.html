@@ -6,7 +6,7 @@
           <img src="brand/logo-stacked.webp" [alt]="site.name" width="500" height="337" loading="lazy" class="h-20 w-auto" />
         </a>
         <p class="mt-4 max-w-sm text-muted-foreground">{{ 'site.tagline' | transloco }}</p>
-        <ul class="mt-6 flex gap-3">
+        <ul class="mt-6 flex gap-3 mobile-center">
           @for (s of site.social; track s.name) {
             <li>
               <a
@@ -53,7 +53,7 @@
             <li>
               <a
                 [href]="c.href"
-                class="flex min-h-11 items-baseline justify-between gap-4 py-3 transition-colors hover:text-accent-deep"
+                class="mobile-stack flex min-h-11 items-baseline justify-between gap-4 py-3 transition-colors hover:text-accent-deep"
               >
                 <span class="text-sm text-muted-foreground">{{ c.label | transloco }}</span>
                 <span class="font-serif text-lg font-light">{{ c.value }}</span>
@@ -64,7 +64,7 @@
       </div>
     </div>
 
-    <div class="mt-16 flex flex-wrap items-center justify-between gap-4 text-sm text-muted-foreground">
+    <div class="mt-16 flex flex-wrap items-center justify-between gap-4 text-sm text-muted-foreground mobile-stack">
       <p>&copy; {{ year }} {{ site.name }}. {{ 'footer.rights' | transloco }}</p>
       <!-- Owner sign-in; opens the dashboard directly when already signed in. A plain link: the
            admin area is Vietnamese only, so it never gets the /en prefix. -->

@@ -41,7 +41,7 @@
               }
             </div>
 
-            <div class="max-w-48">
+            <div class="max-w-48 mx-auto md:mx-0">
               <label class="label" for="book-guests">{{ 'common.guestsLabel' | transloco }}</label>
               <app-select
                 inputId="book-guests"
@@ -148,7 +148,7 @@
             </fieldset>
           </div>
 
-          <div class="flex flex-col-reverse gap-3 border-t border-border pt-8 sm:flex-row sm:items-center sm:justify-between">
+          <div class="flex flex-col-reverse gap-3 border-t border-border pt-8 sm:flex-row sm:items-center sm:justify-between mobile-center">
             <a routerLink="/apartment" [queryParams]="{ apt: apt.slug }" class="btn btn-ghost">{{ 'booking.backToApartment' | transloco }}</a>
             <button type="submit" class="btn btn-primary" [disabled]="quote.isLoading()">{{ 'common.continue' | transloco }}</button>
           </div>

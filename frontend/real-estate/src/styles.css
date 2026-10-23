@@ -6,6 +6,7 @@
 
 @import 'tailwindcss';
 @import 'lenis/dist/lenis.css';
+@import './mobile.css';
 
 /* One self-hosted variable file covers Latin and Vietnamese display text. It replaces three
    cross-origin Google Font subsets and keeps the public site's critical path on one origin. */

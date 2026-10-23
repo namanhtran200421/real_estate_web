@@ -14,7 +14,7 @@ import { AdminApiService } from '../../admin-api.service';
       và ngày nghỉ bù của từng năm.
     </p>
 
-    <div class="mt-8 flex items-center gap-3">
+    <div class="mt-8 flex items-center gap-3 mobile-center">
       <button type="button" class="icon-btn" aria-label="Năm trước" (click)="year.set(year() - 1)">←</button>
       <span class="font-serif text-2xl">{{ year() }}</span>
       <button type="button" class="icon-btn" aria-label="Năm sau" (click)="year.set(year() + 1)">→</button>
@@ -40,7 +40,7 @@ import { AdminApiService } from '../../admin-api.service';
       @if (holidays.value().length) {
         <ul class="mt-8 max-w-2xl divide-y divide-border rounded-lg border border-border bg-card">
           @for (h of holidays.value(); track h.date) {
-            <li class="flex items-center justify-between gap-4 px-5 py-3">
+            <li class="flex items-center justify-between gap-4 px-5 py-3 mobile-stack">
               <span><span class="inline-block w-36">{{ h.date | date: 'EEE dd/MM/yyyy' }}</span> {{ h.name }}</span>
               <button type="button" class="link text-sm" [disabled]="busy()" (click)="remove(h.date)">Xoá</button>
             </li>

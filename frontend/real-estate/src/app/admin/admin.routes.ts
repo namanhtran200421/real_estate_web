@@ -42,11 +42,13 @@ export const adminRoutes: Routes = [
       },
       {
         path: 'apartments/new',
+        canDeactivate: [(component: { confirmLeave: () => boolean | Promise<boolean> }) => component.confirmLeave()],
         loadComponent: () => import('./pages/apartment-edit/apartment-edit').then((m) => m.AdminApartmentEdit),
         title: title('Thêm căn hộ'),
       },
       {
         path: 'apartments/:slug',
+        canDeactivate: [(component: { confirmLeave: () => boolean | Promise<boolean> }) => component.confirmLeave()],
         loadComponent: () => import('./pages/apartment-edit/apartment-edit').then((m) => m.AdminApartmentEdit),
         title: title('Sửa căn hộ'),
       },

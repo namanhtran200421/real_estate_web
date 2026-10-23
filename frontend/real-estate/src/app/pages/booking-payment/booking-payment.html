@@ -67,9 +67,9 @@
             @if (countdown(); as countdown) {
               <!-- The hold, counting down. A timer is never announced as it ticks; screen readers read it on demand. -->
               <div
-                class="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 rounded-md border border-accent bg-accent-muted px-5 py-4"
+                class="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 rounded-md border border-accent bg-accent-muted px-5 py-4 mobile-stack"
               >
-                <p class="flex items-center gap-3 text-sm text-accent-deep">
+                <p class="flex items-center gap-3 text-sm text-accent-deep mobile-center">
                   <svg viewBox="0 0 20 20" class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
                     <circle cx="10" cy="10" r="7.25" />
                     <path d="M10 6v4l2.5 2" stroke-linecap="round" stroke-linejoin="round" />
@@ -91,7 +91,7 @@
               <div class="mt-6 grid gap-4 sm:grid-cols-2">
                 @if (options.deposit != null) {
                   <label
-                    class="panel flex cursor-pointer gap-4 p-6 has-[:checked]:border-accent-deep has-[:checked]:bg-accent-muted md:p-6"
+                    class="mobile-stack panel flex cursor-pointer gap-4 p-6 has-[:checked]:border-accent-deep has-[:checked]:bg-accent-muted md:p-6"
                   >
                     <input
                       type="radio"
@@ -112,7 +112,7 @@
                 }
                 @if (options.full != null) {
                   <label
-                    class="panel flex cursor-pointer gap-4 p-6 has-[:checked]:border-accent-deep has-[:checked]:bg-accent-muted md:p-6"
+                    class="mobile-stack panel flex cursor-pointer gap-4 p-6 has-[:checked]:border-accent-deep has-[:checked]:bg-accent-muted md:p-6"
                   >
                     <input
                       type="radio"
@@ -139,7 +139,7 @@
                 }
                 @if (options.assetSecurity != null) {
                   <label
-                    class="panel flex cursor-pointer gap-4 p-6 has-[:checked]:border-accent-deep has-[:checked]:bg-accent-muted md:p-6"
+                    class="mobile-stack panel flex cursor-pointer gap-4 p-6 has-[:checked]:border-accent-deep has-[:checked]:bg-accent-muted md:p-6"
                   >
                     <input
                       type="radio"
@@ -168,7 +168,7 @@
                 }
                 @if (options.incident != null) {
                   <label
-                    class="panel flex cursor-pointer gap-4 p-6 has-[:checked]:border-accent-deep has-[:checked]:bg-accent-muted md:p-6"
+                    class="mobile-stack panel flex cursor-pointer gap-4 p-6 has-[:checked]:border-accent-deep has-[:checked]:bg-accent-muted md:p-6"
                   >
                     <input
                       type="radio"
@@ -212,35 +212,35 @@
                     </div>
 
                     <dl class="divide-y divide-border border-y border-border text-sm">
-                      <div class="flex items-center justify-between gap-4 py-3">
+                      <div class="flex items-center justify-between gap-4 py-3 mobile-stack">
                         <dt class="text-muted-foreground">{{ 'payment.bank' | transloco }}</dt>
                         <dd class="font-medium">{{ t.bankName }}</dd>
                       </div>
-                      <div class="flex items-center justify-between gap-4 py-3">
+                      <div class="flex items-center justify-between gap-4 py-3 mobile-stack">
                         <dt class="text-muted-foreground">{{ 'payment.accountName' | transloco }}</dt>
                         <dd class="text-right font-medium">{{ t.accountName }}</dd>
                       </div>
-                      <div class="flex items-center justify-between gap-4 py-3">
+                      <div class="flex items-center justify-between gap-4 py-3 mobile-stack">
                         <dt class="text-muted-foreground">{{ 'payment.accountNumber' | transloco }}</dt>
-                        <dd class="flex items-center gap-3">
+                        <dd class="flex items-center gap-3 mobile-center">
                           <span class="font-mono text-base">{{ t.accountNumber }}</span>
                           <button type="button" class="link min-h-6 px-2 text-xs" (click)="copy('account', t.accountNumber)">
                             {{ (copied() === 'account' ? 'payment.copied' : 'payment.copy') | transloco }}
                           </button>
                         </dd>
                       </div>
-                      <div class="flex items-center justify-between gap-4 py-3">
+                      <div class="flex items-center justify-between gap-4 py-3 mobile-stack">
                         <dt class="text-muted-foreground">{{ 'payment.amount' | transloco }}</dt>
-                        <dd class="flex items-center gap-3">
+                        <dd class="flex items-center gap-3 mobile-center">
                           <span class="font-serif text-xl">{{ t.amount | number }} ₫</span>
                           <button type="button" class="link min-h-6 px-2 text-xs" (click)="copy('amount', '' + t.amount)">
                             {{ (copied() === 'amount' ? 'payment.copied' : 'payment.copy') | transloco }}
                           </button>
                         </dd>
                       </div>
-                      <div class="flex items-center justify-between gap-4 py-3">
+                      <div class="flex items-center justify-between gap-4 py-3 mobile-stack">
                         <dt class="text-muted-foreground">{{ 'payment.note' | transloco }}</dt>
-                        <dd class="flex items-center gap-3">
+                        <dd class="flex items-center gap-3 mobile-center">
                           <span class="font-mono text-base font-medium text-accent-deep">{{ t.note }}</span>
                           <button type="button" class="link min-h-6 px-2 text-xs" (click)="copy('note', t.note)">
                             {{ (copied() === 'note' ? 'payment.copied' : 'payment.copy') | transloco }}
@@ -250,7 +250,7 @@
                     </dl>
                   </div>
 
-                  <ol class="mt-8 list-decimal space-y-2 pl-5 text-sm text-muted-foreground">
+                  <ol class="mobile-marker-list mt-8 list-decimal space-y-2 pl-5 text-sm text-muted-foreground">
                     <li>{{ 'payment.steps.scan' | transloco: { name: t.accountName } }}</li>
                     <li>{{ 'payment.steps.phone' | transloco }}</li>
                     <li>
@@ -280,7 +280,7 @@
               </h2>
 
               @if (t(); as t) {
-                <p class="mt-4 flex gap-3 rounded-md border border-accent bg-accent-muted p-4 text-sm">
+                <p class="mt-4 flex gap-3 rounded-md border border-accent bg-accent-muted p-4 text-sm mobile-center">
                   <svg viewBox="0 0 20 20" class="mt-0.5 h-5 w-5 shrink-0 text-accent-deep" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
                     <path d="M10 3.5 2.75 16.5h14.5L10 3.5Z" stroke-linejoin="round" />
                     <path d="M10 8.5v3.5M10 14.25v.01" stroke-linecap="round" />
@@ -302,7 +302,7 @@
                     class="mx-auto max-h-96 w-auto rounded-sm border border-border"
                     [alt]="'payment.upload.previewAlt' | transloco"
                   />
-                  <div class="mt-4 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm">
+                  <div class="mt-4 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm mobile-stack">
                     <button type="button" class="link" (click)="fileInput.click()" [disabled]="submitting()">
                       {{ 'payment.upload.change' | transloco }}
                     </button>
@@ -346,7 +346,7 @@
                 </p>
               }
 
-              <div class="mt-8 flex items-start gap-3">
+              <div class="mt-8 flex items-start gap-3 mobile-stack">
                 <input
                   type="checkbox"
                   id="accept-policy"
@@ -370,7 +370,7 @@
                 <div class="mt-8 rounded-md border border-accent bg-accent-muted p-4 text-sm" role="alert">
                   <p class="font-medium">{{ 'payment.upload.notTransfer.title' | transloco }}</p>
                   <p class="mt-1 text-muted-foreground">{{ 'payment.upload.notTransfer.text' | transloco }}</p>
-                  <div class="mt-4 flex flex-col gap-3 sm:flex-row">
+                  <div class="mt-4 flex flex-col gap-3 sm:flex-row mobile-center">
                     <button type="button" class="btn btn-primary" [disabled]="submitting()" (click)="fileInput.click()">
                       {{ 'payment.upload.notTransfer.chooseAnother' | transloco }}
                     </button>

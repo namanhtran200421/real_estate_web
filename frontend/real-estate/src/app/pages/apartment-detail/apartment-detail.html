@@ -6,9 +6,9 @@
         <app-apartment-header class="mb-10 block md:mb-12" [apartment]="apt" [tabsOnly]="true" />
         <p class="label-caps text-accent-deep">{{ apt.area }}</p>
         <h1 class="display mt-4 lg:whitespace-nowrap"><app-split [text]="apt.name" /></h1>
-        <div class="mt-6 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+        <div class="mt-6 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between mobile-center">
           <p class="text-lg text-muted-foreground">{{ 'apartment.capacity' | transloco: { guests: apt.guests, bedrooms: apt.bedrooms, beds: apt.beds, bathrooms: apt.bathrooms } }}</p>
-          <div class="flex flex-wrap items-center gap-5">
+          <div class="flex flex-wrap items-center gap-5 mobile-center">
             <p class="font-serif text-3xl">{{ 'home.scenes.perNight' | transloco: { price: (apt.pricing.weekday | number) } }}</p>
             <a class="btn btn-primary" routerLink="/book" [queryParams]="{ apt: apt.slug }">{{ 'home.scenes.heroCta' | transloco }} →</a>
           </div>
@@ -40,7 +40,7 @@
           </div>
           <ul class="mt-7 grid grid-cols-2 gap-2.5 xl:grid-cols-5">
             @for (item of apt.keyFacilities; track item) {
-              <li class="panel flex min-h-16 items-center gap-3 !rounded-md !p-4 text-sm leading-snug">
+              <li class="mobile-stack panel flex min-h-16 items-center gap-3 !rounded-md !p-4 text-sm leading-snug mobile-center">
                 <svg viewBox="0 0 24 24" class="size-6 shrink-0 text-accent-deep" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                   @switch (facilityIcon(item)) {
                     @case ('apartment') { <path d="M4 21V7l8-5 8 5v14M3 21h18M9 21v-8h6v8M8 9h.01M16 9h.01" /> }
@@ -75,7 +75,7 @@
               <div class="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 @for (group of amenityGroups; track group.key) {
                   <section class="panel !p-5">
-                    <h3 class="flex items-center gap-3 font-sans text-base font-semibold">
+                    <h3 class="flex items-center gap-3 font-sans text-base font-semibold mobile-center">
                       <svg viewBox="0 0 24 24" class="size-6 shrink-0 text-accent-deep" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         @switch (group.key) {
                           @case ('bathrooms') { <path d="M5 20V8a4 4 0 0 1 8 0v2M10 10h7M11 14h.01M14 14h.01M17 14h.01M12 18h.01M16 18h.01" /> }
@@ -91,7 +91,7 @@
                     </h3>
                     <ul class="mt-4 space-y-2 border-t border-border pt-4 text-sm text-muted-foreground">
                       @for (item of group.items; track item) {
-                        <li class="flex gap-2">
+                        <li class="flex gap-2 mobile-center">
                           @if (item === 'noPets') {
                             <svg viewBox="0 0 24 24" class="mt-0.5 size-4 shrink-0 text-accent-deep" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><circle cx="8" cy="6" r="1" /><circle cx="14" cy="5" r="1" /><circle cx="18" cy="8" r="1" /><path d="M5 14c-2 3 0 6 3 6 2 0 2-1 4-1s2 1 4 1c3 0 5-3 3-6-2-3-4-5-7-5s-5 2-7 5ZM3 3l18 18" /></svg>
                           } @else {
@@ -166,7 +166,7 @@
             <div class="grid gap-4">
               @for (review of reviews(); track review.id) {
                 <article class="panel">
-                  <div class="flex flex-wrap items-center justify-between gap-3">
+                  <div class="flex flex-wrap items-center justify-between gap-3 mobile-stack">
                     <span class="text-xl tracking-wider" [attr.aria-label]="'apartment.reviewRating' | transloco: { rating: review.rating }">
                       @for (star of [1, 2, 3, 4, 5]; track star) {
                         <span aria-hidden="true" [class]="star <= review.rating ? 'text-accent-deep' : 'text-border'">★</span>
@@ -179,7 +179,7 @@
               }
             </div>
           } @else {
-            <div class="panel flex min-h-44 items-center gap-5">
+            <div class="panel flex min-h-44 items-center gap-5 mobile-center">
               <svg viewBox="0 0 24 24" class="size-10 shrink-0 text-accent-deep" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H7l-4 2v-5.5a7.5 7.5 0 1 1 17-4Z" />
                 <path d="M8 11.5h.01M12 11.5h.01M16 11.5h.01" />

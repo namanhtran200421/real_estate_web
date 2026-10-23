@@ -60,21 +60,21 @@
       <div class="mt-16">
         <p class="label-caps text-muted-foreground">{{ 'lookup.result' | transloco }}</p>
         <div class="panel mt-4">
-          <div class="flex flex-wrap items-start justify-between gap-4">
+          <div class="flex flex-wrap items-start justify-between gap-4 mobile-stack">
             <div>
               <p class="font-mono text-xl tracking-[0.1em]">{{ b.reference }}</p>
               <p class="mt-1 text-sm text-muted-foreground">
                 {{ 'lookup.bookedOn' | transloco: { date: (b.createdAt | date: 'dd/MM/yyyy') } }}
               </p>
             </div>
-            <div class="flex flex-wrap gap-2">
+            <div class="flex flex-wrap gap-2 mobile-center">
               <app-status-badge [status]="b.status" />
               <app-status-badge [status]="b.paymentStatus" />
             </div>
           </div>
 
           @if (apartment(); as apt) {
-            <div class="mt-6 flex gap-4 border-y border-border py-6">
+            <div class="mt-6 flex gap-4 border-y border-border py-6 mobile-stack">
               <img
                 [ngSrc]="apt.photos[0].src"
                 [alt]="apt.photos[0].alt"
@@ -96,7 +96,7 @@
 
           @if (b.depositFirst && b.financials; as money) {
             <!-- Deposit-first: the deposit is held apart from the rent, so it is shown on its own. -->
-            <dl class="mt-6 grid grid-cols-3 gap-4 text-center">
+            <dl class="mt-6 grid grid-cols-3 gap-4 text-center mobile-single-column">
               <div>
                 <dt class="small-caps text-xs text-muted-foreground">{{ 'lookup.deposit' | transloco }}</dt>
                 <dd class="mt-2 whitespace-nowrap font-serif text-lg text-accent-deep sm:text-xl">{{ money.assetSecurityRequired | number }} ₫</dd>
@@ -125,7 +125,7 @@
               </div>
             </dl>
           } @else {
-            <dl class="mt-6 grid grid-cols-3 gap-4 text-center">
+            <dl class="mt-6 grid grid-cols-3 gap-4 text-center mobile-single-column">
               <div>
                 <dt class="small-caps text-xs text-muted-foreground">{{ 'common.totalPrice' | transloco }}</dt>
                 <dd class="mt-2 whitespace-nowrap font-serif text-lg sm:text-xl">{{ b.quote.total | number }} ₫</dd>
@@ -150,7 +150,7 @@
             </p>
           }
 
-          <div class="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-end">
+          <div class="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-end mobile-center">
             @if (
               b.paymentOptions.deposit != null ||
               b.paymentOptions.full != null ||
@@ -193,7 +193,7 @@
               <p class="mt-3 text-sm text-muted-foreground">{{ 'lookup.reviewPublic' | transloco }}</p>
               <form class="mt-6" (submit)="$event.preventDefault(); submitReview()">
                 <p id="review-rating-label" class="label">{{ 'lookup.reviewRating' | transloco }}</p>
-                <div class="flex gap-1" role="group" aria-labelledby="review-rating-label">
+                <div class="flex gap-1 mobile-center" role="group" aria-labelledby="review-rating-label">
                   @for (star of [1, 2, 3, 4, 5]; track star) {
                     <button type="button" class="grid size-11 place-items-center rounded-md text-3xl transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-deep" [class]="star <= rating() ? 'text-accent-deep' : 'text-border'" [attr.aria-label]="'lookup.reviewStar' | transloco: { rating: star }" [attr.aria-pressed]="rating() === star" (click)="rating.set(star)">★</button>
                   }

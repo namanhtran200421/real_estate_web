@@ -18,7 +18,7 @@
   <!-- The same information as a list: visible on narrow screens, read aloud everywhere. -->
   <ul class="divide-y divide-border md:sr-only">
     @for (place of places(); track place.place) {
-      <li class="flex items-baseline justify-between gap-4 py-3">
+      <li class="flex items-baseline justify-between gap-4 py-3 mobile-stack">
         <span class="font-serif text-lg">{{ place.place }}</span>
         <span class="text-sm text-muted-foreground">{{ place.distance }}</span>
       </li>

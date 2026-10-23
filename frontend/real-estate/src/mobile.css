@@ -1,0 +1,199 @@
+/* One phone layout contract for guest pages, owner administration and sign-in.
+   Content rows opt into stacking; calendars, carousel tracks and navigation retain their geometry. */
+@media (width < 48rem) {
+  app-root :is(.panel, .card, form) {
+    min-width: 0;
+  }
+  app-root {
+    text-align: center;
+  }
+  app-root :is(h1, h2, h3, h4, p, label, legend, dt, dd, th, td, .label, .text-left, .text-right) {
+    text-align: center;
+  }
+  app-root
+    :is(
+      input:not([type='checkbox']):not([type='radio']),
+      textarea,
+      select,
+      [role='combobox'],
+      [role='option']
+    ) {
+    text-align: center;
+    font-size: 1rem;
+  }
+  app-root input[type='date']::-webkit-date-and-time-value {
+    text-align: center;
+  }
+  app-root input[type='date']::-webkit-datetime-edit {
+    display: inline-flex;
+    flex: 1;
+    justify-content: center;
+  }
+  app-root select {
+    text-align-last: center;
+  }
+  app-root legend {
+    margin-inline: auto;
+  }
+  app-root :is(p[class*='max-w-'], form[class*='max-w-'], .rule-accent) {
+    margin-inline: auto;
+  }
+  app-root .mobile-stack {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  app-root .mobile-stack > * {
+    min-width: 0;
+    max-width: 100%;
+  }
+  app-root .mobile-stack > .flex-1 {
+    flex: 0 1 auto;
+  }
+  app-root :is(dl > .mobile-stack, .mobile-pair) {
+    row-gap: 0.25rem;
+  }
+  app-root .mobile-center {
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  app-root .mobile-single-column {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  app-root .mobile-marker-list {
+    list-style-position: inside;
+    padding-inline: 0;
+  }
+  app-root .mobile-price-table {
+    table-layout: fixed;
+  }
+  app-root .mobile-price-table :is(th, td) {
+    width: 50%;
+    padding-inline: 0.25rem;
+    overflow-wrap: anywhere;
+  }
+  app-root .mobile-price-table td span {
+    display: block;
+  }
+
+  /* Center the value itself, keeping the select's indicator out of its text area. */
+  app-select [role='combobox'],
+  app-select [role='option'] {
+    position: relative;
+    justify-content: center;
+    padding-inline: 2.5rem;
+  }
+  app-select :is([role='combobox'], [role='option']) > span {
+    flex: 1;
+  }
+  app-select :is([role='combobox'], [role='option']) > svg {
+    position: absolute;
+    right: 0.75rem;
+  }
+
+  app-site-header .menu-links {
+    text-align: center;
+  }
+  app-site-header dialog > [role='group'] {
+    justify-content: center;
+  }
+  app-site-footer .container-editorial > .grid > * {
+    min-width: 0;
+  }
+  app-site-footer p {
+    margin-inline: auto;
+  }
+  app-site-footer a > span {
+    overflow-wrap: anywhere;
+  }
+  app-root .mobile-tabs {
+    justify-content: safe center;
+  }
+  app-apartment-header nav {
+    justify-content: safe center;
+    gap: 1.25rem;
+    mask-image: none;
+  }
+  app-admin-layout #admin-nav :is(nav a, nav p) {
+    justify-content: center;
+    text-align: center;
+  }
+  app-admin-layout #admin-nav > .border-t > a {
+    justify-content: center;
+  }
+  app-admin-layout #admin-nav > .border-t > div :is(a, button) {
+    justify-content: center;
+  }
+
+  /* Keep narrow phone cards comfortable; retain the existing desktop panel spacing. */
+  app-root :is(.card, .panel) {
+    padding: 1.25rem;
+  }
+  /* Balanced chrome puts the brand on the centre line while keeping menu/booking in reach. */
+  app-site-header header > div {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    gap: 0.5rem;
+  }
+  app-site-header header > div > a {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: center;
+    min-width: 0;
+  }
+  app-site-header header > div > a img {
+    width: 7rem;
+    max-width: 100%;
+    height: auto;
+  }
+  app-site-header header > div > div {
+    display: contents;
+  }
+  app-site-header header > div > div > a {
+    grid-column: 3;
+    grid-row: 1;
+    justify-self: end;
+    padding-inline: 0.75rem;
+    font-size: 0.8125rem;
+  }
+  app-site-header header > div > div > button {
+    justify-self: start;
+    grid-column: 1;
+    grid-row: 1;
+  }
+  app-site-header dialog > div:first-child {
+    display: grid;
+    grid-template-columns: 2.75rem minmax(0, 1fr) 2.75rem;
+  }
+  app-site-header dialog > div:first-child > img {
+    width: 10rem;
+    grid-column: 2;
+    justify-self: center;
+    max-width: 100%;
+    height: auto;
+  }
+  app-site-header dialog > div:first-child > button {
+    grid-column: 3;
+  }
+  app-admin-layout > div > header {
+    display: grid;
+    grid-template-columns: 2.75rem minmax(0, 1fr) 2.75rem;
+  }
+  app-admin-layout > div > header > a {
+    grid-column: 2;
+  }
+  app-admin-layout > div > header > button {
+    grid-column: 3;
+  }
+  app-root .btn {
+    white-space: normal;
+    text-align: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  app-site-header dialog[open] .menu-links > li {
+    animation: none;
+  }
+}

@@ -54,7 +54,7 @@
 
           <!-- Where the booking stands: two steps done, the owner's check in progress -->
           <ol class="mx-auto mt-10 max-w-sm space-y-4 text-left">
-            <li class="flex items-center gap-3">
+            <li class="flex items-center gap-3 mobile-center">
               <span class="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-accent text-accent-foreground">
                 <svg viewBox="0 0 20 20" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                   <path d="m4 10.5 4 4 8-9" stroke-linecap="round" stroke-linejoin="round" />
@@ -62,7 +62,7 @@
               </span>
               <span>{{ 'confirmation.progress.created' | transloco }}</span>
             </li>
-            <li class="flex items-center gap-3">
+            <li class="flex items-center gap-3 mobile-center">
               <span class="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-accent text-accent-foreground">
                 <svg viewBox="0 0 20 20" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                   <path d="m4 10.5 4 4 8-9" stroke-linecap="round" stroke-linejoin="round" />
@@ -70,13 +70,13 @@
               </span>
               <span>{{ 'confirmation.progress.sent' | transloco: { amount: (pending.amount | number) } }}</span>
             </li>
-            <li class="flex items-center gap-3" aria-current="step">
+            <li class="flex items-center gap-3 mobile-center" aria-current="step">
               <span class="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-accent-deep">
                 <span class="h-2.5 w-2.5 animate-pulse rounded-full bg-accent-deep"></span>
               </span>
               <span class="font-medium">{{ 'confirmation.progress.checking' | transloco }}</span>
             </li>
-            <li class="flex items-center gap-3 text-muted-foreground">
+            <li class="flex items-center gap-3 text-muted-foreground mobile-center">
               <span class="h-7 w-7 shrink-0 rounded-full border border-border"></span>
               <span>{{ 'confirmation.progress.confirmed' | transloco }}</span>
             </li>
@@ -86,7 +86,7 @@
             <!-- A fixed frame: the page does not move when the image arrives. -->
             <figure class="mx-auto mt-10 max-w-sm">
               <figcaption class="label-caps text-muted-foreground">{{ 'confirmation.screenshotTitle' | transloco }}</figcaption>
-              <div class="mx-auto mt-3 flex h-72 w-52 items-center justify-center overflow-hidden rounded-md border border-border bg-card">
+              <div class="mx-auto mt-3 flex h-72 w-52 items-center justify-center overflow-hidden rounded-md border border-border bg-card mobile-center">
                 @if (screenshotUrl(); as url) {
                   <a [href]="url" target="_blank" rel="noopener" class="block h-full w-full">
                     <img
@@ -226,12 +226,12 @@
         <!-- The rent: its total, the rent paid, and what is left, so the lines add up. Deposit and
              damage payments are listed apart, each named. -->
         <div class="mt-8 space-y-3 rounded-md bg-muted p-5" data-summary="rent">
-          <div class="flex justify-between gap-4">
+          <div class="flex justify-between gap-4 mobile-stack mobile-pair">
             <span class="text-muted-foreground">{{ (b.depositFirst ? 'purposes.accommodation' : 'common.totalPrice') | transloco }}</span>
             <span>{{ b.quote.total | number }} ₫</span>
           </div>
           @for (p of rentPayments(); track p.id) {
-            <div class="flex justify-between gap-4 text-sm">
+            <div class="flex justify-between gap-4 text-sm mobile-stack mobile-pair">
               <span class="text-muted-foreground">
                 {{ 'purposes.accommodation' | transloco }} ·
                 {{
@@ -242,7 +242,7 @@
               <span class="text-accent-deep">{{ p.amount | number }} ₫</span>
             </div>
           }
-          <div class="flex items-baseline justify-between gap-4 border-t border-border pt-3">
+          <div class="flex items-baseline justify-between gap-4 border-t border-border pt-3 mobile-stack mobile-pair">
             <span class="font-medium">
               @if (b.depositFirst && b.rentDueFrom) {
                 <!-- Deposit-first: the rent is due from check-in; a transfer being checked is the deposit, shown above. -->
@@ -261,7 +261,7 @@
         @if (otherPayments().length) {
           <div class="mt-3 space-y-3 rounded-md border border-border p-5 text-sm" data-summary="other">
             @for (p of otherPayments(); track p.id) {
-              <div class="flex justify-between gap-4">
+              <div class="flex justify-between gap-4 mobile-stack mobile-pair">
                 <span class="text-muted-foreground">
                   {{ 'purposes.' + p.purpose | transloco }} ·
                   {{
@@ -280,7 +280,7 @@
             <h2 id="money-timeline-heading" class="text-xl">{{ 'confirmation.timeline.title' | transloco }}</h2>
             <ol class="mt-4 divide-y divide-border border-y border-border text-sm">
               <li class="py-4">
-                <div class="flex justify-between gap-4">
+                <div class="flex justify-between gap-4 mobile-stack mobile-pair">
                   <span class="font-medium">{{ 'confirmation.timeline.deposit' | transloco }}</span>
                   <span>{{ money.assetSecurityRequired | number }} ₫</span>
                 </div>
@@ -304,7 +304,7 @@
                 }
               </li>
               <li class="py-4">
-                <div class="flex justify-between gap-4">
+                <div class="flex justify-between gap-4 mobile-stack mobile-pair">
                   <span class="font-medium">{{ 'confirmation.timeline.rent' | transloco }}</span>
                   <span>{{ b.quote.total | number }} ₫</span>
                 </div>
@@ -322,7 +322,7 @@
                 }
               </li>
               <li class="py-4">
-                <div class="flex justify-between gap-4">
+                <div class="flex justify-between gap-4 mobile-stack mobile-pair">
                   <span class="font-medium">{{ 'confirmation.timeline.refund' | transloco }}</span>
                 </div>
                 <p class="mt-1 text-muted-foreground">
@@ -335,7 +335,7 @@
                 @if (incidents.length) {
                   <ul class="mt-3 divide-y divide-border border-y border-border">
                     @for (incident of incidents; track incident.id) {
-                      <li class="flex justify-between gap-4 py-3">
+                      <li class="flex justify-between gap-4 py-3 mobile-stack mobile-pair">
                         <span>
                           <span class="block">{{ incident.description }}</span>
                           @if (incident.securityApplied > 0) {
@@ -362,11 +362,11 @@
             <h2 id="asset-financials-heading" class="text-xl">{{ 'confirmation.assetsTitle' | transloco }}</h2>
             @if (b.financials.assetSecurityRequired > 0) {
               <dl class="mt-4 space-y-2 text-sm">
-                <div class="flex justify-between gap-4">
+                <div class="flex justify-between gap-4 mobile-stack mobile-pair">
                   <dt class="text-muted-foreground">{{ 'confirmation.securityRequired' | transloco }}</dt>
                   <dd>{{ b.financials.assetSecurityRequired | number }} ₫</dd>
                 </div>
-                <div class="flex justify-between gap-4">
+                <div class="flex justify-between gap-4 mobile-stack mobile-pair">
                   <dt class="text-muted-foreground">{{ 'confirmation.securityHeld' | transloco }}</dt>
                   <dd>{{ b.financials.assetSecurityHeld | number }} ₫</dd>
                 </div>
@@ -375,7 +375,7 @@
             @if (incidents.length) {
               <ul class="mt-4 divide-y divide-border border-y border-border text-sm">
                 @for (incident of incidents; track incident.id) {
-                  <li class="flex justify-between gap-4 py-3">
+                  <li class="flex justify-between gap-4 py-3 mobile-stack mobile-pair">
                     <span>
                       <span class="block">{{ incident.description }}</span>
                       @if (incident.securityApplied > 0) {
@@ -396,7 +396,7 @@
         }
       </div>
 
-      <div class="mt-10 flex flex-col justify-center gap-3 sm:flex-row">
+      <div class="mt-10 flex flex-col justify-center gap-3 sm:flex-row mobile-center">
         <a routerLink="/booking/manage" [queryParams]="{ ref: b.reference }" class="btn btn-outline">
           {{ 'nav.lookup' | transloco }}
         </a>

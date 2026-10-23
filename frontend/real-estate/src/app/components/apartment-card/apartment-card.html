@@ -78,7 +78,7 @@
     </p>
 
     @if (featured()) {
-      <ul class="mt-5 flex flex-wrap gap-2">
+      <ul class="mt-5 flex flex-wrap gap-2 mobile-center">
         @for (item of apt.keyFacilities; track item) {
           <li class="rounded-md border border-accent bg-accent-muted px-3 py-1 text-sm">{{ item }}</li>
         }
@@ -87,7 +87,7 @@
 
     <div class="mt-auto pt-8">
       <hr />
-      <div class="mt-6 flex flex-wrap items-center justify-between gap-4">
+      <div class="mt-6 flex flex-wrap items-center justify-between gap-4 mobile-stack">
         <p class="text-muted-foreground">
           {{ 'common.from' | transloco }}
           <span class="font-serif text-2xl text-foreground">{{ apt.pricing.weekday | number }} ₫</span>
