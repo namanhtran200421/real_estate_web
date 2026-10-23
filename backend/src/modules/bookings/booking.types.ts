@@ -343,6 +343,29 @@ export interface MonthStats {
   nightsAvailable: number;
 }
 
+/** Calendar reporting units; weeks start on Monday in the business timezone. */
+export type StatsPeriod = 'day' | 'week' | 'month' | 'year';
+
+export interface PeriodStats {
+  start: string;
+  /** Exclusive end, yyyy-mm-dd. */
+  end: string;
+  revenue: number;
+  bookings: number;
+  nightsBooked: number;
+  nightsAvailable: number;
+}
+
+export interface DashboardStats {
+  period: StatsPeriod;
+  date: string;
+  today: string;
+  timezone: string;
+  selected: PeriodStats;
+  previous: PeriodStats;
+  periods: PeriodStats[];
+}
+
 export interface AdminStats {
   /** The current month, "2026-10". */
   currentMonth: string;

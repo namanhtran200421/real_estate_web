@@ -49,9 +49,19 @@ async function summary(_req: Request, res: Response): Promise<void> {
   res.json({ data: await bookingService.summary() });
 }
 
-/** GET /admin/stats — month-by-month revenue, bookings and occupancy for the dashboard charts */
-async function stats(_req: Request, res: Response): Promise<void> {
-  res.json({ data: await bookingService.stats() });
+const statsQuery = z.object({
+  period: z.enum(['day', 'week', 'month', 'year']).default('month'),
+  date: isoDate.refine((value) => value >= '2000-01-01' && value <= '2100-12-31', 'Chọn ngày từ năm 2000 đến 2100.').optional(),
+});
+
+/** No query retains the legacy monthly response for older clients. */
+async function stats(req: Request, res: Response): Promise<void> {
+  if (req.query['period'] === undefined && req.query['date'] === undefined) {
+    res.json({ data: await bookingService.stats() });
+    return;
+  }
+  const { period, date } = parse(statsQuery, req.query);
+  res.json({ data: await bookingService.dashboardStats(period, date) });
 }
 
 /** GET /admin/bookings?status=&apartment=&search=&from=&to=&sort=&page=&pageSize= */

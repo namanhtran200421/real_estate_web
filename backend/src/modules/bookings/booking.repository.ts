@@ -10,6 +10,8 @@ import type {
   AdminBookingFilters,
   AdminBookingListItem,
   AdminStats,
+  DashboardStats,
+  StatsPeriod,
   AdminSummary,
   AwaitingPayment,
   BalanceDue,
@@ -786,6 +788,69 @@ async function monthlyStats(today: string): Promise<AdminStats> {
   };
 }
 
+/** Bounded reporting buckets. Date truncation uses the configured database session timezone. */
+async function periodStats(period: StatsPeriod, date: string): Promise<DashboardStats['periods']> {
+  const window = {
+    day: { step: '1 day', back: 13, ahead: 7 },
+    week: { step: '1 week', back: 11, ahead: 6 },
+    month: { step: '1 month', back: 11, ahead: 6 },
+    year: { step: '1 year', back: 4, ahead: 2 },
+  }[period];
+  const rows = await query<{
+    start: string; end: string; revenue: number; bookings: number;
+    nights_booked: number; nights_available: number;
+  }>(
+    `WITH periods AS (
+       SELECT p::date AS start, (p + $3::interval)::date AS next
+       FROM generate_series(date_trunc($2::text, $1::date) - $4::int * $3::interval,
+                            date_trunc($2::text, $1::date) + $5::int * $3::interval, $3::interval) AS p
+     ),
+     span AS (SELECT min(start) AS first, max(next) AS last FROM periods),
+     received AS (
+       SELECT date_trunc($2::text, paid_at)::date AS start, sum(amount) AS amount
+       FROM payments, span
+       WHERE state = 'succeeded' AND purpose <> 'asset_security'
+         AND paid_at >= span.first AND paid_at < span.last GROUP BY 1
+     ),
+     refunded AS (
+       SELECT date_trunc($2::text, r.completed_at)::date AS start, sum(r.amount) AS amount
+       FROM refunds r JOIN payments p ON p.id = r.payment_id, span
+       WHERE r.state = 'succeeded' AND p.purpose <> 'asset_security'
+         AND r.completed_at >= span.first AND r.completed_at < span.last GROUP BY 1
+     ),
+     confirmed AS (
+       SELECT date_trunc($2::text, confirmed_at)::date AS start, count(*) AS bookings
+       FROM bookings, span
+       WHERE status IN ('confirmed', 'completed') AND confirmed_at >= span.first
+         AND confirmed_at < span.last GROUP BY 1
+     ),
+     nights AS (
+       SELECT date_trunc($2::text, night)::date AS start, count(*) AS nights
+       FROM bookings b JOIN apartments a ON a.id = b.apartment_id AND a.is_active, span,
+            generate_series(greatest(b.check_in, span.first), least(b.check_out, span.last) - 1, interval '1 day') AS night
+       WHERE b.status IN ('confirmed', 'completed') AND b.check_out > span.first AND b.check_in < span.last
+       GROUP BY 1
+     ),
+     listed AS (SELECT count(*) AS apartments FROM apartments WHERE is_active)
+     SELECT to_char(p.start, 'YYYY-MM-DD') AS start, to_char(p.next, 'YYYY-MM-DD') AS end,
+            (coalesce(r.amount, 0) - coalesce(f.amount, 0))::float8 AS revenue,
+            coalesce(c.bookings, 0)::int AS bookings,
+            coalesce(n.nights, 0)::int AS nights_booked,
+            (listed.apartments * (p.next - p.start))::int AS nights_available
+     FROM periods p CROSS JOIN listed
+     LEFT JOIN received r ON r.start = p.start
+     LEFT JOIN refunded f ON f.start = p.start
+     LEFT JOIN confirmed c ON c.start = p.start
+     LEFT JOIN nights n ON n.start = p.start
+     ORDER BY p.start`,
+    [date, period, window.step, window.back, window.ahead],
+  );
+  return rows.map((row) => ({
+    start: row.start, end: row.end, revenue: row.revenue, bookings: row.bookings,
+    nightsBooked: row.nights_booked, nightsAvailable: row.nights_available,
+  }));
+}
+
 export const bookingRepository = {
   insert,
   findByReference,
@@ -815,4 +880,5 @@ export const bookingRepository = {
   list,
   summary,
   monthlyStats,
+  periodStats,
 };

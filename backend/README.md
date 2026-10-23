@@ -81,6 +81,19 @@ src/
 migrations/              Versioned SQL (never edit an applied file; add a new one)
 ```
 
+### Apartment image uploads
+
+Run migration `017_apartment_photos.sql` before deploying the editor. The signed-in owner can
+POST JPG, PNG or WebP bytes (up to 5 MB) to `/api/v1/admin/apartments/photos`. The API verifies
+container bytes and dimensions, stores the image durably in Postgres, and returns a relative
+`/api/v1/apartments/photos/<sha256>` URL. Public GET requests serve that immutable image across
+website/API origins. The frontend resolves only these uploaded paths against its configured
+API URL; bundled apartment assets keep their existing website paths.
+
+Listing images have their own lifecycle and do not expire with private transfer screenshots.
+Removing a photo from a listing removes its reference when the owner saves; it does not delete
+the stored asset. Content hashes deduplicate retries and reuse across listings.
+
 ### Layers
 
 Each module is split into layers that only call the layer below:
@@ -349,3 +362,20 @@ tokens solved on another website sharing the widget are refused.
 - [ ] Daily database backups with point-in-time recovery
 - [ ] Log collection and an alert on `level: "error"` lines
 - [ ] One real booking end to end: small transfer → verify in admin → guest confirmation email
+
+### Dashboard report periods
+
+`GET /api/v1/admin/stats?period=day|week|month|year&date=YYYY-MM-DD` returns selected/previous
+period totals plus a bounded chart history and future occupancy buckets. Date is optional and
+defaults to today in BUSINESS_TIMEZONE. Monday starts a week. The API validates dates from
+2000 through 2100 and requires the existing signed-in-owner session. Without either query
+parameter the legacy monthly response is preserved.
+
+Revenue excludes held security deposits and their refunds. Occupancy uses currently published
+apartments for both nights and capacity, including historical reports. Negative net revenue
+is possible in refund-only periods. No migration is needed for report filtering.
+
+Run the optional real-Postgres reporting regression only on a clean, migrated local database:
+`DASHBOARD_TEST_DATABASE_URL=postgresql://localhost/real_estate_reporting_test npm run test:security`.
+The harness refuses remote or non-reporting database names; fixtures are synthetic and removed
+at the end. Calendar-navigation tests run in the ordinary security suite without a database.

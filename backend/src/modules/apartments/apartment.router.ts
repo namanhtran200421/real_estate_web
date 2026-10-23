@@ -9,11 +9,13 @@
 import { Router } from 'express';
 import { promoCodeRateLimiter } from '../../middleware/security.js';
 import { apartmentController } from './apartment.controller.js';
+import { apartmentPhotoController } from './apartment-photo.controller.js';
 import { reviewController } from '../reviews/review.controller.js';
 
 export const apartmentRouter = Router();
 
 apartmentRouter.get('/', apartmentController.list);
+apartmentRouter.get('/photos/:id', apartmentPhotoController.get);
 apartmentRouter.get('/:slug', apartmentController.getBySlug);
 apartmentRouter.get('/:slug/quote', promoCodeRateLimiter, apartmentController.quote);
 apartmentRouter.get('/:slug/reviews', reviewController.list);

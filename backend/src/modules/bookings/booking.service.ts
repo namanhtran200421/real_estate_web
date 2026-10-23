@@ -50,6 +50,8 @@ import type {
   AdminBookingListItem,
   AdminPayment,
   AdminStats,
+  DashboardStats,
+  StatsPeriod,
   AdminSummary,
   AssetIncidentStatus,
   BookingFinancials,
@@ -568,6 +570,15 @@ async function stats(): Promise<AdminStats> {
   return bookingRepository.monthlyStats(todayIn(env.timezone));
 }
 
+async function dashboardStats(period: StatsPeriod, date = todayIn(env.timezone)): Promise<DashboardStats> {
+  const periods = await bookingRepository.periodStats(period, date);
+  const index = periods.findIndex((bucket) => bucket.start <= date && date < bucket.end);
+  const selected = periods[index];
+  const previous = periods[index - 1];
+  if (!selected || !previous) throw new Error('Reporting period missing from aggregate window');
+  return { period, date, today: todayIn(env.timezone), timezone: env.timezone, selected, previous, periods };
+}
+
 async function summary(): Promise<AdminSummary> {
   const today = todayIn(env.timezone);
   return bookingRepository.summary(today, addDays(today, 7));
@@ -666,6 +677,7 @@ export const bookingService = {
   resolveIncident,
   summary,
   stats,
+  dashboardStats,
   expireStaleHolds,
   completeFinishedStays,
   remindOwnerOfEndingHolds,

@@ -13,7 +13,7 @@
     "build": "tsc -p tsconfig.build.json",
     "start": "node --enable-source-maps dist/server.js",
     "typecheck": "tsc --noEmit",
-    "test:security": "tsx --test security/*.test.ts ../frontend/real-estate/scripts/security-regression.test.ts",
+    "test:security": "tsx --test security/*.test.ts ../frontend/real-estate/scripts/*.test.ts",
     "typecheck:security": "tsc --project security/tsconfig.json --noEmit",
     "db:migrate": "node dist/db/migrate.js",
     "db:migrate:dev": "tsx src/db/migrate.ts",
